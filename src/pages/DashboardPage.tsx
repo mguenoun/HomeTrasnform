@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export function DashboardPage() {
@@ -20,9 +21,20 @@ export function DashboardPage() {
           </button>
         </div>
       </header>
-      <p className="text-slate-600">
-        Les objectifs, tâches et budgets apparaîtront ici.
-      </p>
+      <nav className="flex gap-3">
+        <Link
+          to="/objectives"
+          className="rounded border border-slate-300 bg-white px-4 py-2 hover:bg-slate-100"
+        >
+          Objectifs
+        </Link>
+        <Link
+          to="/tasks"
+          className="rounded border border-slate-300 bg-white px-4 py-2 hover:bg-slate-100"
+        >
+          Tâches
+        </Link>
+      </nav>
     </div>
   );
 }
