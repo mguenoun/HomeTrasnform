@@ -1,0 +1,66 @@
+export type TaskType = "menage" | "travaux" | "achat" | "soustraitance";
+
+export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
+
+export type TaskPriority = "low" | "medium" | "high";
+
+export interface FamilyUser {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  colorTag?: string;
+}
+
+export type ObjectiveStatus = "active" | "archived";
+
+export interface Objective {
+  id: string;
+  title: string;
+  description?: string;
+  targetDate?: string;
+  status: ObjectiveStatus;
+  createdBy: string;
+  createdAt: number;
+}
+
+export interface Task {
+  id: string;
+  objectiveId: string | null;
+  title: string;
+  description?: string;
+  type: TaskType;
+  room?: string;
+  priority: TaskPriority;
+  status: TaskStatus;
+  assigneeIds: string[];
+  dueDate?: string;
+  budgetEstimated?: number;
+  budgetActual?: number;
+  currency?: string;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+  closedAt?: number;
+  closedBy?: string;
+}
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  text: string;
+  createdAt: number;
+}
+
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  fileName: string;
+  storagePath: string;
+  url: string;
+  contentType: string;
+  size: number;
+  uploadedBy: string;
+  uploadedAt: number;
+}

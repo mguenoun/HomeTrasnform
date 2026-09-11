@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isFamilyMember() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/familyMembers/$(request.auth.token.email));
+    }
+
+    match /familyMembers/{email} {
+      allow read: if isFamilyMember();
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isFamilyMember();
+      allow write: if isFamilyMember() && request.auth.uid == userId;
+    }
+
+    match /objectives/{objectiveId} {
+      allow read: if isFamilyMember();
+      allow create, update, delete: if isFamilyMember();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isFamilyMember();
+      allow create, update, delete: if isFamilyMember();
+
+      match /comments/{commentId} {
+        allow read: if isFamilyMember();
+        allow create, update, delete: if isFamilyMember();
+      }
+
+      match /attachments/{attachmentId} {
+        allow read: if isFamilyMember();
+        allow create, update, delete: if isFamilyMember();
+      }
+    }
+  }
+}
