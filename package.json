@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:rules": "firebase emulators:exec --only firestore,storage,auth --project hometransform-test \"vitest run --config vitest.rules.config.ts\""
+    "test:rules": "firebase emulators:exec --only firestore,auth --project hometransform-test \"vitest run --config vitest.rules.config.ts\""
   },
   "dependencies": {
     "firebase": "^12.19.0",

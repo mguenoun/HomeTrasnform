@@ -4,29 +4,50 @@
 ```
 [Navigateur] --SPA React statique--> Cloudflare Pages
       |
-      | SDK Firebase (JS, client-only, pas de serveur à nous)
+      | SDK Firebase (JS, client-only)
       v
-[Firebase]
+[Firebase — plan Spark, gratuit, sans carte bancaire]
  ├─ Auth        : connexion des membres de la famille (Google Sign-In)
- ├─ Firestore   : objectifs, tâches, commentaires, métadonnées des pièces jointes
- └─ Storage     : fichiers (devis/factures/photos)
+ └─ Firestore   : objectifs, tâches, commentaires, métadonnées des pièces jointes
+
+      |
+      | fetch() avec le token Firebase (Authorization: Bearer ...)
+      v
+[Cloudflare Worker "attachments"] --vérifie le token + l'email--> [Cloudflare R2]
+                                                                    fichiers (devis/
+                                                                    factures/photos)
 ```
-Aucun backend à héberger nous-même : le frontend est 100% statique (déployé sur
-Cloudflare Pages), toute la logique "serveur" (auth, données partagées temps réel,
-fichiers) est déléguée à Firebase, gratuit à ce volume d'usage (plan Spark).
+Le frontend reste 100% statique (déployé sur Cloudflare Pages). Authentification et
+données restent déléguées à Firebase (plan Spark, gratuit, sans carte bancaire). Les
+fichiers (pièces jointes) sont stockés sur **Cloudflare R2** plutôt que Firebase
+Storage : depuis fin 2024, Firebase Storage impose le plan payant Blaze pour être
+activé, même si l'usage réel reste gratuit. Pour ne pas avoir à lier de carte
+bancaire au projet Firebase, on héberge les fichiers sur R2 (gratuit jusqu'à 10 Go,
+pas de carte requise) via un unique petit Cloudflare Worker qui fait office de porte
+d'entrée sécurisée (vérifie que l'appelant est un membre de la famille avant de
+lire/écrire un fichier). C'est le seul bout de "backend" du projet — tout le reste
+reste sans serveur à maintenir.
 
 ## Décisions retenues
-- **Authentification** : Google Sign-In (Firebase Auth).
-- **Hébergement** : Cloudflare Pages, déploiement continu depuis le repo Git.
-- **Backend de données** : Firebase (Firestore + Storage).
+- **Authentification** : Google Sign-In (Firebase Auth, plan Spark).
+- **Hébergement frontend** : Cloudflare Pages, déploiement continu depuis le repo Git.
+- **Backend de données** : Firebase Firestore (plan Spark).
+- **Fichiers** : Cloudflare R2, via un Cloudflare Worker qui vérifie l'authentification
+  Firebase avant chaque accès (au lieu de Firebase Storage, pour rester 100% gratuit
+  sans carte bancaire).
 
 ## Stack technique
 - **Frontend** : React + TypeScript + Vite, Tailwind CSS, React Router.
 - **Données temps réel** : SDK Firestore avec écouteurs (`onSnapshot`) — une modification
   par un membre est visible par les autres sans rafraîchissement manuel.
-- **Fichiers** : Firebase Storage, upload direct depuis le client.
+- **Fichiers** : Cloudflare Worker (TypeScript, `worker/`) exposant 3 routes
+  (upload / téléchargement / suppression) sur un bucket R2, appelées par le client via
+  `fetch()` avec le token d'ID Firebase en en-tête `Authorization`. Le Worker vérifie la
+  signature du token (JWKS Firebase, librairie `jose`) et que l'email correspond à un
+  membre autorisé, avant de lire/écrire dans R2.
 - **Tests** : Vitest + React Testing Library (unitaire/composants), Firebase Emulator
-  Suite (règles de sécurité Firestore/Storage), Playwright en option pour l'E2E critique.
+  Suite (règles de sécurité Firestore), tests du Worker via `vitest` + `@cloudflare/vitest-pool-workers`,
+  Playwright en option pour l'E2E critique.
 
 ## Configuration et secrets
 La configuration client Firebase (`apiKey`, `authDomain`, `projectId`, `storageBucket`,
@@ -56,19 +77,23 @@ d'environnement.
   - budgetEstimated, budgetActual, currency
   - createdBy, createdAt, updatedAt
   - sous-collection `comments/{id}` : authorId, text, createdAt
-  - sous-collection `attachments/{id}` : fileName, storagePath, url, contentType, size,
-    uploadedBy, uploadedAt
-- Fichiers réels dans Storage sous `tasks/{taskId}/{attachmentId}-{fileName}`
+  - sous-collection `attachments/{id}` : fileName, storagePath (clé R2), contentType,
+    size, uploadedBy, uploadedAt
+- Fichiers réels dans le bucket R2 sous `tasks/{taskId}/{attachmentId}-{fileName}`,
+  gérés exclusivement via le Worker (jamais d'accès direct du client à R2)
 
 Pas de notion multi-foyer : l'app est dédiée à une seule famille (les données ne sont pas
 cloisonnées par "household"), ce qui simplifie le modèle.
 
 ## Sécurité
-- Firestore/Storage rules : accès en lecture/écriture réservé aux utilisateurs
-  authentifiés dont l'email figure dans une liste de membres autorisés (collection
-  `familyMembers` ou liste codée dans les règles) — pas d'auto-inscription libre.
-- Limite de taille/type de fichier appliquée dans les règles Storage (10 Mo max,
-  PDF/images uniquement).
+- Firestore rules : accès en lecture/écriture réservé aux utilisateurs authentifiés
+  dont l'email figure dans la collection `familyMembers` — pas d'auto-inscription libre.
+- Worker (fichiers) : chaque requête doit porter un token d'ID Firebase valide
+  (signature vérifiée via le JWKS public de Firebase) dont l'email figure dans la
+  liste des membres autorisés, configurée comme variable du Worker (`ALLOWED_EMAILS`).
+  Cette liste duplique volontairement `familyMembers` (Firestore) — ajouter un membre
+  nécessite de le déclarer aux deux endroits. Limite de taille/type de fichier (10 Mo
+  max, PDF/JPG/PNG) appliquée dans le Worker avant l'écriture dans R2.
 - Tout membre authentifié et autorisé peut créer/modifier/supprimer n'importe quelle
   tâche, objectif, commentaire ou pièce jointe (pas de granularité de droits en v1).
 
@@ -77,6 +102,9 @@ cloisonnées par "household"), ce qui simplifie le modèle.
   Cloudflare Pages (build command + variables d'environnement configurées dans le
   dashboard Cloudflare).
 - Preview deployments automatiques sur les pull requests.
+- Le Worker (`worker/`) et le bucket R2 sont déployés séparément via `wrangler deploy`
+  (pas de déploiement continu automatique en v1 — le Worker change rarement une fois
+  en place).
 
 ## Documents du projet
 Les artefacts de cadrage (brief, architecture, spec fonctionnelle, user stories) sont
@@ -89,6 +117,7 @@ versionnés en Markdown dans `documents/` :
 ## Tests prévus par couche
 - Unitaire : logique métier pure (calculs de budget, agrégations d'avancement).
 - Composants : rendu et interactions (formulaires tâche, liste filtrée, upload).
-- Intégration : règles de sécurité Firestore/Storage via l'émulateur (vérifier qu'un
-  email hors liste est bien rejeté, qu'un fichier trop lourd est refusé, etc.).
+- Intégration : règles de sécurité Firestore via l'émulateur (vérifier qu'un email hors
+  liste est bien rejeté, etc.) ; règles du Worker testées directement (token absent/
+  invalide, email non autorisé, fichier trop lourd ou de mauvais type → rejet).
 - E2E (optionnel v1) : parcours "créer tâche → affecter → uploader devis → clôturer".
