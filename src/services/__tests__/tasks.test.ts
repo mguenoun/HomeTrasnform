@@ -39,9 +39,24 @@ describe("createTask", () => {
       title: "Nettoyer le garage",
       status: "todo",
       assigneeIds: [],
+      budgetEstimated: null,
       objectiveId: "obj1",
       createdBy: "user-1",
     });
+  });
+
+  it("enregistre le budget estimé fourni à la création", async () => {
+    await createTask({
+      title: "Acheter une porte",
+      type: "achat",
+      priority: "medium",
+      objectiveId: "obj1",
+      budgetEstimated: 450,
+      createdBy: "user-1",
+    });
+
+    const [, payload] = addDocMock.mock.calls[0];
+    expect(payload.budgetEstimated).toBe(450);
   });
 });
 

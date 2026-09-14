@@ -35,6 +35,7 @@ describe("TaskForm", () => {
     await userEvent.selectOptions(screen.getByLabelText(/type/i), "achat");
 
     expect(screen.getByLabelText(/budget estimé/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/budget réel/i)).toBeInTheDocument();
 
     await userEvent.click(
       screen.getByRole("button", { name: /créer la tâche/i }),
@@ -42,6 +43,33 @@ describe("TaskForm", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent(/budget/i);
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("ne montre pas les champs de budget pour un type ménage", () => {
+    const onSubmit = vi.fn();
+    render(<TaskForm objectives={objectives} onSubmit={onSubmit} />);
+
+    expect(screen.queryByLabelText(/budget estimé/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/budget réel/i)).not.toBeInTheDocument();
+  });
+
+  it("soumet le budget réel saisi", async () => {
+    const onSubmit = vi.fn();
+    render(<TaskForm objectives={objectives} onSubmit={onSubmit} />);
+
+    await userEvent.type(screen.getByLabelText(/titre/i), "Acheter une porte");
+    await userEvent.selectOptions(screen.getByLabelText(/type/i), "achat");
+    await userEvent.type(screen.getByLabelText(/budget estimé/i), "500");
+    await userEvent.type(screen.getByLabelText(/budget réel/i), "480");
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /créer la tâche/i }),
+    );
+
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      budgetEstimated: "500",
+      budgetActual: "480",
+    });
   });
 
   it("soumet les valeurs saisies quand le formulaire est valide", async () => {

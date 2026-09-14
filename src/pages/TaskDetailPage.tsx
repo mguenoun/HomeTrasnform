@@ -7,6 +7,7 @@ import {
   TASK_TYPE_LABELS,
 } from "../constants";
 import { useAuth } from "../context/AuthContext";
+import { summarizeTaskBudget } from "../domain/budget";
 import { canTransition } from "../domain/taskStatus";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
@@ -59,6 +60,9 @@ export function TaskDetailPage() {
       budgetEstimated: values.budgetEstimated
         ? Number(values.budgetEstimated)
         : undefined,
+      budgetActual: values.budgetActual
+        ? Number(values.budgetActual)
+        : undefined,
     });
     setEditing(false);
   }
@@ -78,6 +82,7 @@ export function TaskDetailPage() {
   const objectiveTitle = objectives.find(
     (o) => o.id === task.objectiveId,
   )?.title;
+  const budgetSummary = summarizeTaskBudget(task);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -98,6 +103,7 @@ export function TaskDetailPage() {
               objectiveId: task.objectiveId,
               dueDate: task.dueDate ?? "",
               budgetEstimated: task.budgetEstimated?.toString() ?? "",
+              budgetActual: task.budgetActual?.toString() ?? "",
             }}
             submitLabel="Enregistrer"
             onSubmit={handleUpdate}
@@ -123,9 +129,16 @@ export function TaskDetailPage() {
             </p>
           )}
           {(task.budgetEstimated || task.budgetActual) && (
-            <p className="mt-2 text-sm text-slate-500">
-              Budget estimé : {task.budgetEstimated ?? 0} € · Budget réel :{" "}
-              {task.budgetActual ?? 0} €
+            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+              <span>
+                Budget estimé : {task.budgetEstimated ?? 0} € · Budget réel :{" "}
+                {task.budgetActual ?? 0} €
+              </span>
+              {budgetSummary.overBudget && (
+                <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                  Dépassement de budget
+                </span>
+              )}
             </p>
           )}
 

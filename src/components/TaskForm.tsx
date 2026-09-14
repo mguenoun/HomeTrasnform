@@ -15,6 +15,7 @@ export interface TaskFormValues {
   objectiveId: string | null;
   dueDate: string;
   budgetEstimated: string;
+  budgetActual: string;
 }
 
 const EMPTY_VALUES: TaskFormValues = {
@@ -26,6 +27,7 @@ const EMPTY_VALUES: TaskFormValues = {
   objectiveId: null,
   dueDate: "",
   budgetEstimated: "",
+  budgetActual: "",
 };
 
 export interface TaskFormProps {
@@ -179,21 +181,37 @@ export function TaskForm({
       </label>
 
       {budgetRequired && (
-        <label className="flex flex-col gap-1">
-          <span className="text-sm font-medium">
-            Budget estimé (€) — requis pour ce type de tâche
-          </span>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={values.budgetEstimated}
-            onChange={(e) =>
-              setValues({ ...values, budgetEstimated: e.target.value })
-            }
-            className="rounded border border-slate-300 px-3 py-2"
-          />
-        </label>
+        <div className="flex gap-3">
+          <label className="flex flex-1 flex-col gap-1">
+            <span className="text-sm font-medium">
+              Budget estimé (€) — requis pour ce type de tâche
+            </span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.budgetEstimated}
+              onChange={(e) =>
+                setValues({ ...values, budgetEstimated: e.target.value })
+              }
+              className="rounded border border-slate-300 px-3 py-2"
+            />
+          </label>
+
+          <label className="flex flex-1 flex-col gap-1">
+            <span className="text-sm font-medium">Budget réel (€)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={values.budgetActual}
+              onChange={(e) =>
+                setValues({ ...values, budgetActual: e.target.value })
+              }
+              className="rounded border border-slate-300 px-3 py-2"
+            />
+          </label>
+        </div>
       )}
 
       <button

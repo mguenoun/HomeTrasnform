@@ -34,6 +34,12 @@ export function DashboardPage() {
         >
           Tâches
         </Link>
+        <Link
+          to="/budget"
+          className="rounded border border-slate-300 bg-white px-4 py-2 hover:bg-slate-100"
+        >
+          Budget
+        </Link>
       </nav>
     </div>
   );

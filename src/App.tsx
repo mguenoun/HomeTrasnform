@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { BudgetPage } from "./pages/BudgetPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ObjectiveDetailPage } from "./pages/ObjectiveDetailPage";
 import { ObjectivesPage } from "./pages/ObjectivesPage";
@@ -19,6 +20,7 @@ function App() {
           <Route path="/tasks" element={<TasksPage />} />
           <Route path="/tasks/new" element={<TaskCreatePage />} />
           <Route path="/tasks/:id" element={<TaskDetailPage />} />
+          <Route path="/budget" element={<BudgetPage />} />
         </Routes>
       </ProtectedRoute>
     </AuthProvider>
