@@ -12,6 +12,7 @@ import {
 import { joinChunks, splitIntoChunks, validateFile } from "../domain/attachments";
 import { db } from "../firebase/config";
 import type { TaskAttachment } from "../types";
+import { resizeImageIfNeeded } from "./imageResize";
 
 function attachmentsCollection(taskId: string) {
   return collection(db, "tasks", taskId, "attachments");
@@ -46,12 +47,17 @@ export async function uploadAttachment(
   file: File,
   user: User,
 ): Promise<void> {
-  const validationError = validateFile(file.type, file.size);
+  // Réduit les photos trop grandes avant tout (une image sous la limite de
+  // 10 Mo après redimensionnement passe, même si l'original la dépassait) ;
+  // n'a aucun effet sur les PDF ni les images déjà petites.
+  const uploadFile = await resizeImageIfNeeded(file);
+
+  const validationError = validateFile(uploadFile.type, uploadFile.size);
   if (validationError) {
     throw new Error(validationError);
   }
 
-  const buffer = await file.arrayBuffer();
+  const buffer = await uploadFile.arrayBuffer();
   const chunks = splitIntoChunks(buffer);
 
   const attachmentRef = doc(attachmentsCollection(taskId));
@@ -59,9 +65,9 @@ export async function uploadAttachment(
 
   batch.set(attachmentRef, {
     taskId,
-    fileName: file.name,
-    contentType: file.type,
-    size: file.size,
+    fileName: uploadFile.name,
+    contentType: uploadFile.type,
+    size: uploadFile.size,
     chunkCount: chunks.length,
     uploadedBy: user.uid,
     uploadedAt: Date.now(),

@@ -3,6 +3,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../../firebase/config", () => ({ db: {} }));
 
+const resizeImageIfNeededMock = vi.fn(async (file: File) => file);
+vi.mock("../imageResize", () => ({
+  resizeImageIfNeeded: (file: File) => resizeImageIfNeededMock(file),
+}));
+
 const setDocMock = vi.fn();
 const deleteDocMock = vi.fn();
 const onSnapshotMock = vi.fn();
@@ -88,6 +93,22 @@ describe("uploadAttachment", () => {
     expect(typeof chunkPayload.data).toBe("string");
 
     expect(batchCommitMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("passe le fichier par resizeImageIfNeeded et utilise le résultat pour les métadonnées", async () => {
+    const originalFile = new File([new Uint8Array(1000)], "photo.jpg", {
+      type: "image/jpeg",
+    });
+    const resizedFile = new File([new Uint8Array(200)], "photo.jpg", {
+      type: "image/jpeg",
+    });
+    resizeImageIfNeededMock.mockResolvedValueOnce(resizedFile);
+
+    await uploadAttachment("task1", originalFile, fakeUser);
+
+    expect(resizeImageIfNeededMock).toHaveBeenCalledWith(originalFile);
+    const [, metaPayload] = batchSetMock.mock.calls[0];
+    expect(metaPayload.size).toBe(200);
   });
 });
 

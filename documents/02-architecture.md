@@ -44,6 +44,10 @@ maintenir — tout reste sur Firebase.
 - **Fichiers** : découpage/réassemblage en base64 côté client (`src/domain/attachments.ts`,
   fonctions pures testées indépendamment), écriture/lecture des morceaux via des batchs
   Firestore (`writeBatch`) pour rester atomique et limiter le nombre d'aller-retours.
+  Les photos (JPEG/PNG) sont redimensionnées côté client avant l'envoi si elles
+  dépassent 1920 px sur leur plus grand côté (`src/services/imageResize.ts`, via
+  `canvas`/`createImageBitmap`) — réduit nettement le nombre de morceaux nécessaires
+  pour une photo de téléphone, sans effet sur les PDF.
 - **Tests** : Vitest + React Testing Library (unitaire/composants), Firebase Emulator
   Suite (règles de sécurité Firestore).
 
