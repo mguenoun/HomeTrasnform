@@ -9,19 +9,22 @@ architecture, spécification fonctionnelle, user stories.
 
 ## Stack
 
-React + TypeScript + Vite + Tailwind CSS, données et authentification via Firebase
-(Auth/Firestore, plan Spark gratuit), pièces jointes sur Cloudflare R2 via un petit
-Cloudflare Worker, hébergement statique sur Cloudflare Pages.
+React + TypeScript + Vite + Tailwind CSS. Authentification, données et hébergement
+via Firebase (Auth/Firestore/Hosting, plan Spark gratuit). Pièces jointes sur
+Cloudflare R2 via un petit Cloudflare Worker (le seul service hors Firebase, car
+Firebase Storage nécessite le plan payant Blaze).
 
 ## Démarrage local
 
 1. Créer un projet Firebase (console.firebase.google.com), activer **Authentication
-   → Google** et **Firestore** (le plan Spark gratuit suffit, aucune carte bancaire
-   requise pour ces deux services).
+   → Google**, **Firestore** et **Hosting** (le plan Spark gratuit suffit, aucune
+   carte bancaire requise pour ces trois services).
 2. Copier `.env.example` en `.env.local` et renseigner les clés de config Firebase
    (Paramètres du projet → Vos applications → config SDK).
 3. Ajouter les membres autorisés dans la collection Firestore `familymembers`
-   (id du document = email du membre, ex: `familymembers/marie@example.com`).
+   (id du document = email du membre, ex: `familymembers/marie@example.com` —
+   **attention à la casse**, c'est bien `familymembers` tout en minuscules, pas
+   `familyMembers`).
 4. Installer les dépendances puis lancer le serveur de dev :
 
 ```bash
@@ -44,17 +47,21 @@ npm run build        # build de production + vérification des types
 `npm run test:rules` nécessite un JDK 21+ sur le PATH (requis par l'émulateur
 Firestore).
 
-## Déploiement (Cloudflare Pages)
+## Déploiement (Firebase Hosting)
 
-1. Connecter le dépôt Git dans le dashboard Cloudflare Pages.
-2. Build command : `npm run build` — Output directory : `dist`.
-3. Renseigner les variables d'environnement (Settings → Environment variables) avec
-   les mêmes clés que `.env.example` (`VITE_FIREBASE_API_KEY`, etc., plus
-   `VITE_ATTACHMENTS_WORKER_URL`), pour les environnements Production et Preview.
-4. Chaque push sur `main` déclenche un déploiement automatique.
+Déploiement manuel pour l'instant (pas de CI/CD configuré) :
+
+```bash
+npm run build
+npx firebase deploy --only hosting          # déploie dist/
+npx firebase deploy --only firestore:rules  # si les règles ont changé
+```
+
+Nécessite d'être connecté au CLI (`npx firebase login`) avec un compte ayant accès
+au projet Firebase.
 
 Le Worker et le bucket R2 se déploient séparément via `wrangler deploy` (voir
-`worker/`), pas via Cloudflare Pages.
+`worker/`), indépendamment de Firebase Hosting.
 
 ## Structure
 

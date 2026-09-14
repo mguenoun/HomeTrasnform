@@ -2,13 +2,14 @@
 
 ## Vue d'ensemble
 ```
-[Navigateur] --SPA React statique--> Cloudflare Pages
+[Navigateur] --SPA React statique--> Firebase Hosting
       |
       | SDK Firebase (JS, client-only)
       v
 [Firebase — plan Spark, gratuit, sans carte bancaire]
  ├─ Auth        : connexion des membres de la famille (Google Sign-In)
- └─ Firestore   : objectifs, tâches, commentaires, métadonnées des pièces jointes
+ ├─ Firestore   : objectifs, tâches, commentaires, métadonnées des pièces jointes
+ └─ Hosting     : sert le bundle React (dist/)
 
       |
       | fetch() avec le token Firebase (Authorization: Bearer ...)
@@ -17,20 +18,27 @@
                                                                     fichiers (devis/
                                                                     factures/photos)
 ```
-Le frontend reste 100% statique (déployé sur Cloudflare Pages). Authentification et
-données restent déléguées à Firebase (plan Spark, gratuit, sans carte bancaire). Les
-fichiers (pièces jointes) sont stockés sur **Cloudflare R2** plutôt que Firebase
-Storage : depuis fin 2024, Firebase Storage impose le plan payant Blaze pour être
-activé, même si l'usage réel reste gratuit. Pour ne pas avoir à lier de carte
-bancaire au projet Firebase, on héberge les fichiers sur R2 (gratuit jusqu'à 10 Go,
-pas de carte requise) via un unique petit Cloudflare Worker qui fait office de porte
-d'entrée sécurisée (vérifie que l'appelant est un membre de la famille avant de
-lire/écrire un fichier). C'est le seul bout de "backend" du projet — tout le reste
-reste sans serveur à maintenir.
+Après une évaluation initiale de Cloudflare Pages pour l'hébergement du frontend,
+tout a finalement été consolidé sur **Firebase** (Auth + Firestore + Hosting) : un
+seul tableau de bord à gérer, un seul flux de déploiement (`firebase deploy`), pas
+de risque de divergence entre l'origine de l'app et le domaine d'authentification
+(`authDomain`) — ce qui avait justement causé plusieurs blocages de connexion durant
+la mise en place. Les trois services utilisés restent gratuits sur le plan **Spark**,
+sans carte bancaire.
+
+Les fichiers (pièces jointes) restent stockés sur **Cloudflare R2** plutôt que
+Firebase Storage : depuis fin 2024, Firebase Storage impose le plan payant Blaze pour
+être activé, même à usage gratuit. Pour ne pas avoir à lier de carte bancaire au
+projet Firebase, on héberge les fichiers sur R2 (gratuit jusqu'à 10 Go, pas de carte
+requise) via un unique petit Cloudflare Worker qui fait office de porte d'entrée
+sécurisée (vérifie que l'appelant est un membre de la famille avant de lire/écrire un
+fichier). C'est le seul bout de "backend" du projet — tout le reste reste sans
+serveur à maintenir.
 
 ## Décisions retenues
 - **Authentification** : Google Sign-In (Firebase Auth, plan Spark).
-- **Hébergement frontend** : Cloudflare Pages, déploiement continu depuis le repo Git.
+- **Hébergement frontend** : Firebase Hosting (plan Spark), déployé via `firebase
+  deploy --only hosting`.
 - **Backend de données** : Firebase Firestore (plan Spark).
 - **Fichiers** : Cloudflare R2, via un Cloudflare Worker qui vérifie l'authentification
   Firebase avant chaque accès (au lieu de Firebase Storage, pour rester 100% gratuit
@@ -50,19 +58,18 @@ reste sans serveur à maintenir.
   Playwright en option pour l'E2E critique.
 
 ## Configuration et secrets
-La configuration client Firebase (`apiKey`, `authDomain`, `projectId`, `storageBucket`,
+La configuration client Firebase (`apiKey`, `authDomain`, `projectId`,
 `messagingSenderId`, `appId`) n'est **pas codée en dur** dans le dépôt :
 - Valeurs lues via des variables d'environnement Vite (`VITE_FIREBASE_API_KEY`,
-  `VITE_FIREBASE_AUTH_DOMAIN`, etc.), injectées au build.
+  `VITE_FIREBASE_AUTH_DOMAIN`, etc.), injectées au build (`npm run build` lit
+  `.env.local`).
 - En local : fichier `.env.local` (gitignored), avec un `.env.example` versionné
   documentant les clés attendues.
-- En production/preview : variables d'environnement définies dans le projet Cloudflare
-  Pages (Settings → Environment variables), pas commitées dans le dépôt.
 
 Ces clés Firebase restent publiques par nature (elles sont visibles côté client de toute
-façon), mais les garder hors du dépôt et gérées via Cloudflare évite de les coupler au
-code source, facilite la rotation et garde le dépôt réutilisable sans fuite de config
-d'environnement.
+façon, protégées par les règles de sécurité Firestore plutôt que par le secret), mais
+les garder hors du dépôt facilite la rotation et garde le dépôt réutilisable sans fuite
+de config d'environnement.
 
 ## Modèle de données (Firestore)
 - `users/{uid}` : displayName, email, photoURL, colorTag (pour l'affichage dans le
@@ -98,10 +105,10 @@ cloisonnées par "household"), ce qui simplifie le modèle.
   tâche, objectif, commentaire ou pièce jointe (pas de granularité de droits en v1).
 
 ## Hébergement & CI/CD
-- Repo Git → push sur `main` → build Vite → déploiement automatique via l'intégration
-  Cloudflare Pages (build command + variables d'environnement configurées dans le
-  dashboard Cloudflare).
-- Preview deployments automatiques sur les pull requests.
+- Déploiement manuel pour l'instant : `npm run build` puis `firebase deploy --only
+  hosting` (et `--only firestore:rules` quand les règles changent). Le dépôt GitHub
+  n'est pas encore relié à un déploiement continu (piste v2 : GitHub Actions avec un
+  compte de service Firebase en secret du repo).
 - Le Worker (`worker/`) et le bucket R2 sont déployés séparément via `wrangler deploy`
   (pas de déploiement continu automatique en v1 — le Worker change rarement une fois
   en place).
