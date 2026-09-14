@@ -5,14 +5,18 @@ import {
   TASK_STATUS_LABELS,
   TASK_TYPE_LABELS,
 } from "../constants";
+import { useAuth } from "../context/AuthContext";
 import { filterTasks, sortTasks, type TaskFilters, type TaskSortKey } from "../domain/taskFilters";
+import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
 import type { TaskStatus, TaskType } from "../types";
 
 export function TasksPage() {
+  const { user } = useAuth();
   const { tasks, loading } = useTasks();
   const { objectives } = useObjectives();
+  const { users } = useFamilyUsers();
   const [filters, setFilters] = useState<TaskFilters>({});
   const [sortBy, setSortBy] = useState<TaskSortKey>("priority");
 
@@ -22,6 +26,8 @@ export function TasksPage() {
   );
 
   const objectiveTitleById = new Map(objectives.map((o) => [o.id, o.title]));
+  const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
+  const onlyMyTasks = Boolean(user) && filters.assigneeId === user?.uid;
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -102,6 +108,27 @@ export function TasksPage() {
         </label>
 
         <label className="flex flex-col gap-1 text-sm">
+          <span>Assigné</span>
+          <select
+            value={filters.assigneeId ?? ""}
+            onChange={(e) =>
+              setFilters({
+                ...filters,
+                assigneeId: e.target.value || undefined,
+              })
+            }
+            className="rounded border border-slate-300 px-2 py-1"
+          >
+            <option value="">Tous</option>
+            {users.map((familyUser) => (
+              <option key={familyUser.uid} value={familyUser.uid}>
+                {familyUser.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
           <span>Trier par</span>
           <select
             value={sortBy}
@@ -113,6 +140,26 @@ export function TasksPage() {
             <option value="budgetEstimated">Budget</option>
           </select>
         </label>
+
+        {user && (
+          <button
+            type="button"
+            onClick={() =>
+              setFilters((f) => ({
+                ...f,
+                assigneeId: onlyMyTasks ? undefined : user.uid,
+              }))
+            }
+            aria-pressed={onlyMyTasks}
+            className={`self-end rounded border px-3 py-1 text-sm ${
+              onlyMyTasks
+                ? "border-blue-600 bg-blue-600 text-white"
+                : "border-slate-300 hover:bg-slate-100"
+            }`}
+          >
+            Mes tâches
+          </button>
+        )}
       </div>
 
       {loading && <p className="text-slate-500">Chargement...</p>}
@@ -132,6 +179,13 @@ export function TasksPage() {
                   {task.objectiveId &&
                     ` · ${objectiveTitleById.get(task.objectiveId) ?? ""}`}
                 </p>
+                {task.assigneeIds.length > 0 && (
+                  <p className="text-xs text-slate-400">
+                    {task.assigneeIds
+                      .map((assigneeId) => userNameById.get(assigneeId) ?? "?")
+                      .join(", ")}
+                  </p>
+                )}
               </div>
               <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
                 {TASK_STATUS_LABELS[task.status]}

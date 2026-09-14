@@ -7,14 +7,25 @@ vi.mock("../../firebase/config", () => ({ auth: {}, db: {} }));
 const getDocMock = vi.fn();
 const signOutMock = vi.fn().mockResolvedValue(undefined);
 const signInWithPopupMock = vi.fn().mockResolvedValue(undefined);
+const upsertUserProfileMock = vi.fn().mockResolvedValue(undefined);
+
+vi.mock("../../services/users", () => ({
+  upsertUserProfile: (...args: unknown[]) => upsertUserProfileMock(...args),
+}));
 
 vi.mock("firebase/auth", () => ({
   GoogleAuthProvider: vi.fn(),
   onAuthStateChanged: (
     _auth: unknown,
-    callback: (user: { email: string } | null) => void,
+    callback: (
+      user: { uid: string; email: string; displayName: string } | null,
+    ) => void,
   ) => {
-    callback({ email: "member@example.com" });
+    callback({
+      uid: "member-uid",
+      email: "member@example.com",
+      displayName: "Membre Test",
+    });
     return () => {};
   },
   signInWithPopup: (...args: unknown[]) => signInWithPopupMock(...args),
@@ -39,6 +50,7 @@ function Probe() {
 describe("AuthProvider", () => {
   beforeEach(() => {
     signInWithPopupMock.mockReset().mockResolvedValue(undefined);
+    upsertUserProfileMock.mockReset().mockResolvedValue(undefined);
   });
 
   it("utilise signInWithPopup pour se connecter", async () => {
@@ -115,5 +127,22 @@ describe("AuthProvider", () => {
 
     const status = await screen.findByText(/isAuthorized:/);
     expect(status).toHaveTextContent("isAuthorized: true");
+  });
+
+  it("met à jour le profil users/{uid} une fois l'accès autorisé", async () => {
+    getDocMock.mockResolvedValue({ exists: () => true });
+
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+
+    await screen.findByText(/isAuthorized: true/);
+    expect(upsertUserProfileMock).toHaveBeenCalledWith({
+      uid: "member-uid",
+      displayName: "Membre Test",
+      email: "member@example.com",
+    });
   });
 });

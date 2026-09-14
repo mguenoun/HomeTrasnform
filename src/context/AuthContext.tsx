@@ -14,6 +14,7 @@ import {
   type ReactNode,
 } from "react";
 import { auth, db } from "../firebase/config";
+import { upsertUserProfile } from "../services/users";
 
 interface AuthContextValue {
   user: User | null;
@@ -66,6 +67,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(nextUser);
         setIsAuthorized(true);
         setLoading(false);
+
+        // Non-bloquant : l'accès reste autorisé même si la mise à jour du
+        // profil (nom/photo affichés aux autres membres) échoue.
+        void upsertUserProfile({
+          uid: nextUser.uid,
+          displayName: nextUser.displayName ?? nextUser.email,
+          email: nextUser.email,
+          ...(nextUser.photoURL ? { photoURL: nextUser.photoURL } : {}),
+        }).catch(() => {});
       } catch (err) {
         setError(
           `Impossible de vérifier votre accès (${err instanceof Error ? err.message : "erreur inconnue"}). Vérifiez les règles de sécurité Firestore.`,

@@ -8,6 +8,7 @@ import {
 } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { canTransition } from "../domain/taskStatus";
+import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
 import { changeTaskStatus, deleteTask, updateTask } from "../services/tasks";
@@ -21,6 +22,7 @@ export function TaskDetailPage() {
   const { user } = useAuth();
   const { tasks } = useTasks();
   const { objectives } = useObjectives();
+  const { users } = useFamilyUsers();
   const [editing, setEditing] = useState(false);
 
   const task = tasks.find((t) => t.id === id);
@@ -34,6 +36,14 @@ export function TaskDetailPage() {
         </Link>
       </div>
     );
+  }
+
+  async function toggleAssignee(uid: string) {
+    if (!task) return;
+    const assigneeIds = task.assigneeIds.includes(uid)
+      ? task.assigneeIds.filter((assigneeId) => assigneeId !== uid)
+      : [...task.assigneeIds, uid];
+    await updateTask(task.id, { assigneeIds });
   }
 
   async function handleUpdate(values: TaskFormValues) {
@@ -142,6 +152,33 @@ export function TaskDetailPage() {
               Clôturée le {new Date(task.closedAt).toLocaleDateString("fr-FR")}
             </p>
           )}
+
+          <div className="mt-4">
+            <p className="text-sm font-medium text-slate-700">Assignés</p>
+            <div className="mt-1 flex flex-wrap gap-2">
+              {users.map((familyUser) => {
+                const assigned = task.assigneeIds.includes(familyUser.uid);
+                return (
+                  <button
+                    key={familyUser.uid}
+                    type="button"
+                    onClick={() => toggleAssignee(familyUser.uid)}
+                    aria-pressed={assigned}
+                    className={`rounded-full border px-3 py-1 text-sm ${
+                      assigned
+                        ? "border-blue-600 bg-blue-600 text-white"
+                        : "border-slate-300 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {familyUser.displayName}
+                  </button>
+                );
+              })}
+              {users.length === 0 && (
+                <p className="text-sm text-slate-400">Aucun membre trouvé.</p>
+              )}
+            </div>
+          </div>
 
           <div className="mt-4 flex gap-2">
             <button
