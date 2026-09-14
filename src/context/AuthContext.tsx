@@ -1,9 +1,6 @@
 import {
   GoogleAuthProvider,
-  browserLocalPersistence,
-  getRedirectResult,
   onAuthStateChanged,
-  setPersistence,
   signInWithPopup,
   signOut,
   type User,
@@ -13,7 +10,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -35,32 +31,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const redirectResultRequested = useRef(false);
-
-  useEffect(() => {
-    // React StrictMode invoque les effets deux fois en développement ; le résultat
-    // de redirection Firebase n'est consultable qu'une fois, donc un second appel
-    // immédiat renverrait null même si le premier a bien recupéré la connexion.
-    if (redirectResultRequested.current) {
-      return;
-    }
-    redirectResultRequested.current = true;
-
-    getRedirectResult(auth)
-      .then((result) => {
-        console.log("[HomeTransform:auth] getRedirectResult ->", result);
-      })
-      .catch((err) => {
-        console.log("[HomeTransform:auth] getRedirectResult error ->", err);
-        setError(
-          `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}).`,
-        );
-      });
-  }, []);
 
   useEffect(() => {
     return onAuthStateChanged(auth, async (nextUser) => {
-      console.log("[HomeTransform:auth] onAuthStateChanged ->", nextUser);
       setLoading(true);
 
       if (!nextUser || !nextUser.email) {
@@ -76,13 +49,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const memberDoc = await getDoc(
-          doc(db, "familyMembers", nextUser.email),
+          doc(db, "familymembers", nextUser.email),
         );
         if (!memberDoc.exists()) {
-          console.log(
-            "[HomeTransform:auth] pas de document familyMembers pour",
-            nextUser.email,
-          );
           setError(
             `Le compte ${nextUser.email} n'est pas autorisé à accéder à cette application.`,
           );
@@ -98,7 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthorized(true);
         setLoading(false);
       } catch (err) {
-        console.log("[HomeTransform:auth] erreur getDoc familyMembers ->", err);
         setError(
           `Impossible de vérifier votre accès (${err instanceof Error ? err.message : "erreur inconnue"}). Vérifiez les règles de sécurité Firestore.`,
         );
@@ -113,10 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signInWithGoogle() {
     setError(null);
     try {
-      await setPersistence(auth, browserLocalPersistence);
       await signInWithPopup(auth, new GoogleAuthProvider());
     } catch (err) {
-      console.log("[HomeTransform:auth] signInWithPopup error ->", err);
       setError(
         `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}). Réessayez.`,
       );

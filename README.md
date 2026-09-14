@@ -20,8 +20,8 @@ Cloudflare Worker, hébergement statique sur Cloudflare Pages.
    requise pour ces deux services).
 2. Copier `.env.example` en `.env.local` et renseigner les clés de config Firebase
    (Paramètres du projet → Vos applications → config SDK).
-3. Ajouter les membres autorisés dans la collection Firestore `familyMembers`
-   (id du document = email du membre, ex: `familyMembers/marie@example.com`).
+3. Ajouter les membres autorisés dans la collection Firestore `familymembers`
+   (id du document = email du membre, ex: `familymembers/marie@example.com`).
 4. Installer les dépendances puis lancer le serveur de dev :
 
 ```bash

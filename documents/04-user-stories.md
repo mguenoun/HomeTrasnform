@@ -18,7 +18,7 @@ Storage écrites et testées avec l'émulateur, afin de garantir que seuls les m
 autorisés accèdent aux données.
 - Critères :
   - Un utilisateur non authentifié ne peut ni lire ni écrire.
-  - Un utilisateur authentifié dont l'email n'est pas dans `familyMembers` est rejeté.
+  - Un utilisateur authentifié dont l'email n'est pas dans `familymembers` est rejeté.
   - Un fichier > 10 Mo ou d'un type non autorisé est rejeté par les règles Storage.
 
 **US-0.3** (P0) — En tant que mainteneur, je veux un déploiement continu sur Cloudflare
@@ -33,7 +33,7 @@ compte Google, afin d'accéder à l'application sans créer de mot de passe.
 
 **US-1.2** (P0) — En tant que membre non autorisé, je veux voir un message clair si mon
 compte n'est pas reconnu, afin de comprendre pourquoi je ne peux pas accéder à l'app.
-- Critères : email hors liste `familyMembers` → message d'erreur + déconnexion
+- Critères : email hors liste `familymembers` → message d'erreur + déconnexion
   automatique, aucune donnée chargée.
 
 **US-1.3** (P1) — En tant que membre connecté, je veux pouvoir me déconnecter, afin de

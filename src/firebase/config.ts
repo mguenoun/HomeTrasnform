@@ -1,5 +1,5 @@
 import { initializeApp, type FirebaseOptions } from "firebase/app";
-import { browserLocalPersistence, getAuth, setPersistence } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 function requireEnv(name: string): string {
@@ -23,8 +23,3 @@ const firebaseConfig: FirebaseOptions = {
 export const firebaseApp = initializeApp(firebaseConfig);
 export const auth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
-
-// IndexedDB (le choix par défaut de Firebase) s'est avéré peu fiable pour retrouver
-// le résultat de signInWithRedirect dans cet environnement ; localStorage est un
-// mécanisme plus simple et plus largement supporté pour ce même besoin.
-void setPersistence(auth, browserLocalPersistence);

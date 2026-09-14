@@ -28,7 +28,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await testEnv.clearFirestore();
   await testEnv.withSecurityRulesDisabled(async (context) => {
-    await setDoc(doc(context.firestore(), "familyMembers/member@example.com"), {
+    await setDoc(doc(context.firestore(), "familymembers/member@example.com"), {
       uid: "member-uid",
     });
   });
@@ -76,12 +76,12 @@ describe("Firestore security rules", () => {
     );
   });
 
-  it("empêche un membre d'écrire directement dans familyMembers", async () => {
+  it("empêche un membre d'écrire directement dans familymembers", async () => {
     const member = testEnv.authenticatedContext("member-uid", {
       email: "member@example.com",
     });
     await assertFails(
-      setDoc(doc(member.firestore(), "familyMembers/new@example.com"), {
+      setDoc(doc(member.firestore(), "familymembers/new@example.com"), {
         uid: "x",
       }),
     );

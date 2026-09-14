@@ -87,11 +87,11 @@ cloisonnées par "household"), ce qui simplifie le modèle.
 
 ## Sécurité
 - Firestore rules : accès en lecture/écriture réservé aux utilisateurs authentifiés
-  dont l'email figure dans la collection `familyMembers` — pas d'auto-inscription libre.
+  dont l'email figure dans la collection `familymembers` — pas d'auto-inscription libre.
 - Worker (fichiers) : chaque requête doit porter un token d'ID Firebase valide
   (signature vérifiée via le JWKS public de Firebase) dont l'email figure dans la
   liste des membres autorisés, configurée comme variable du Worker (`ALLOWED_EMAILS`).
-  Cette liste duplique volontairement `familyMembers` (Firestore) — ajouter un membre
+  Cette liste duplique volontairement `familymembers` (Firestore) — ajouter un membre
   nécessite de le déclarer aux deux endroits. Limite de taille/type de fichier (10 Mo
   max, PDF/JPG/PNG) appliquée dans le Worker avant l'écriture dans R2.
 - Tout membre authentifié et autorisé peut créer/modifier/supprimer n'importe quelle

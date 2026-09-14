@@ -7,12 +7,16 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Le nom de la collection ("familymembers", tout en minuscules) doit être
+    // reproduit exactement tel quel dans la console Firestore : les chemins sont
+    // sensibles à la casse, une collection nommée différemment (ex: "familyMembers")
+    // rendrait exists() ci-dessous silencieusement faux pour tout le monde.
     function isFamilyMember() {
       return isSignedIn() &&
-        exists(/databases/$(database)/documents/familyMembers/$(request.auth.token.email));
+        exists(/databases/$(database)/documents/familymembers/$(request.auth.token.email));
     }
 
-    match /familyMembers/{email} {
+    match /familymembers/{email} {
       allow read: if isFamilyMember();
       allow write: if false;
     }

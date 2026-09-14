@@ -6,13 +6,10 @@ vi.mock("../../firebase/config", () => ({ auth: {}, db: {} }));
 
 const getDocMock = vi.fn();
 const signOutMock = vi.fn().mockResolvedValue(undefined);
-const getRedirectResultMock = vi.fn().mockResolvedValue(null);
 const signInWithPopupMock = vi.fn().mockResolvedValue(undefined);
-const setPersistenceMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("firebase/auth", () => ({
   GoogleAuthProvider: vi.fn(),
-  browserLocalPersistence: "browserLocalPersistence",
   onAuthStateChanged: (
     _auth: unknown,
     callback: (user: { email: string } | null) => void,
@@ -20,8 +17,6 @@ vi.mock("firebase/auth", () => ({
     callback({ email: "member@example.com" });
     return () => {};
   },
-  getRedirectResult: (...args: unknown[]) => getRedirectResultMock(...args),
-  setPersistence: (...args: unknown[]) => setPersistenceMock(...args),
   signInWithPopup: (...args: unknown[]) => signInWithPopupMock(...args),
   signOut: (...args: unknown[]) => signOutMock(...args),
 }));
@@ -43,7 +38,6 @@ function Probe() {
 
 describe("AuthProvider", () => {
   beforeEach(() => {
-    getRedirectResultMock.mockReset().mockResolvedValue(null);
     signInWithPopupMock.mockReset().mockResolvedValue(undefined);
   });
 
@@ -68,7 +62,10 @@ describe("AuthProvider", () => {
   });
 
   it("affiche une erreur si la connexion par popup échoue", async () => {
-    getDocMock.mockResolvedValue({ exists: () => true });
+    // Ne jamais résoudre : évite que le flux onAuthStateChanged (déclenché par le
+    // mock ci-dessus dès le montage) efface l'erreur de popup via son setError(null)
+    // de succès, ce qui n'a aucun rapport avec ce que ce test vérifie.
+    getDocMock.mockReturnValue(new Promise(() => {}));
     signInWithPopupMock.mockRejectedValueOnce(new Error("auth/popup-closed-by-user"));
 
     function TriggerSignIn() {
@@ -107,7 +104,7 @@ describe("AuthProvider", () => {
     expect(signOutMock).toHaveBeenCalled();
   });
 
-  it("autorise l'utilisateur quand le document familyMembers existe", async () => {
+  it("autorise l'utilisateur quand le document familymembers existe", async () => {
     getDocMock.mockResolvedValue({ exists: () => true });
 
     render(
