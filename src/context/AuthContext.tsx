@@ -1,7 +1,8 @@
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User,
 } from "firebase/auth";
@@ -33,6 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    getRedirectResult(auth).catch((err) => {
+      setError(
+        `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}).`,
+      );
+    });
+  }, []);
+
+  useEffect(() => {
     return onAuthStateChanged(auth, async (nextUser) => {
       setLoading(true);
       setError(null);
@@ -44,28 +53,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const memberDoc = await getDoc(doc(db, "familyMembers", nextUser.email));
-      if (!memberDoc.exists()) {
+      try {
+        const memberDoc = await getDoc(
+          doc(db, "familyMembers", nextUser.email),
+        );
+        if (!memberDoc.exists()) {
+          setError(
+            `Le compte ${nextUser.email} n'est pas autorisé à accéder à cette application.`,
+          );
+          await signOut(auth);
+          setUser(null);
+          setIsAuthorized(false);
+          setLoading(false);
+          return;
+        }
+
+        setUser(nextUser);
+        setIsAuthorized(true);
+        setLoading(false);
+      } catch (err) {
         setError(
-          `Le compte ${nextUser.email} n'est pas autorisé à accéder à cette application.`,
+          `Impossible de vérifier votre accès (${err instanceof Error ? err.message : "erreur inconnue"}). Vérifiez les règles de sécurité Firestore.`,
         );
         await signOut(auth);
         setUser(null);
         setIsAuthorized(false);
         setLoading(false);
-        return;
       }
-
-      setUser(nextUser);
-      setIsAuthorized(true);
-      setLoading(false);
     });
   }, []);
 
   async function signInWithGoogle() {
     setError(null);
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      await signInWithRedirect(auth, new GoogleAuthProvider());
     } catch {
       setError("La connexion a échoué. Veuillez réessayer.");
     }
