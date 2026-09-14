@@ -2,6 +2,10 @@
   "firestore": {
     "rules": "firebase-rules/firestore.rules"
   },
+  "hosting": {
+    "public": "firebase-hosting-placeholder",
+    "ignore": ["firebase.json", "**/.*"]
+  },
   "emulators": {
     "firestore": {
       "port": 8080
