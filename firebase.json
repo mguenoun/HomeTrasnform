@@ -3,8 +3,9 @@
     "rules": "firebase-rules/firestore.rules"
   },
   "hosting": {
-    "public": "firebase-hosting-placeholder",
-    "ignore": ["firebase.json", "**/.*"]
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*"],
+    "rewrites": [{ "source": "**", "destination": "/index.html" }]
   },
   "emulators": {
     "firestore": {

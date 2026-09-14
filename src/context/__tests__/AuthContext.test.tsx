@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthProvider, useAuth } from "../AuthContext";
 
@@ -7,10 +7,12 @@ vi.mock("../../firebase/config", () => ({ auth: {}, db: {} }));
 const getDocMock = vi.fn();
 const signOutMock = vi.fn().mockResolvedValue(undefined);
 const getRedirectResultMock = vi.fn().mockResolvedValue(null);
-const signInWithRedirectMock = vi.fn().mockResolvedValue(undefined);
+const signInWithPopupMock = vi.fn().mockResolvedValue(undefined);
+const setPersistenceMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("firebase/auth", () => ({
   GoogleAuthProvider: vi.fn(),
+  browserLocalPersistence: "browserLocalPersistence",
   onAuthStateChanged: (
     _auth: unknown,
     callback: (user: { email: string } | null) => void,
@@ -19,7 +21,8 @@ vi.mock("firebase/auth", () => ({
     return () => {};
   },
   getRedirectResult: (...args: unknown[]) => getRedirectResultMock(...args),
-  signInWithRedirect: (...args: unknown[]) => signInWithRedirectMock(...args),
+  setPersistence: (...args: unknown[]) => setPersistenceMock(...args),
+  signInWithPopup: (...args: unknown[]) => signInWithPopupMock(...args),
   signOut: (...args: unknown[]) => signOutMock(...args),
 }));
 
@@ -41,9 +44,10 @@ function Probe() {
 describe("AuthProvider", () => {
   beforeEach(() => {
     getRedirectResultMock.mockReset().mockResolvedValue(null);
+    signInWithPopupMock.mockReset().mockResolvedValue(undefined);
   });
 
-  it("utilise signInWithRedirect plutôt qu'une popup (évite les blocages COOP/extensions)", async () => {
+  it("utilise signInWithPopup pour se connecter", async () => {
     getDocMock.mockResolvedValue({ exists: () => true });
 
     function TriggerSignIn() {
@@ -58,21 +62,30 @@ describe("AuthProvider", () => {
       </AuthProvider>,
     );
 
-    expect(signInWithRedirectMock).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(signInWithPopupMock).toHaveBeenCalled();
+    });
   });
 
-  it("affiche une erreur si la redirection Google échoue", async () => {
-    getRedirectResultMock.mockReset().mockRejectedValue(new Error("auth/network-request-failed"));
+  it("affiche une erreur si la connexion par popup échoue", async () => {
     getDocMock.mockResolvedValue({ exists: () => true });
+    signInWithPopupMock.mockRejectedValueOnce(new Error("auth/popup-closed-by-user"));
+
+    function TriggerSignIn() {
+      const { signInWithGoogle, error } = useAuth();
+      signInWithGoogle();
+      return <p>error: {error ?? "aucune"}</p>;
+    }
 
     render(
       <AuthProvider>
-        <Probe />
+        <TriggerSignIn />
       </AuthProvider>,
     );
 
-    const status = await screen.findByText(/isAuthorized:/);
-    expect(status).toHaveTextContent(/network-request-failed/i);
+    await waitFor(() => {
+      expect(screen.getByText(/error:/)).toHaveTextContent(/popup-closed-by-user/i);
+    });
   });
 
   it("ne reste pas bloqué en chargement quand Firestore refuse la lecture (règles non déployées)", async () => {
