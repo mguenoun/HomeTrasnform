@@ -9,10 +9,13 @@ architecture, spécification fonctionnelle, user stories.
 
 ## Stack
 
-React + TypeScript + Vite + Tailwind CSS. Authentification, données et hébergement
-via Firebase (Auth/Firestore/Hosting, plan Spark gratuit). Pièces jointes sur
-Cloudflare R2 via un petit Cloudflare Worker (le seul service hors Firebase, car
-Firebase Storage nécessite le plan payant Blaze).
+React + TypeScript + Vite + Tailwind CSS. Authentification, données, fichiers et
+hébergement — tout sur Firebase (Auth/Firestore/Hosting, plan Spark gratuit, aucune
+carte bancaire). Les pièces jointes sont stockées directement dans Firestore,
+découpées en morceaux côté client pour rester sous la limite de 1 Mio par document
+(voir `src/domain/attachments.ts`) — pas de service de stockage de fichiers externe
+(Firebase Storage et Cloudflare R2 ont tous deux été écartés car ils exigent une
+carte bancaire même à usage gratuit).
 
 ## Démarrage local
 
@@ -31,9 +34,6 @@ Firebase Storage nécessite le plan payant Blaze).
 npm install
 npm run dev
 ```
-
-Le Worker de pièces jointes (`worker/`) se configure et se lance séparément — voir
-[`worker/README.md`](worker/README.md) une fois cette partie mise en place.
 
 ## Tests
 
@@ -60,19 +60,14 @@ npx firebase deploy --only firestore:rules  # si les règles ont changé
 Nécessite d'être connecté au CLI (`npx firebase login`) avec un compte ayant accès
 au projet Firebase.
 
-Le Worker et le bucket R2 se déploient séparément via `wrangler deploy` (voir
-`worker/`), indépendamment de Firebase Hosting.
-
 ## Structure
 
-- `src/domain/` — logique métier pure (statuts de tâche, calculs de budget), testée
-  indépendamment de Firebase.
+- `src/domain/` — logique métier pure (statuts de tâche, calculs de budget, découpage
+  des pièces jointes), testée indépendamment de Firebase.
 - `src/firebase/` — configuration du SDK Firebase (lue depuis les variables
   d'environnement).
 - `src/context/` — contexte d'authentification.
 - `src/pages/`, `src/components/` — UI.
 - `firebase-rules/` — règles de sécurité Firestore, avec leurs tests via l'émulateur.
-- `worker/` — Cloudflare Worker gérant les pièces jointes (upload/téléchargement/
-  suppression sur R2, avec vérification du token Firebase).
 - `documents/` — artefacts de cadrage du projet (brief, architecture, spec, user
   stories).

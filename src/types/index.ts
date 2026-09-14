@@ -57,10 +57,9 @@ export interface TaskAttachment {
   id: string;
   taskId: string;
   fileName: string;
-  storagePath: string;
-  url: string;
   contentType: string;
   size: number;
+  chunkCount: number;
   uploadedBy: string;
   uploadedAt: number;
 }

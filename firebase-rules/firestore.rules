@@ -43,6 +43,14 @@ service cloud.firestore {
       match /attachments/{attachmentId} {
         allow read: if isFamilyMember();
         allow create, update, delete: if isFamilyMember();
+
+        // Le contenu du fichier (encodé en base64) est découpé en morceaux
+        // de documents ici, pour rester sous la limite de 1 Mio par document
+        // Firestore — voir src/domain/attachments.ts.
+        match /chunks/{chunkId} {
+          allow read: if isFamilyMember();
+          allow create, update, delete: if isFamilyMember();
+        }
       }
     }
   }

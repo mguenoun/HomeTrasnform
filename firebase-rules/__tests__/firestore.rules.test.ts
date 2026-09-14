@@ -74,6 +74,27 @@ describe("Firestore security rules", () => {
         fileName: "devis.pdf",
       }),
     );
+    await assertSucceeds(
+      setDoc(doc(member.firestore(), "tasks/task1/attachments/a1/chunks/0"), {
+        index: 0,
+        data: "base64...",
+      }),
+    );
+  });
+
+  it("refuse la lecture des morceaux d'une pièce jointe à un non-membre", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(
+        doc(context.firestore(), "tasks/task1/attachments/a1/chunks/0"),
+        { index: 0, data: "base64..." },
+      );
+    });
+    const outsider = testEnv.authenticatedContext("outsider-uid", {
+      email: "outsider@example.com",
+    });
+    await assertFails(
+      getDoc(doc(outsider.firestore(), "tasks/task1/attachments/a1/chunks/0")),
+    );
   });
 
   it("empêche un membre d'écrire directement dans familymembers", async () => {

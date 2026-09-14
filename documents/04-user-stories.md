@@ -13,17 +13,17 @@ pouvoir construire les fonctionnalités sur une base saine et déployable.
   - Config Firebase lue depuis `import.meta.env.VITE_FIREBASE_*`, avec `.env.example`
     versionné et `.env.local` ignoré par git.
 
-**US-0.2** (P0) — En tant que développeur, je veux les règles de sécurité Firestore et
-Storage écrites et testées avec l'émulateur, afin de garantir que seuls les membres
+**US-0.2** (P0) — En tant que développeur, je veux les règles de sécurité Firestore
+écrites et testées avec l'émulateur, afin de garantir que seuls les membres
 autorisés accèdent aux données.
 - Critères :
   - Un utilisateur non authentifié ne peut ni lire ni écrire.
   - Un utilisateur authentifié dont l'email n'est pas dans `familymembers` est rejeté.
-  - Un fichier > 10 Mo ou d'un type non autorisé est rejeté par les règles Storage.
+  - Un fichier > 10 Mo ou d'un type non autorisé est rejeté avant tout envoi.
 
-**US-0.3** (P0) — En tant que mainteneur, je veux un déploiement continu sur Cloudflare
-Pages déclenché par un push sur `main`, afin que chaque changement validé soit
-automatiquement mis en ligne.
+**US-0.3** (P0) — En tant que mainteneur, je veux un déploiement (manuel dans un
+premier temps, automatisable ensuite) vers Firebase Hosting, afin que chaque
+changement validé puisse être mis en ligne simplement.
 
 ## Epic 1 — Authentification & accès
 **US-1.1** (P0) — En tant que membre de la famille, je veux me connecter avec mon
@@ -135,4 +135,4 @@ en un coup d'œil.
 8. Epic 8 (tableau de bord) — agrège tout ce qui précède, donc en dernier.
 
 Chaque story est livrée avec ses tests (unitaires/composants a minima, règles de
-sécurité pour tout ce qui touche Firestore/Storage).
+sécurité Firestore pour tout ce qui touche aux données).

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AttachmentsSection } from "../components/AttachmentsSection";
 import { TaskForm, type TaskFormValues } from "../components/TaskForm";
 import {
   TASK_PRIORITY_LABELS,
@@ -9,6 +10,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import { summarizeTaskBudget } from "../domain/budget";
 import { canTransition } from "../domain/taskStatus";
+import { useAttachments } from "../hooks/useAttachments";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
@@ -24,6 +26,7 @@ export function TaskDetailPage() {
   const { tasks } = useTasks();
   const { objectives } = useObjectives();
   const { users } = useFamilyUsers();
+  const { attachments } = useAttachments(id);
   const [editing, setEditing] = useState(false);
 
   const task = tasks.find((t) => t.id === id);
@@ -192,6 +195,15 @@ export function TaskDetailPage() {
               )}
             </div>
           </div>
+
+          {user && (
+            <AttachmentsSection
+              taskId={task.id}
+              attachments={attachments}
+              currentUser={user}
+              users={users}
+            />
+          )}
 
           <div className="mt-4 flex gap-2">
             <button
