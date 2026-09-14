@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../context/AuthContext";
+import { useAttachments } from "../../hooks/useAttachments";
+import { useComments } from "../../hooks/useComments";
 import { useFamilyUsers } from "../../hooks/useFamilyUsers";
 import { useObjectives } from "../../hooks/useObjectives";
 import { useTasks } from "../../hooks/useTasks";
@@ -11,6 +13,8 @@ import type { Task } from "../../types";
 import { TaskDetailPage } from "../TaskDetailPage";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../../hooks/useAttachments", () => ({ useAttachments: vi.fn() }));
+vi.mock("../../hooks/useComments", () => ({ useComments: vi.fn() }));
 vi.mock("../../hooks/useFamilyUsers", () => ({ useFamilyUsers: vi.fn() }));
 vi.mock("../../hooks/useObjectives", () => ({ useObjectives: vi.fn() }));
 vi.mock("../../hooks/useTasks", () => ({ useTasks: vi.fn() }));
@@ -21,6 +25,8 @@ vi.mock("../../services/tasks", () => ({
 }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedUseAttachments = vi.mocked(useAttachments);
+const mockedUseComments = vi.mocked(useComments);
 const mockedUseFamilyUsers = vi.mocked(useFamilyUsers);
 const mockedUseObjectives = vi.mocked(useObjectives);
 const mockedUseTasks = vi.mocked(useTasks);
@@ -70,6 +76,8 @@ describe("TaskDetailPage — affectation", () => {
       loading: false,
     });
     mockedUpdateTask.mockResolvedValue(undefined);
+    mockedUseAttachments.mockReturnValue({ attachments: [], loading: false });
+    mockedUseComments.mockReturnValue({ comments: [], loading: false });
   });
 
   it("affiche les membres de la famille et met en évidence les assignés", () => {
@@ -99,5 +107,46 @@ describe("TaskDetailPage — affectation", () => {
     expect(mockedUpdateTask).toHaveBeenCalledWith("task1", {
       assigneeIds: [],
     });
+  });
+});
+
+describe("TaskDetailPage — historique de clôture", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedUseAuth.mockReturnValue({
+      user: { uid: "user-1" } as never,
+      loading: false,
+      isAuthorized: true,
+      error: null,
+      signInWithGoogle: vi.fn(),
+      signOutUser: vi.fn(),
+    });
+    mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
+    mockedUseFamilyUsers.mockReturnValue({
+      users: [
+        { uid: "user-1", displayName: "Marie", email: "marie@example.com" },
+      ],
+      loading: false,
+    });
+    mockedUseAttachments.mockReturnValue({ attachments: [], loading: false });
+    mockedUseComments.mockReturnValue({ comments: [], loading: false });
+  });
+
+  it("affiche qui a clos la tâche et quand", () => {
+    mockedUseTasks.mockReturnValue({
+      tasks: [
+        {
+          ...TASK,
+          status: "done",
+          closedAt: Date.parse("2026-02-01"),
+          closedBy: "user-1",
+        },
+      ],
+      loading: false,
+    });
+
+    renderPage();
+
+    expect(screen.getByText(/Clôturée le/)).toHaveTextContent("par Marie");
   });
 });

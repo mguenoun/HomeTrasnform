@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AttachmentsSection } from "../components/AttachmentsSection";
+import { CommentsSection } from "../components/CommentsSection";
 import { TaskForm, type TaskFormValues } from "../components/TaskForm";
 import {
   TASK_PRIORITY_LABELS,
@@ -11,6 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { summarizeTaskBudget } from "../domain/budget";
 import { canTransition } from "../domain/taskStatus";
 import { useAttachments } from "../hooks/useAttachments";
+import { useComments } from "../hooks/useComments";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
@@ -27,6 +29,7 @@ export function TaskDetailPage() {
   const { objectives } = useObjectives();
   const { users } = useFamilyUsers();
   const { attachments } = useAttachments(id);
+  const { comments } = useComments(id);
   const [editing, setEditing] = useState(false);
 
   const task = tasks.find((t) => t.id === id);
@@ -86,6 +89,7 @@ export function TaskDetailPage() {
     (o) => o.id === task.objectiveId,
   )?.title;
   const budgetSummary = summarizeTaskBudget(task);
+  const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -166,6 +170,8 @@ export function TaskDetailPage() {
           {task.status === "done" && task.closedAt && (
             <p className="mt-2 text-xs text-slate-400">
               Clôturée le {new Date(task.closedAt).toLocaleDateString("fr-FR")}
+              {task.closedBy &&
+                ` par ${userNameById.get(task.closedBy) ?? "?"}`}
             </p>
           )}
 
@@ -201,6 +207,15 @@ export function TaskDetailPage() {
               taskId={task.id}
               attachments={attachments}
               currentUser={user}
+              users={users}
+            />
+          )}
+
+          {user && (
+            <CommentsSection
+              taskId={task.id}
+              comments={comments}
+              currentUserId={user.uid}
               users={users}
             />
           )}
