@@ -1,18 +1,35 @@
 import { Link } from "react-router-dom";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { TASK_TYPE_LABELS } from "../constants";
-import { getBlockedTasks, getUpcomingTasks } from "../domain/dashboard";
+import {
+  countClosedObjectives,
+  countClosedTasks,
+  getBlockedTasks,
+  getTaskKpisByPerson,
+  getUpcomingTasks,
+} from "../domain/dashboard";
+import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
+
+function formatRatio(closed: number, total: number): string {
+  const percent = total === 0 ? 0 : Math.round((closed / total) * 100);
+  return `${closed} / ${total} (${percent}%)`;
+}
 
 export function DashboardPage() {
   const { objectives, loading: objectivesLoading } = useObjectives();
   const { tasks, loading: tasksLoading } = useTasks();
+  const { users, loading: usersLoading } = useFamilyUsers();
 
   const activeObjectives = objectives.filter((o) => o.status === "active");
   const upcomingTasks = getUpcomingTasks(tasks);
   const blockedTasks = getBlockedTasks(tasks);
-  const loading = objectivesLoading || tasksLoading;
+  const loading = objectivesLoading || tasksLoading || usersLoading;
+
+  const objectivesKpi = countClosedObjectives(objectives);
+  const tasksKpi = countClosedTasks(tasks);
+  const personKpis = getTaskKpisByPerson(tasks, users);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -24,6 +41,68 @@ export function DashboardPage() {
 
       {!loading && (
         <>
+          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-slate-700">
+                Objectifs clôturés
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">
+                {formatRatio(objectivesKpi.closed, objectivesKpi.total)}
+              </p>
+            </div>
+            <div className="rounded border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-slate-700">
+                Tâches clôturées
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">
+                {formatRatio(tasksKpi.closed, tasksKpi.total)}
+              </p>
+            </div>
+          </section>
+
+          <section className="mt-6">
+            <h2 className="mb-2 text-sm font-medium text-slate-700">
+              Tâches par personne
+            </h2>
+            <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-500">
+                    <th className="p-3 font-medium">Personne</th>
+                    <th className="p-3 font-medium">En retard</th>
+                    <th className="p-3 font-medium">Clôturées</th>
+                    <th className="p-3 font-medium">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {personKpis.map((kpi) => (
+                    <tr key={kpi.uid} className="border-b border-slate-100 last:border-0">
+                      <td className="p-3 font-medium text-slate-900">
+                        {kpi.displayName}
+                      </td>
+                      <td className="p-3">
+                        {kpi.overdue > 0 ? (
+                          <span className="rounded bg-red-100 px-1.5 py-0.5 font-medium text-red-700">
+                            {kpi.overdue}
+                          </span>
+                        ) : (
+                          kpi.overdue
+                        )}
+                      </td>
+                      <td className="p-3">{kpi.closed}</td>
+                      <td className="p-3">{kpi.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {personKpis.length === 0 && (
+                <p className="p-3 text-sm text-slate-500">
+                  Aucune personne pour le moment.
+                </p>
+              )}
+            </div>
+          </section>
+
           <section className="mt-6">
             <h2 className="mb-2 text-sm font-medium text-slate-700">
               Objectifs
