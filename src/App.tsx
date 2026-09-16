@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { AppNav } from "./components/AppNav";
+import { InstallPrompt } from "./components/InstallPrompt";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { BudgetPage } from "./pages/BudgetPage";
@@ -15,6 +16,7 @@ function App() {
     <AuthProvider>
       <ProtectedRoute>
         <AppNav />
+        <InstallPrompt />
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/objectives" element={<ObjectivesPage />} />
