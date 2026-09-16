@@ -17,6 +17,7 @@ import { useComments } from "../hooks/useComments";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
+import { sendPushNotification } from "../services/push";
 import { changeTaskStatus, deleteTask, updateTask } from "../services/tasks";
 import type { TaskStatus } from "../types";
 
@@ -48,10 +49,26 @@ export function TaskDetailPage() {
 
   async function toggleAssignee(uid: string) {
     if (!task) return;
-    const assigneeIds = task.assigneeIds.includes(uid)
+    const wasAssigned = task.assigneeIds.includes(uid);
+    const assigneeIds = wasAssigned
       ? task.assigneeIds.filter((assigneeId) => assigneeId !== uid)
       : [...task.assigneeIds, uid];
     await updateTask(task.id, { assigneeIds });
+
+    if (!wasAssigned && user && uid !== user.uid) {
+      const assignedUser = users.find((familyUser) => familyUser.uid === uid);
+      if (assignedUser?.pushSubscriptions?.length) {
+        sendPushNotification(
+          assignedUser.pushSubscriptions,
+          {
+            title: "Nouvelle tâche assignée",
+            body: task.title,
+            url: `/tasks/${task.id}`,
+          },
+          user,
+        ).catch(() => {});
+      }
+    }
   }
 
   async function handleUpdate(values: TaskFormValues) {

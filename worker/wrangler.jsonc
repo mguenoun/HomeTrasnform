@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "hometransform-notifications",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "FIREBASE_PROJECT_ID": "hometransform-c2ac9",
+    "ALLOWED_ORIGIN": "https://hometransform-c2ac9.web.app",
+    "VAPID_PUBLIC_KEY": "BLFDrXoHNCwAUUjhx0_wYLdA0ulUq9mHxmKgZlO-Fcj2wqF9HuzziAsVmLseeNxE22f8MIh6wjnhs0dC4LUA5_M",
+    "VAPID_SUBJECT": "mailto:mguenoun@gmail.com"
+  },
+  "triggers": {
+    "crons": ["0 7 * * *"]
+  }
+}

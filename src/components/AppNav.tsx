@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { NotificationsToggle } from "./NotificationsToggle";
 
 const LINKS: Array<{ to: string; label: string }> = [
   { to: "/", label: "Tableau de bord" },
@@ -35,6 +36,7 @@ export function AppNav() {
         })}
       </nav>
       <div className="flex items-center gap-3">
+        <NotificationsToggle />
         {user?.displayName && (
           <span className="text-sm text-slate-600">{user.displayName}</span>
         )}

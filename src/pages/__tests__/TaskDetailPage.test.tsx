@@ -8,6 +8,7 @@ import { useComments } from "../../hooks/useComments";
 import { useFamilyUsers } from "../../hooks/useFamilyUsers";
 import { useObjectives } from "../../hooks/useObjectives";
 import { useTasks } from "../../hooks/useTasks";
+import { sendPushNotification } from "../../services/push";
 import { updateTask } from "../../services/tasks";
 import type { Objective, Task } from "../../types";
 import { TaskDetailPage } from "../TaskDetailPage";
@@ -23,6 +24,9 @@ vi.mock("../../services/tasks", () => ({
   changeTaskStatus: vi.fn().mockResolvedValue(undefined),
   deleteTask: vi.fn().mockResolvedValue(undefined),
 }));
+vi.mock("../../services/push", () => ({
+  sendPushNotification: vi.fn().mockResolvedValue(undefined),
+}));
 
 const mockedUseAuth = vi.mocked(useAuth);
 const mockedUseAttachments = vi.mocked(useAttachments);
@@ -31,6 +35,7 @@ const mockedUseFamilyUsers = vi.mocked(useFamilyUsers);
 const mockedUseObjectives = vi.mocked(useObjectives);
 const mockedUseTasks = vi.mocked(useTasks);
 const mockedUpdateTask = vi.mocked(updateTask);
+const mockedSendPushNotification = vi.mocked(sendPushNotification);
 
 const TASK: Task = {
   id: "task1",
@@ -71,7 +76,15 @@ describe("TaskDetailPage — affectation", () => {
     mockedUseFamilyUsers.mockReturnValue({
       users: [
         { uid: "user-1", displayName: "Marie", email: "marie@example.com" },
-        { uid: "user-2", displayName: "Paul", email: "paul@example.com" },
+        {
+          uid: "user-2",
+          displayName: "Paul",
+          email: "paul@example.com",
+          pushSubscriptions: [
+            { endpoint: "https://push.example.com/paul", keys: { p256dh: "a", auth: "b" } },
+          ],
+        },
+        { uid: "user-3", displayName: "Julie", email: "julie@example.com" },
       ],
       loading: false,
     });
@@ -107,6 +120,27 @@ describe("TaskDetailPage — affectation", () => {
     expect(mockedUpdateTask).toHaveBeenCalledWith("task1", {
       assigneeIds: [],
     });
+    expect(mockedSendPushNotification).not.toHaveBeenCalled();
+  });
+
+  it("envoie une notification push au membre nouvellement assigné", async () => {
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Paul" }));
+
+    expect(mockedSendPushNotification).toHaveBeenCalledWith(
+      [{ endpoint: "https://push.example.com/paul", keys: { p256dh: "a", auth: "b" } }],
+      expect.objectContaining({ url: "/tasks/task1" }),
+      { uid: "user-1" },
+    );
+  });
+
+  it("n'envoie pas de notification si le membre assigné n'a pas d'abonnement push", async () => {
+    renderPage();
+
+    await userEvent.click(screen.getByRole("button", { name: "Julie" }));
+
+    expect(mockedSendPushNotification).not.toHaveBeenCalled();
   });
 });
 

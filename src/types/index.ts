@@ -4,12 +4,18 @@ export type TaskStatus = "todo" | "in_progress" | "blocked" | "done";
 
 export type TaskPriority = "low" | "medium" | "high";
 
+export interface PushSubscriptionRecord {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+}
+
 export interface FamilyUser {
   uid: string;
   displayName: string;
   email: string;
   photoURL?: string;
   colorTag?: string;
+  pushSubscriptions?: PushSubscriptionRecord[];
 }
 
 export type ObjectiveStatus = "active" | "archived";
