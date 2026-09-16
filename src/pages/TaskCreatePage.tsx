@@ -1,4 +1,5 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { TaskForm, type TaskFormValues } from "../components/TaskForm";
 import { useAuth } from "../context/AuthContext";
 import { useObjectives } from "../hooks/useObjectives";
@@ -10,6 +11,9 @@ export function TaskCreatePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const preselectedObjectiveId = searchParams.get("objectiveId");
+  const preselectedObjective = objectives.find(
+    (o) => o.id === preselectedObjectiveId,
+  );
 
   async function handleCreate(values: TaskFormValues) {
     if (!user) return;
@@ -31,9 +35,25 @@ export function TaskCreatePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <Link to="/tasks" className="text-sm text-blue-700 hover:underline">
-        ← Tâches
-      </Link>
+      <Breadcrumb
+        items={
+          preselectedObjective
+            ? [
+                { label: "Tableau de bord", to: "/" },
+                { label: "Objectifs", to: "/objectives" },
+                {
+                  label: preselectedObjective.title,
+                  to: `/objectives/${preselectedObjective.id}`,
+                },
+                { label: "Nouvelle tâche" },
+              ]
+            : [
+                { label: "Tableau de bord", to: "/" },
+                { label: "Tâches", to: "/tasks" },
+                { label: "Nouvelle tâche" },
+              ]
+        }
+      />
       <h1 className="mt-4 mb-6 text-xl font-semibold text-slate-900">
         Nouvelle tâche
       </h1>

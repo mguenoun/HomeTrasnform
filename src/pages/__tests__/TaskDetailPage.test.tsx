@@ -9,7 +9,7 @@ import { useFamilyUsers } from "../../hooks/useFamilyUsers";
 import { useObjectives } from "../../hooks/useObjectives";
 import { useTasks } from "../../hooks/useTasks";
 import { updateTask } from "../../services/tasks";
-import type { Task } from "../../types";
+import type { Objective, Task } from "../../types";
 import { TaskDetailPage } from "../TaskDetailPage";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
@@ -148,5 +148,58 @@ describe("TaskDetailPage — historique de clôture", () => {
     renderPage();
 
     expect(screen.getByText(/Clôturée le/)).toHaveTextContent("par Marie");
+  });
+});
+
+describe("TaskDetailPage — fil d'Ariane", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockedUseAuth.mockReturnValue({
+      user: { uid: "user-1" } as never,
+      loading: false,
+      isAuthorized: true,
+      error: null,
+      signInWithGoogle: vi.fn(),
+      signOutUser: vi.fn(),
+    });
+    mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+    mockedUseAttachments.mockReturnValue({ attachments: [], loading: false });
+    mockedUseComments.mockReturnValue({ comments: [], loading: false });
+  });
+
+  it("relie vers l'objectif de la tâche quand elle en a un", () => {
+    const objective: Objective = {
+      id: "obj1",
+      title: "Réaménager le salon",
+      status: "active",
+      createdBy: "user-1",
+      createdAt: 0,
+    };
+    mockedUseObjectives.mockReturnValue({
+      objectives: [objective],
+      loading: false,
+    });
+    mockedUseTasks.mockReturnValue({
+      tasks: [{ ...TASK, objectiveId: "obj1" }],
+      loading: false,
+    });
+
+    renderPage();
+
+    expect(
+      screen.getByRole("link", { name: "Réaménager le salon" }),
+    ).toHaveAttribute("href", "/objectives/obj1");
+  });
+
+  it("relie vers la liste des tâches quand la tâche est libre", () => {
+    mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
+    mockedUseTasks.mockReturnValue({ tasks: [TASK], loading: false });
+
+    renderPage();
+
+    expect(screen.getByRole("link", { name: "Tâches" })).toHaveAttribute(
+      "href",
+      "/tasks",
+    );
   });
 });

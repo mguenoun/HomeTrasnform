@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { TASK_TYPE_LABELS } from "../constants";
 import {
   groupBudgetByObjective,
@@ -56,9 +57,9 @@ export function BudgetPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <Link to="/" className="text-sm text-blue-700 hover:underline">
-        ← Tableau de bord
-      </Link>
+      <Breadcrumb
+        items={[{ label: "Tableau de bord", to: "/" }, { label: "Budget" }]}
+      />
       <h1 className="mt-4 mb-6 text-xl font-semibold text-slate-900">
         Budget
       </h1>

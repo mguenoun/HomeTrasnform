@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { ObjectiveForm, type ObjectiveFormValues } from "../components/ObjectiveForm";
 import { TASK_STATUS_LABELS, TASK_TYPE_LABELS } from "../constants";
 import { computeProgress } from "../domain/progress";
@@ -66,9 +67,13 @@ export function ObjectiveDetailPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <Link to="/objectives" className="text-sm text-blue-700 hover:underline">
-        ← Objectifs
-      </Link>
+      <Breadcrumb
+        items={[
+          { label: "Tableau de bord", to: "/" },
+          { label: "Objectifs", to: "/objectives" },
+          { label: objective.title },
+        ]}
+      />
 
       {editing ? (
         <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4">

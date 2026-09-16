@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AttachmentsSection } from "../components/AttachmentsSection";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { CommentsSection } from "../components/CommentsSection";
 import { TaskForm, type TaskFormValues } from "../components/TaskForm";
 import {
@@ -85,17 +86,29 @@ export function TaskDetailPage() {
     navigate("/tasks");
   }
 
-  const objectiveTitle = objectives.find(
-    (o) => o.id === task.objectiveId,
-  )?.title;
+  const objective = objectives.find((o) => o.id === task.objectiveId);
+  const objectiveTitle = objective?.title;
   const budgetSummary = summarizeTaskBudget(task);
   const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <Link to="/tasks" className="text-sm text-blue-700 hover:underline">
-        ← Tâches
-      </Link>
+      <Breadcrumb
+        items={
+          objective
+            ? [
+                { label: "Tableau de bord", to: "/" },
+                { label: "Objectifs", to: "/objectives" },
+                { label: objective.title, to: `/objectives/${objective.id}` },
+                { label: task.title },
+              ]
+            : [
+                { label: "Tableau de bord", to: "/" },
+                { label: "Tâches", to: "/tasks" },
+                { label: task.title },
+              ]
+        }
+      />
 
       {editing ? (
         <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4">

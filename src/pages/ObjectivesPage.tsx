@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Breadcrumb } from "../components/Breadcrumb";
 import { ObjectiveForm, type ObjectiveFormValues } from "../components/ObjectiveForm";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { useAuth } from "../context/AuthContext";
@@ -27,6 +28,9 @@ export function ObjectivesPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
+      <Breadcrumb
+        items={[{ label: "Tableau de bord", to: "/" }, { label: "Objectifs" }]}
+      />
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-900">Objectifs</h1>
         <button

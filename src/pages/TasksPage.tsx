@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { Breadcrumb } from "../components/Breadcrumb";
 import {
   TASK_PRIORITY_LABELS,
   TASK_STATUS_LABELS,
@@ -32,6 +33,9 @@ export function TasksPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
+      <Breadcrumb
+        items={[{ label: "Tableau de bord", to: "/" }, { label: "Tâches" }]}
+      />
       <header className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-slate-900">Tâches</h1>
         <Link
