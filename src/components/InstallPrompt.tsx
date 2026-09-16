@@ -94,16 +94,33 @@ export function InstallPrompt() {
     })
   ) {
     return (
-      <div className="flex items-center justify-between gap-3 bg-blue-50 px-6 py-2 text-sm text-blue-900">
-        <span>
-          Pour installer HomeTransform : appuyez sur{" "}
-          <strong>Partager</strong> puis « <strong>Sur l'écran d'accueil</strong> ».
-        </span>
+      <div className="flex items-start justify-between gap-3 bg-blue-50 px-6 py-3 text-sm text-blue-900">
+        <div>
+          <p className="font-medium">Installer HomeTransform sur cet iPhone/iPad :</p>
+          <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+            <li>
+              Faites un <strong>appui long</strong> sur l'adresse du site,
+              tout en bas de l'écran, jusqu'à ce qu'un menu s'ouvre
+            </li>
+            <li>
+              Choisissez <strong>« Partager »</strong> (« Share » si votre
+              appareil est en anglais)
+            </li>
+            <li>
+              Faites défiler et choisissez{" "}
+              <strong>« Sur l'écran d'accueil »</strong> (« Add to Home
+              Screen »)
+            </li>
+            <li>
+              Confirmez en appuyant sur <strong>« Ajouter »</strong> (« Add »)
+            </li>
+          </ol>
+        </div>
         <button
           type="button"
           onClick={dismiss}
           aria-label="Masquer"
-          className="text-blue-700 hover:underline"
+          className="shrink-0 text-blue-700 hover:underline"
         >
           ✕
         </button>
