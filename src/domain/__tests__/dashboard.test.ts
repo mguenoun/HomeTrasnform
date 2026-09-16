@@ -182,4 +182,24 @@ describe("getTaskKpisByPerson", () => {
     expect(kpis.find((k) => k.uid === "u1")?.total).toBe(1);
     expect(kpis.find((k) => k.uid === "u2")?.total).toBe(1);
   });
+
+  it("inclut une personne sans tâche assignée", () => {
+    const users = [makeUser({ uid: "u1", displayName: "Alice" })];
+    expect(getTaskKpisByPerson([], users, REFERENCE)).toEqual([
+      { uid: "u1", displayName: "Alice", overdue: 0, closed: 0, total: 0 },
+    ]);
+  });
+
+  it("inclut un assigné sans profil connu sous un nom générique", () => {
+    const tasks = [makeTask({ id: "t1", assigneeIds: ["ghost"], status: "todo" })];
+    expect(getTaskKpisByPerson(tasks, [], REFERENCE)).toEqual([
+      {
+        uid: "ghost",
+        displayName: "Utilisateur inconnu",
+        overdue: 0,
+        closed: 0,
+        total: 1,
+      },
+    ]);
+  });
 });

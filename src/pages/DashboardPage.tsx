@@ -41,7 +41,7 @@ export function DashboardPage() {
 
       {!loading && (
         <>
-          <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <section className="grid grid-cols-2 gap-4">
             <div className="rounded border border-slate-200 bg-white p-4">
               <p className="text-sm font-medium text-slate-700">
                 Objectifs clôturés
@@ -64,43 +64,47 @@ export function DashboardPage() {
             <h2 className="mb-2 text-sm font-medium text-slate-700">
               Tâches par personne
             </h2>
-            <div className="overflow-x-auto rounded border border-slate-200 bg-white">
-              <table className="w-full text-left text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-slate-500">
-                    <th className="p-3 font-medium">Personne</th>
-                    <th className="p-3 font-medium">En retard</th>
-                    <th className="p-3 font-medium">Clôturées</th>
-                    <th className="p-3 font-medium">Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {personKpis.map((kpi) => (
-                    <tr key={kpi.uid} className="border-b border-slate-100 last:border-0">
-                      <td className="p-3 font-medium text-slate-900">
-                        {kpi.displayName}
-                      </td>
-                      <td className="p-3">
-                        {kpi.overdue > 0 ? (
-                          <span className="rounded bg-red-100 px-1.5 py-0.5 font-medium text-red-700">
-                            {kpi.overdue}
-                          </span>
-                        ) : (
-                          kpi.overdue
-                        )}
-                      </td>
-                      <td className="p-3">{kpi.closed}</td>
-                      <td className="p-3">{kpi.total}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {personKpis.length === 0 && (
-                <p className="p-3 text-sm text-slate-500">
-                  Aucune personne pour le moment.
-                </p>
-              )}
+            <div className="grid grid-cols-2 gap-4">
+              {personKpis.map((kpi) => (
+                <div
+                  key={kpi.uid}
+                  className="rounded border border-slate-200 bg-white p-4"
+                >
+                  <p className="truncate text-sm font-medium text-slate-700">
+                    {kpi.displayName}
+                  </p>
+                  <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
+                    <div>
+                      <dt className="text-xs text-slate-500">En retard</dt>
+                      <dd
+                        className={`text-lg font-semibold ${
+                          kpi.overdue > 0 ? "text-red-700" : "text-slate-900"
+                        }`}
+                      >
+                        {kpi.overdue}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-slate-500">Clôturées</dt>
+                      <dd className="text-lg font-semibold text-slate-900">
+                        {kpi.closed}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt className="text-xs text-slate-500">Total</dt>
+                      <dd className="text-lg font-semibold text-slate-900">
+                        {kpi.total}
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              ))}
             </div>
+            {personKpis.length === 0 && (
+              <p className="text-sm text-slate-500">
+                Aucune personne pour le moment.
+              </p>
+            )}
           </section>
 
           <section className="mt-6">

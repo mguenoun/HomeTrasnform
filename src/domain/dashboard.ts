@@ -60,20 +60,29 @@ export interface PersonTaskKpi {
 }
 
 /**
- * Pour chaque personne de la famille : nombre de tâches en retard,
- * clôturées et le total des tâches qui lui sont assignées.
+ * Pour chaque personne connue et pour chaque assigné rencontré dans les
+ * tâches (même sans profil connu, ex. profil supprimé depuis) : nombre de
+ * tâches en retard, clôturées et le total des tâches qui lui sont assignées.
+ * On combine les deux sources pour ne jamais omettre silencieusement
+ * quelqu'un qui a des tâches assignées.
  */
 export function getTaskKpisByPerson(
   tasks: Task[],
   users: FamilyUser[],
   referenceDate: Date = new Date(),
 ): PersonTaskKpi[] {
-  return users
-    .map((user) => {
-      const userTasks = tasks.filter((t) => t.assigneeIds.includes(user.uid));
+  const displayNameByUid = new Map(users.map((u) => [u.uid, u.displayName]));
+  const uids = new Set([
+    ...users.map((u) => u.uid),
+    ...tasks.flatMap((t) => t.assigneeIds),
+  ]);
+
+  return Array.from(uids)
+    .map((uid) => {
+      const userTasks = tasks.filter((t) => t.assigneeIds.includes(uid));
       return {
-        uid: user.uid,
-        displayName: user.displayName,
+        uid,
+        displayName: displayNameByUid.get(uid) ?? "Utilisateur inconnu",
         overdue: userTasks.filter((t) => isTaskOverdue(t, referenceDate)).length,
         closed: userTasks.filter((t) => t.status === "done").length,
         total: userTasks.length,
