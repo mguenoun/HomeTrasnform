@@ -12,7 +12,8 @@ vi.mock("firebase/firestore", () => ({
   onSnapshot: (...args: unknown[]) => onSnapshotMock(...args),
 }));
 
-const { subscribeToUsers, upsertUserProfile } = await import("../users");
+const { subscribeToUsers, upsertUserProfile, subscribeToFamilyMembers } =
+  await import("../users");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -53,6 +54,28 @@ describe("subscribeToUsers", () => {
 
     expect(onChange).toHaveBeenCalledWith([
       { uid: "user-1", displayName: "Marie", email: "marie@example.com" },
+    ]);
+  });
+});
+
+describe("subscribeToFamilyMembers", () => {
+  it("transforme les documents de la collection familymembers en FamilyMemberRecord[]", () => {
+    const onChange = vi.fn();
+    onSnapshotMock.mockImplementation((_collectionRef, callback) => {
+      callback({
+        docs: [
+          { id: "hajar@example.com", data: () => ({}) },
+          { id: "marie@example.com", data: () => ({ uid: "user-1" }) },
+        ],
+      });
+      return () => {};
+    });
+
+    subscribeToFamilyMembers(onChange);
+
+    expect(onChange).toHaveBeenCalledWith([
+      { email: "hajar@example.com" },
+      { email: "marie@example.com", uid: "user-1" },
     ]);
   });
 });

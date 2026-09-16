@@ -18,6 +18,16 @@ export interface FamilyUser {
   pushSubscriptions?: PushSubscriptionRecord[];
 }
 
+/**
+ * Entrée de la liste blanche `familymembers` (autorise l'accès à l'app).
+ * Existe indépendamment de `FamilyUser` : une personne peut y figurer sans
+ * jamais s'être encore connectée (donc sans profil `users`).
+ */
+export interface FamilyMemberRecord {
+  email: string;
+  uid?: string;
+}
+
 export type ObjectiveStatus = "active" | "archived";
 
 export interface Objective {

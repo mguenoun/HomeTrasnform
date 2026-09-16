@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { FamilyUser, Objective, Task } from "../../types";
+import type { FamilyMemberRecord, FamilyUser, Objective, Task } from "../../types";
 import {
   countClosedObjectives,
   countClosedTasks,
@@ -43,6 +43,13 @@ function makeUser(overrides: Partial<FamilyUser> = {}): FamilyUser {
     uid: "u1",
     displayName: "Alice",
     email: "alice@example.com",
+    ...overrides,
+  };
+}
+
+function makeMember(overrides: Partial<FamilyMemberRecord> = {}): FamilyMemberRecord {
+  return {
+    email: "member@example.com",
     ...overrides,
   };
 }
@@ -169,7 +176,7 @@ describe("getTaskKpisByPerson", () => {
       makeTask({ id: "t2", assigneeIds: ["u1"], status: "done" }),
       makeTask({ id: "t3", assigneeIds: ["u2"], status: "todo" }),
     ];
-    expect(getTaskKpisByPerson(tasks, users, REFERENCE)).toEqual([
+    expect(getTaskKpisByPerson(tasks, users, [], REFERENCE)).toEqual([
       { uid: "u2", displayName: "Alice", overdue: 0, closed: 0, total: 1 },
       { uid: "u1", displayName: "Bob", overdue: 1, closed: 1, total: 2 },
     ]);
@@ -178,21 +185,21 @@ describe("getTaskKpisByPerson", () => {
   it("compte une tâche pour chacun de ses assignés multiples", () => {
     const users = [makeUser({ uid: "u1" }), makeUser({ uid: "u2", displayName: "Bob" })];
     const tasks = [makeTask({ id: "t1", assigneeIds: ["u1", "u2"], status: "todo" })];
-    const kpis = getTaskKpisByPerson(tasks, users, REFERENCE);
+    const kpis = getTaskKpisByPerson(tasks, users, [], REFERENCE);
     expect(kpis.find((k) => k.uid === "u1")?.total).toBe(1);
     expect(kpis.find((k) => k.uid === "u2")?.total).toBe(1);
   });
 
   it("inclut une personne sans tâche assignée", () => {
     const users = [makeUser({ uid: "u1", displayName: "Alice" })];
-    expect(getTaskKpisByPerson([], users, REFERENCE)).toEqual([
+    expect(getTaskKpisByPerson([], users, [], REFERENCE)).toEqual([
       { uid: "u1", displayName: "Alice", overdue: 0, closed: 0, total: 0 },
     ]);
   });
 
   it("inclut un assigné sans profil connu sous un nom générique", () => {
     const tasks = [makeTask({ id: "t1", assigneeIds: ["ghost"], status: "todo" })];
-    expect(getTaskKpisByPerson(tasks, [], REFERENCE)).toEqual([
+    expect(getTaskKpisByPerson(tasks, [], [], REFERENCE)).toEqual([
       {
         uid: "ghost",
         displayName: "Utilisateur inconnu",
@@ -200,6 +207,27 @@ describe("getTaskKpisByPerson", () => {
         closed: 0,
         total: 1,
       },
+    ]);
+  });
+
+  it("inclut un membre autorisé qui ne s'est jamais connecté", () => {
+    const members = [makeMember({ email: "hajar@example.com" })];
+    expect(getTaskKpisByPerson([], [], members, REFERENCE)).toEqual([
+      {
+        uid: "pending:hajar@example.com",
+        displayName: "hajar@example.com",
+        overdue: 0,
+        closed: 0,
+        total: 0,
+      },
+    ]);
+  });
+
+  it("n'affiche pas en double un membre autorisé qui a déjà un profil", () => {
+    const users = [makeUser({ uid: "u1", email: "alice@example.com" })];
+    const members = [makeMember({ email: "alice@example.com" })];
+    expect(getTaskKpisByPerson([], users, members, REFERENCE)).toEqual([
+      { uid: "u1", displayName: "Alice", overdue: 0, closed: 0, total: 0 },
     ]);
   });
 });

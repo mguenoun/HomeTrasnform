@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
+import { useFamilyMembers } from "../../hooks/useFamilyMembers";
 import { useFamilyUsers } from "../../hooks/useFamilyUsers";
 import { useObjectives } from "../../hooks/useObjectives";
 import { useTasks } from "../../hooks/useTasks";
@@ -10,10 +11,12 @@ import { DashboardPage } from "../DashboardPage";
 vi.mock("../../hooks/useObjectives", () => ({ useObjectives: vi.fn() }));
 vi.mock("../../hooks/useTasks", () => ({ useTasks: vi.fn() }));
 vi.mock("../../hooks/useFamilyUsers", () => ({ useFamilyUsers: vi.fn() }));
+vi.mock("../../hooks/useFamilyMembers", () => ({ useFamilyMembers: vi.fn() }));
 
 const mockedUseObjectives = vi.mocked(useObjectives);
 const mockedUseTasks = vi.mocked(useTasks);
 const mockedUseFamilyUsers = vi.mocked(useFamilyUsers);
+const mockedUseFamilyMembers = vi.mocked(useFamilyMembers);
 
 const OBJECTIVE: Objective = {
   id: "obj1",
@@ -55,6 +58,7 @@ describe("DashboardPage", () => {
     });
     mockedUseTasks.mockReturnValue({ tasks: [], loading: false });
     mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+    mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
 
     renderPage();
 
@@ -64,6 +68,7 @@ describe("DashboardPage", () => {
   it("affiche les tâches à échéance proche et les tâches bloquées", () => {
     mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
     mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+    mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
     const soon = new Date();
     soon.setDate(soon.getDate() + 2);
     const soonDate = soon.toISOString().slice(0, 10);
@@ -88,6 +93,7 @@ describe("DashboardPage", () => {
     mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
     mockedUseTasks.mockReturnValue({ tasks: [], loading: false });
     mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+    mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
 
     renderPage();
 
@@ -115,6 +121,13 @@ describe("DashboardPage", () => {
       users: [{ uid: "u1", displayName: "Alice", email: "alice@example.com" }],
       loading: false,
     });
+    mockedUseFamilyMembers.mockReturnValue({
+      members: [
+        { email: "alice@example.com" },
+        { email: "hajar@example.com" },
+      ],
+      loading: false,
+    });
 
     renderPage();
 
@@ -124,5 +137,6 @@ describe("DashboardPage", () => {
     expect(screen.getByText("1 / 3 (33%)")).toBeInTheDocument();
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Utilisateur inconnu")).toBeInTheDocument();
+    expect(screen.getByText("hajar@example.com")).toBeInTheDocument();
   });
 });

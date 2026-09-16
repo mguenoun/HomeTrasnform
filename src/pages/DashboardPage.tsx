@@ -8,6 +8,7 @@ import {
   getTaskKpisByPerson,
   getUpcomingTasks,
 } from "../domain/dashboard";
+import { useFamilyMembers } from "../hooks/useFamilyMembers";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
@@ -21,15 +22,17 @@ export function DashboardPage() {
   const { objectives, loading: objectivesLoading } = useObjectives();
   const { tasks, loading: tasksLoading } = useTasks();
   const { users, loading: usersLoading } = useFamilyUsers();
+  const { members, loading: membersLoading } = useFamilyMembers();
 
   const activeObjectives = objectives.filter((o) => o.status === "active");
   const upcomingTasks = getUpcomingTasks(tasks);
   const blockedTasks = getBlockedTasks(tasks);
-  const loading = objectivesLoading || tasksLoading || usersLoading;
+  const loading =
+    objectivesLoading || tasksLoading || usersLoading || membersLoading;
 
   const objectivesKpi = countClosedObjectives(objectives);
   const tasksKpi = countClosedTasks(tasks);
-  const personKpis = getTaskKpisByPerson(tasks, users);
+  const personKpis = getTaskKpisByPerson(tasks, users, members);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -73,9 +76,11 @@ export function DashboardPage() {
                   <p className="truncate text-sm font-medium text-slate-700">
                     {kpi.displayName}
                   </p>
-                  <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
+                  <dl className="mt-2 grid grid-cols-3 gap-1 text-center">
                     <div>
-                      <dt className="text-xs text-slate-500">En retard</dt>
+                      <dt className="whitespace-nowrap text-xs text-slate-500">
+                        Retard
+                      </dt>
                       <dd
                         className={`text-lg font-semibold ${
                           kpi.overdue > 0 ? "text-red-700" : "text-slate-900"
@@ -85,13 +90,17 @@ export function DashboardPage() {
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-slate-500">Clôturées</dt>
+                      <dt className="whitespace-nowrap text-xs text-slate-500">
+                        Clôturées
+                      </dt>
                       <dd className="text-lg font-semibold text-slate-900">
                         {kpi.closed}
                       </dd>
                     </div>
                     <div>
-                      <dt className="text-xs text-slate-500">Total</dt>
+                      <dt className="whitespace-nowrap text-xs text-slate-500">
+                        Total
+                      </dt>
                       <dd className="text-lg font-semibold text-slate-900">
                         {kpi.total}
                       </dd>

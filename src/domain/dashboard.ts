@@ -1,4 +1,4 @@
-import type { FamilyUser, Objective, Task } from "../types";
+import type { FamilyMemberRecord, FamilyUser, Objective, Task } from "../types";
 
 /**
  * Tâches non terminées dont l'échéance est déjà passée ou tombe dans les
@@ -60,15 +60,16 @@ export interface PersonTaskKpi {
 }
 
 /**
- * Pour chaque personne connue et pour chaque assigné rencontré dans les
- * tâches (même sans profil connu, ex. profil supprimé depuis) : nombre de
+ * Pour chaque personne connue, chaque assigné rencontré dans les tâches
+ * (même sans profil connu, ex. profil supprimé depuis) et chaque membre
+ * autorisé (`familymembers`) qui ne s'est encore jamais connecté : nombre de
  * tâches en retard, clôturées et le total des tâches qui lui sont assignées.
- * On combine les deux sources pour ne jamais omettre silencieusement
- * quelqu'un qui a des tâches assignées.
+ * On combine ces sources pour ne jamais omettre silencieusement quelqu'un.
  */
 export function getTaskKpisByPerson(
   tasks: Task[],
   users: FamilyUser[],
+  members: FamilyMemberRecord[] = [],
   referenceDate: Date = new Date(),
 ): PersonTaskKpi[] {
   const displayNameByUid = new Map(users.map((u) => [u.uid, u.displayName]));
@@ -77,16 +78,33 @@ export function getTaskKpisByPerson(
     ...tasks.flatMap((t) => t.assigneeIds),
   ]);
 
-  return Array.from(uids)
-    .map((uid) => {
-      const userTasks = tasks.filter((t) => t.assigneeIds.includes(uid));
-      return {
-        uid,
-        displayName: displayNameByUid.get(uid) ?? "Utilisateur inconnu",
-        overdue: userTasks.filter((t) => isTaskOverdue(t, referenceDate)).length,
-        closed: userTasks.filter((t) => t.status === "done").length,
-        total: userTasks.length,
-      };
-    })
-    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+  const knownPeople = Array.from(uids).map((uid) => {
+    const userTasks = tasks.filter((t) => t.assigneeIds.includes(uid));
+    return {
+      uid,
+      displayName: displayNameByUid.get(uid) ?? "Utilisateur inconnu",
+      overdue: userTasks.filter((t) => isTaskOverdue(t, referenceDate)).length,
+      closed: userTasks.filter((t) => t.status === "done").length,
+      total: userTasks.length,
+    };
+  });
+
+  const knownEmails = new Set(users.map((u) => u.email));
+  const neverLoggedIn = members
+    .filter(
+      (member) =>
+        !knownEmails.has(member.email) &&
+        !(member.uid && uids.has(member.uid)),
+    )
+    .map((member) => ({
+      uid: member.uid ?? `pending:${member.email}`,
+      displayName: member.email,
+      overdue: 0,
+      closed: 0,
+      total: 0,
+    }));
+
+  return [...knownPeople, ...neverLoggedIn].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName),
+  );
 }
