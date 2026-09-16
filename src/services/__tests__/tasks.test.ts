@@ -88,6 +88,18 @@ describe("updateTask", () => {
     expect(payload.dueDate).toBeNull();
     expect(payload.budgetEstimated).toBeNull();
   });
+
+  it("réinitialise le rappel d'échéance quand la date change (pour qu'un nouveau rappel puisse être envoyé)", async () => {
+    await updateTask("task1", { dueDate: "2026-10-01" });
+    const [, payload] = updateDocMock.mock.calls[0];
+    expect(payload.dueReminderSentAt).toBeNull();
+  });
+
+  it("ne touche pas au rappel d'échéance quand la date n'est pas modifiée", async () => {
+    await updateTask("task1", { title: "Nouveau titre" });
+    const [, payload] = updateDocMock.mock.calls[0];
+    expect(payload).not.toHaveProperty("dueReminderSentAt");
+  });
 });
 
 describe("changeTaskStatus", () => {

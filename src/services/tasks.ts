@@ -78,6 +78,8 @@ export async function updateTask(
 ): Promise<void> {
   await updateDoc(doc(db, TASKS_COLLECTION, taskId), {
     ...stripUndefined(changes),
+    // Une nouvelle échéance doit pouvoir redéclencher un rappel push.
+    ...("dueDate" in changes ? { dueReminderSentAt: null } : {}),
     updatedAt: Date.now(),
   });
 }

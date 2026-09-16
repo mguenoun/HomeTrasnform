@@ -1,5 +1,8 @@
 import webpush from "web-push";
 import { AuthError, verifyFirebaseToken, type VerifiedUser } from "./auth";
+import { getDocument, listDocuments, patchDocument } from "./firestoreClient";
+import { getGoogleAccessToken } from "./googleAuth";
+import { runDueDateReminders } from "./reminders";
 import { isAllowedEmail, validateNotifyBody } from "./validation";
 
 export interface Env {
@@ -9,6 +12,8 @@ export interface Env {
   VAPID_PUBLIC_KEY: string;
   VAPID_PRIVATE_KEY: string;
   VAPID_SUBJECT: string;
+  FIREBASE_SERVICE_ACCOUNT_EMAIL: string;
+  FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: string;
 }
 
 type TokenVerifier = (
@@ -113,6 +118,30 @@ export async function handleRequest(
   return jsonResponse({ results }, 200, origin);
 }
 
+export async function handleScheduled(env: Env): Promise<void> {
+  await runDueDateReminders(env, {
+    getAccessToken: getGoogleAccessToken,
+    listTasks: (projectId, accessToken) =>
+      listDocuments(projectId, "tasks", accessToken),
+    getUser: (projectId, uid, accessToken) =>
+      getDocument(projectId, `users/${uid}`, accessToken),
+    markReminded: (projectId, taskId, accessToken) =>
+      patchDocument(
+        projectId,
+        `tasks/${taskId}`,
+        { dueReminderSentAt: { integerValue: String(Date.now()) } },
+        accessToken,
+      ),
+    // Construit paresseusement : évite d'appeler setVapidDetails() (qui
+    // valide le format des clés) tant qu'aucune notification n'est à envoyer.
+    sendPush: (subscription, payload) => defaultPushSender(env)(subscription, payload),
+    now: () => new Date(),
+  });
+}
+
 export default {
   fetch: (request: Request, env: Env) => handleRequest(request, env),
+  scheduled: (_event: ScheduledEvent, env: Env, ctx: ExecutionContext) => {
+    ctx.waitUntil(handleScheduled(env));
+  },
 };

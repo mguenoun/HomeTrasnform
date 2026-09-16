@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AuthError } from "./auth";
-import { handleRequest, type Env } from "./index";
+import { handleRequest, handleScheduled, type Env } from "./index";
+import * as reminders from "./reminders";
 
 const BASE_ENV: Env = {
   FIREBASE_PROJECT_ID: "test-project",
@@ -9,6 +10,8 @@ const BASE_ENV: Env = {
   VAPID_PUBLIC_KEY: "pub",
   VAPID_PRIVATE_KEY: "priv",
   VAPID_SUBJECT: "mailto:test@example.com",
+  FIREBASE_SERVICE_ACCOUNT_EMAIL: "worker@test-project.iam.gserviceaccount.com",
+  FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY: "fake-key",
 };
 
 const verifyOk = vi
@@ -138,5 +141,18 @@ describe("handleRequest", () => {
     const req = new Request("https://worker/autre-chose", { method: "POST" });
     const res = await handleRequest(req, BASE_ENV, verifyOk, vi.fn());
     expect(res.status).toBe(404);
+  });
+});
+
+describe("handleScheduled", () => {
+  it("délègue au job de rappels d'échéance avec l'environnement fourni", async () => {
+    const spy = vi
+      .spyOn(reminders, "runDueDateReminders")
+      .mockResolvedValue({ tasksReminded: 2 });
+
+    await handleScheduled(BASE_ENV);
+
+    expect(spy).toHaveBeenCalledWith(BASE_ENV, expect.any(Object));
+    spy.mockRestore();
   });
 });
