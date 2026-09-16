@@ -25,7 +25,7 @@ function BudgetRow({
       <span className="font-medium text-slate-900">{label}</span>
       <div className="flex items-center gap-2 text-sm text-slate-600">
         <span>
-          {summary.actual.toFixed(2)} € / {summary.estimated.toFixed(2)} €
+          {summary.actual.toFixed(2)} MAD / {summary.estimated.toFixed(2)} MAD
           engagés
         </span>
         {summary.overBudget && (
@@ -73,9 +73,9 @@ export function BudgetPage() {
               Vue d'ensemble
             </p>
             <p className="mt-1 text-2xl font-semibold text-slate-900">
-              {global.actual.toFixed(2)} €{" "}
+              {global.actual.toFixed(2)} MAD{" "}
               <span className="text-base font-normal text-slate-500">
-                dépensés / {global.estimated.toFixed(2)} € engagés
+                dépensés / {global.estimated.toFixed(2)} MAD engagés
               </span>
             </p>
             {global.overBudget && (

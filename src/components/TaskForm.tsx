@@ -190,7 +190,7 @@ export function TaskForm({
         <div className="flex gap-3">
           <label className="flex flex-1 flex-col gap-1">
             <span className="text-sm font-medium">
-              Budget estimé (€) — requis pour ce type de tâche
+              Budget estimé (MAD) — requis pour ce type de tâche
             </span>
             <input
               type="number"
@@ -205,7 +205,7 @@ export function TaskForm({
           </label>
 
           <label className="flex flex-1 flex-col gap-1">
-            <span className="text-sm font-medium">Budget réel (€)</span>
+            <span className="text-sm font-medium">Budget réel (MAD)</span>
             <input
               type="number"
               min="0"

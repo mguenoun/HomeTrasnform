@@ -168,8 +168,8 @@ export function TaskDetailPage() {
           {(task.budgetEstimated || task.budgetActual) && (
             <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
               <span>
-                Budget estimé : {task.budgetEstimated ?? 0} € · Budget réel :{" "}
-                {task.budgetActual ?? 0} €
+                Budget estimé : {task.budgetEstimated ?? 0} MAD · Budget réel :{" "}
+                {task.budgetActual ?? 0} MAD
               </span>
               {budgetSummary.overBudget && (
                 <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">

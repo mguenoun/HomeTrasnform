@@ -65,10 +65,10 @@ describe("BudgetPage", () => {
       </MemoryRouter>,
     );
 
-    // "170.00 €" (global dépensé) et "150.00 €" (global engagé, aussi le
+    // "170.00 MAD" (global dépensé) et "150.00 MAD" (global engagé, aussi le
     // dépensé de l'objectif obj1) peuvent apparaître dans plusieurs blocs.
-    expect(screen.getAllByText(/170.00 €/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/150.00 €/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/170.00 MAD/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/150.00 MAD/).length).toBeGreaterThan(0);
     expect(
       screen.getByText("Au moins une tâche dépasse son budget estimé"),
     ).toBeInTheDocument();

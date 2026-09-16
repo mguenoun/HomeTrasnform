@@ -63,7 +63,7 @@ describe("ObjectiveSummaryCard", () => {
       task({ id: "t1", budgetEstimated: 100, budgetActual: 150 }),
     ]);
 
-    expect(screen.getByText(/Budget : 150.00 € \/ 100.00 €/)).toBeInTheDocument();
+    expect(screen.getByText(/Budget : 150.00 MAD \/ 100.00 MAD/)).toBeInTheDocument();
     expect(screen.getByText("Dépassement")).toBeInTheDocument();
   });
 

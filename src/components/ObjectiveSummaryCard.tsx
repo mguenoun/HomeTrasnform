@@ -41,7 +41,7 @@ export function ObjectiveSummaryCard({
       {(budget.estimated > 0 || budget.actual > 0) && (
         <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
           <span>
-            Budget : {budget.actual.toFixed(2)} € / {budget.estimated.toFixed(2)} €
+            Budget : {budget.actual.toFixed(2)} MAD / {budget.estimated.toFixed(2)} MAD
           </span>
           {budget.overBudget && (
             <span className="rounded bg-red-100 px-1.5 py-0.5 font-medium text-red-700">
