@@ -108,3 +108,18 @@ export function getTaskKpisByPerson(
     a.displayName.localeCompare(b.displayName),
   );
 }
+
+/**
+ * Replace l'élément dont l'`uid` correspond à `currentUid` en tête de liste,
+ * sans changer l'ordre relatif des autres (ex. mettre en avant sa propre
+ * carte de KPI dans le tableau de bord).
+ */
+export function withCurrentFirst<T extends { uid: string }>(
+  items: T[],
+  currentUid?: string,
+): T[] {
+  if (!currentUid) return items;
+  const mine = items.find((item) => item.uid === currentUid);
+  if (!mine) return items;
+  return [mine, ...items.filter((item) => item.uid !== currentUid)];
+}

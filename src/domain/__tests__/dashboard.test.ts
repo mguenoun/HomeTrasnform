@@ -7,6 +7,7 @@ import {
   getTaskKpisByPerson,
   getUpcomingTasks,
   isTaskOverdue,
+  withCurrentFirst,
 } from "../dashboard";
 
 const REFERENCE = new Date("2026-03-10T09:00:00");
@@ -229,5 +230,30 @@ describe("getTaskKpisByPerson", () => {
     expect(getTaskKpisByPerson([], users, members, REFERENCE)).toEqual([
       { uid: "u1", displayName: "Alice", overdue: 0, closed: 0, total: 0 },
     ]);
+  });
+});
+
+describe("withCurrentFirst", () => {
+  it("place l'élément de l'utilisateur courant en tête", () => {
+    const items = [
+      { uid: "a", label: "A" },
+      { uid: "b", label: "B" },
+      { uid: "c", label: "C" },
+    ];
+    expect(withCurrentFirst(items, "c")).toEqual([
+      { uid: "c", label: "C" },
+      { uid: "a", label: "A" },
+      { uid: "b", label: "B" },
+    ]);
+  });
+
+  it("laisse la liste inchangée si l'utilisateur courant n'y figure pas", () => {
+    const items = [{ uid: "a", label: "A" }];
+    expect(withCurrentFirst(items, "unknown")).toEqual(items);
+  });
+
+  it("laisse la liste inchangée sans utilisateur courant", () => {
+    const items = [{ uid: "a", label: "A" }];
+    expect(withCurrentFirst(items)).toEqual(items);
   });
 });

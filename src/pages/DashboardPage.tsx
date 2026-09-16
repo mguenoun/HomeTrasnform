@@ -1,12 +1,14 @@
 import { Link } from "react-router-dom";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { TASK_TYPE_LABELS } from "../constants";
+import { useAuth } from "../context/AuthContext";
 import {
   countClosedObjectives,
   countClosedTasks,
   getBlockedTasks,
   getTaskKpisByPerson,
   getUpcomingTasks,
+  withCurrentFirst,
 } from "../domain/dashboard";
 import { useFamilyMembers } from "../hooks/useFamilyMembers";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
@@ -19,6 +21,7 @@ function formatRatio(closed: number, total: number): string {
 }
 
 export function DashboardPage() {
+  const { user } = useAuth();
   const { objectives, loading: objectivesLoading } = useObjectives();
   const { tasks, loading: tasksLoading } = useTasks();
   const { users, loading: usersLoading } = useFamilyUsers();
@@ -32,7 +35,13 @@ export function DashboardPage() {
 
   const objectivesKpi = countClosedObjectives(objectives);
   const tasksKpi = countClosedTasks(tasks);
-  const personKpis = getTaskKpisByPerson(tasks, users, members);
+  const personKpis = withCurrentFirst(
+    getTaskKpisByPerson(tasks, users, members),
+    user?.uid,
+  );
+  const myUpcomingTasks = user
+    ? getUpcomingTasks(tasks.filter((t) => t.assigneeIds.includes(user.uid)))
+    : [];
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -68,46 +77,59 @@ export function DashboardPage() {
               Tâches par personne
             </h2>
             <div className="grid grid-cols-2 gap-4">
-              {personKpis.map((kpi) => (
-                <div
-                  key={kpi.uid}
-                  className="rounded border border-slate-200 bg-white p-4"
-                >
-                  <p className="truncate text-sm font-medium text-slate-700">
-                    {kpi.displayName}
-                  </p>
-                  <dl className="mt-2 grid grid-cols-3 gap-1 text-center">
-                    <div>
-                      <dt className="whitespace-nowrap text-xs text-slate-500">
-                        Retard
-                      </dt>
-                      <dd
-                        className={`text-lg font-semibold ${
-                          kpi.overdue > 0 ? "text-red-700" : "text-slate-900"
-                        }`}
-                      >
-                        {kpi.overdue}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="whitespace-nowrap text-xs text-slate-500">
-                        Clôturées
-                      </dt>
-                      <dd className="text-lg font-semibold text-slate-900">
-                        {kpi.closed}
-                      </dd>
-                    </div>
-                    <div>
-                      <dt className="whitespace-nowrap text-xs text-slate-500">
-                        Total
-                      </dt>
-                      <dd className="text-lg font-semibold text-slate-900">
-                        {kpi.total}
-                      </dd>
-                    </div>
-                  </dl>
-                </div>
-              ))}
+              {personKpis.map((kpi) => {
+                const isMe = kpi.uid === user?.uid;
+                return (
+                  <div
+                    key={kpi.uid}
+                    className={`rounded border p-4 ${
+                      isMe
+                        ? "border-blue-300 bg-blue-50"
+                        : "border-slate-200 bg-white"
+                    }`}
+                  >
+                    <p
+                      className={`truncate text-sm ${
+                        isMe
+                          ? "font-semibold text-blue-900"
+                          : "font-medium text-slate-700"
+                      }`}
+                    >
+                      {kpi.displayName}
+                    </p>
+                    <dl className="mt-2 grid grid-cols-3 gap-1 text-center">
+                      <div>
+                        <dt className="whitespace-nowrap text-xs text-slate-500">
+                          Retard
+                        </dt>
+                        <dd
+                          className={`text-lg font-semibold ${
+                            kpi.overdue > 0 ? "text-red-700" : "text-slate-900"
+                          }`}
+                        >
+                          {kpi.overdue}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="whitespace-nowrap text-xs text-slate-500">
+                          Clôturées
+                        </dt>
+                        <dd className="text-lg font-semibold text-slate-900">
+                          {kpi.closed}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="whitespace-nowrap text-xs text-slate-500">
+                          Total
+                        </dt>
+                        <dd className="text-lg font-semibold text-slate-900">
+                          {kpi.total}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                );
+              })}
             </div>
             {personKpis.length === 0 && (
               <p className="text-sm text-slate-500">
@@ -135,6 +157,36 @@ export function DashboardPage() {
               </p>
             )}
           </section>
+
+          {user && (
+            <section className="mt-6">
+              <h2 className="mb-2 text-sm font-medium text-slate-700">
+                Mes tâches à échéance proche
+              </h2>
+              <ul className="flex flex-col gap-2">
+                {myUpcomingTasks.map((task) => (
+                  <li key={task.id}>
+                    <Link
+                      to={`/tasks/${task.id}`}
+                      className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
+                    >
+                      <span className="font-medium text-slate-900">
+                        {task.title}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        {task.dueDate}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+              {myUpcomingTasks.length === 0 && (
+                <p className="text-sm text-slate-500">
+                  Vous n'avez aucune tâche à échéance proche.
+                </p>
+              )}
+            </section>
+          )}
 
           <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
             <section>
