@@ -93,4 +93,20 @@ describe("TaskForm", () => {
       objectiveId: "obj1",
     });
   });
+
+  it("affiche l'erreur si l'enregistrement échoue, au lieu de rester silencieusement bloqué", async () => {
+    const onSubmit = vi.fn().mockRejectedValue(new Error("Erreur réseau."));
+    render(<TaskForm objectives={objectives} onSubmit={onSubmit} />);
+
+    await userEvent.type(screen.getByLabelText(/titre/i), "Nettoyer le garage");
+    await userEvent.click(
+      screen.getByRole("button", { name: /créer la tâche/i }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Erreur réseau.",
+    );
+    const button = screen.getByRole("button", { name: /créer la tâche/i });
+    expect(button).not.toBeDisabled();
+  });
 });

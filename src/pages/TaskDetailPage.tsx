@@ -62,13 +62,13 @@ export function TaskDetailPage() {
       room: values.room,
       priority: values.priority,
       objectiveId: values.objectiveId,
-      dueDate: values.dueDate || undefined,
+      dueDate: values.dueDate || null,
       budgetEstimated: values.budgetEstimated
         ? Number(values.budgetEstimated)
-        : undefined,
+        : null,
       budgetActual: values.budgetActual
         ? Number(values.budgetActual)
-        : undefined,
+        : null,
     });
     setEditing(false);
   }

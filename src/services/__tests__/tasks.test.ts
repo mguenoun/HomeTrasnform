@@ -68,6 +68,26 @@ describe("updateTask", () => {
     expect(payload.title).toBe("Nouveau titre");
     expect(typeof payload.updatedAt).toBe("number");
   });
+
+  it("retire les champs undefined avant l'écriture (Firestore les refuse et l'édition restait bloquée sans message)", async () => {
+    await updateTask("task1", {
+      title: "Repeindre le salon",
+      dueDate: undefined,
+      budgetEstimated: undefined,
+    });
+
+    const [, payload] = updateDocMock.mock.calls[0];
+    expect(payload).not.toHaveProperty("dueDate");
+    expect(payload).not.toHaveProperty("budgetEstimated");
+    expect(payload.title).toBe("Repeindre le salon");
+  });
+
+  it("conserve les valeurs null (utilisées pour effacer un champ)", async () => {
+    await updateTask("task1", { dueDate: null, budgetEstimated: null });
+    const [, payload] = updateDocMock.mock.calls[0];
+    expect(payload.dueDate).toBeNull();
+    expect(payload.budgetEstimated).toBeNull();
+  });
 });
 
 describe("changeTaskStatus", () => {

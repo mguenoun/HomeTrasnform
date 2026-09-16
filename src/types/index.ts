@@ -18,7 +18,7 @@ export interface Objective {
   id: string;
   title: string;
   description?: string;
-  targetDate?: string;
+  targetDate?: string | null;
   status: ObjectiveStatus;
   createdBy: string;
   createdAt: number;
@@ -34,9 +34,9 @@ export interface Task {
   priority: TaskPriority;
   status: TaskStatus;
   assigneeIds: string[];
-  dueDate?: string;
-  budgetEstimated?: number;
-  budgetActual?: number;
+  dueDate?: string | null;
+  budgetEstimated?: number | null;
+  budgetActual?: number | null;
   currency?: string;
   createdBy: string;
   createdAt: number;

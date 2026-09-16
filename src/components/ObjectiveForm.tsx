@@ -40,6 +40,12 @@ export function ObjectiveForm({
     setSubmitting(true);
     try {
       await onSubmit(values);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Échec de l'enregistrement. Réessayez.",
+      );
     } finally {
       setSubmitting(false);
     }

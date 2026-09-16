@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import { AppNav } from "./components/AppNav";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { BudgetPage } from "./pages/BudgetPage";
@@ -13,6 +14,7 @@ function App() {
   return (
     <AuthProvider>
       <ProtectedRoute>
+        <AppNav />
         <Routes>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/objectives" element={<ObjectivesPage />} />

@@ -38,7 +38,7 @@ export function ObjectiveDetailPage() {
     await updateObjective(id, {
       title: values.title,
       description: values.description,
-      targetDate: values.targetDate || undefined,
+      targetDate: values.targetDate || null,
     });
     setEditing(false);
   }

@@ -1,13 +1,11 @@
 import { Link } from "react-router-dom";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { TASK_TYPE_LABELS } from "../constants";
-import { useAuth } from "../context/AuthContext";
 import { getBlockedTasks, getUpcomingTasks } from "../domain/dashboard";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
 
 export function DashboardPage() {
-  const { user, signOutUser } = useAuth();
   const { objectives, loading: objectivesLoading } = useObjectives();
   const { tasks, loading: tasksLoading } = useTasks();
 
@@ -18,41 +16,9 @@ export function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
-      <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">
-          Tableau de bord
-        </h1>
-        <div className="flex items-center gap-3">
-          <span className="text-slate-600">{user?.displayName}</span>
-          <button
-            type="button"
-            onClick={signOutUser}
-            className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
-          >
-            Se déconnecter
-          </button>
-        </div>
-      </header>
-      <nav className="flex gap-3">
-        <Link
-          to="/objectives"
-          className="rounded border border-slate-300 bg-white px-4 py-2 hover:bg-slate-100"
-        >
-          Objectifs
-        </Link>
-        <Link
-          to="/tasks"
-          className="rounded border border-slate-300 bg-white px-4 py-2 hover:bg-slate-100"
-        >
-          Tâches
-        </Link>
-        <Link
-          to="/budget"
-          className="rounded border border-slate-300 bg-white px-4 py-2 hover:bg-slate-100"
-        >
-          Budget
-        </Link>
-      </nav>
+      <h1 className="mb-6 text-xl font-semibold text-slate-900">
+        Tableau de bord
+      </h1>
 
       {loading && <p className="mt-6 text-slate-500">Chargement...</p>}
 

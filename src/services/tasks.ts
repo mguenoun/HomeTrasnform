@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import { applyStatusChange } from "../domain/taskStatus";
 import { db } from "../firebase/config";
+import { stripUndefined } from "../firebase/sanitize";
 import type { Task, TaskPriority, TaskStatus, TaskType } from "../types";
 
 const TASKS_COLLECTION = "tasks";
@@ -76,7 +77,7 @@ export async function updateTask(
   >,
 ): Promise<void> {
   await updateDoc(doc(db, TASKS_COLLECTION, taskId), {
-    ...changes,
+    ...stripUndefined(changes),
     updatedAt: Date.now(),
   });
 }

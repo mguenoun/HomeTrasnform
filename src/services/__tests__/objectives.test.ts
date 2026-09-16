@@ -64,6 +64,25 @@ describe("updateObjective", () => {
       { title: "Nouveau titre" },
     );
   });
+
+  it("retire les champs undefined avant l'écriture (Firestore les refuse et l'édition restait bloquée sans message)", async () => {
+    await updateObjective("obj1", {
+      title: "Réaménager le salon",
+      targetDate: undefined,
+    });
+    expect(updateDocMock).toHaveBeenCalledWith(
+      { __doc: "objectives", id: "obj1" },
+      { title: "Réaménager le salon" },
+    );
+  });
+
+  it("conserve la valeur null (utilisée pour effacer la date cible)", async () => {
+    await updateObjective("obj1", { targetDate: null });
+    expect(updateDocMock).toHaveBeenCalledWith(
+      { __doc: "objectives", id: "obj1" },
+      { targetDate: null },
+    );
+  });
 });
 
 describe("setObjectiveStatus", () => {

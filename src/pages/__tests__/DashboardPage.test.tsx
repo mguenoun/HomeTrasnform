@@ -1,17 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useAuth } from "../../context/AuthContext";
+import { describe, expect, it, vi } from "vitest";
 import { useObjectives } from "../../hooks/useObjectives";
 import { useTasks } from "../../hooks/useTasks";
 import type { Objective, Task } from "../../types";
 import { DashboardPage } from "../DashboardPage";
 
-vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
 vi.mock("../../hooks/useObjectives", () => ({ useObjectives: vi.fn() }));
 vi.mock("../../hooks/useTasks", () => ({ useTasks: vi.fn() }));
 
-const mockedUseAuth = vi.mocked(useAuth);
 const mockedUseObjectives = vi.mocked(useObjectives);
 const mockedUseTasks = vi.mocked(useTasks);
 
@@ -48,17 +45,6 @@ function renderPage() {
 }
 
 describe("DashboardPage", () => {
-  beforeEach(() => {
-    mockedUseAuth.mockReturnValue({
-      user: { uid: "user-1", displayName: "Marie" } as never,
-      loading: false,
-      isAuthorized: true,
-      error: null,
-      signInWithGoogle: vi.fn(),
-      signOutUser: vi.fn(),
-    });
-  });
-
   it("affiche les objectifs actifs avec leur avancement", () => {
     mockedUseObjectives.mockReturnValue({
       objectives: [OBJECTIVE],

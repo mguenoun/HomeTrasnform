@@ -11,6 +11,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
+import { stripUndefined } from "../firebase/sanitize";
 import type { Objective, ObjectiveStatus } from "../types";
 
 const OBJECTIVES_COLLECTION = "objectives";
@@ -53,7 +54,10 @@ export async function updateObjective(
   objectiveId: string,
   changes: Partial<Pick<Objective, "title" | "description" | "targetDate">>,
 ): Promise<void> {
-  await updateDoc(doc(db, OBJECTIVES_COLLECTION, objectiveId), changes);
+  await updateDoc(
+    doc(db, OBJECTIVES_COLLECTION, objectiveId),
+    stripUndefined(changes),
+  );
 }
 
 export async function setObjectiveStatus(

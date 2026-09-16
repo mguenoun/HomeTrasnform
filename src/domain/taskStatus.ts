@@ -47,7 +47,7 @@ export function isTaskValid(
   }
   if (
     isBudgetRequired(task.type) &&
-    (task.budgetEstimated === undefined || task.budgetEstimated <= 0)
+    (task.budgetEstimated == null || task.budgetEstimated <= 0)
   ) {
     return {
       valid: false,
