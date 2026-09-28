@@ -3,6 +3,8 @@ import { AppNav } from "./components/AppNav";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { BudgetItemCreatePage } from "./pages/BudgetItemCreatePage";
+import { BudgetItemDetailPage } from "./pages/BudgetItemDetailPage";
 import { BudgetPage } from "./pages/BudgetPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { ObjectiveDetailPage } from "./pages/ObjectiveDetailPage";
@@ -25,6 +27,8 @@ function App() {
           <Route path="/tasks/new" element={<TaskCreatePage />} />
           <Route path="/tasks/:id" element={<TaskDetailPage />} />
           <Route path="/budget" element={<BudgetPage />} />
+          <Route path="/budget/new" element={<BudgetItemCreatePage />} />
+          <Route path="/budget/:id" element={<BudgetItemDetailPage />} />
         </Routes>
       </ProtectedRoute>
     </AuthProvider>

@@ -1,16 +1,16 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { useBudgetItems } from "../../hooks/useBudgetItems";
 import { useObjectives } from "../../hooks/useObjectives";
-import { useTasks } from "../../hooks/useTasks";
-import type { Objective, Task } from "../../types";
+import type { BudgetItem, Objective } from "../../types";
 import { BudgetPage } from "../BudgetPage";
 
+vi.mock("../../hooks/useBudgetItems", () => ({ useBudgetItems: vi.fn() }));
 vi.mock("../../hooks/useObjectives", () => ({ useObjectives: vi.fn() }));
-vi.mock("../../hooks/useTasks", () => ({ useTasks: vi.fn() }));
 
+const mockedUseBudgetItems = vi.mocked(useBudgetItems);
 const mockedUseObjectives = vi.mocked(useObjectives);
-const mockedUseTasks = vi.mocked(useTasks);
 
 const OBJECTIVE: Objective = {
   id: "obj1",
@@ -20,15 +20,16 @@ const OBJECTIVE: Objective = {
   createdAt: 0,
 };
 
-function task(overrides: Partial<Task>): Task {
+function item(overrides: Partial<BudgetItem>): BudgetItem {
   return {
-    id: "t",
-    objectiveId: "obj1",
-    title: "Tâche",
-    type: "achat",
-    priority: "medium",
-    status: "todo",
-    assigneeIds: [],
+    id: "b1",
+    title: "Rubrique",
+    category: "materiaux",
+    objectiveId: null,
+    taskId: null,
+    budgeted: 1000,
+    forecastHistory: [],
+    payments: [],
     createdBy: "u1",
     createdAt: 0,
     updatedAt: 0,
@@ -36,62 +37,75 @@ function task(overrides: Partial<Task>): Task {
   };
 }
 
-describe("BudgetPage", () => {
-  beforeEach(() => {
-    mockedUseObjectives.mockReturnValue({
-      objectives: [OBJECTIVE],
-      loading: false,
-    });
-  });
+function renderPage() {
+  return render(
+    <MemoryRouter>
+      <BudgetPage />
+    </MemoryRouter>,
+  );
+}
 
-  it("affiche le total engagé/dépensé global et signale un dépassement", () => {
-    mockedUseTasks.mockReturnValue({
-      tasks: [
-        task({ id: "t1", budgetEstimated: 100, budgetActual: 150 }),
-        task({
-          id: "t2",
-          objectiveId: null,
-          type: "travaux",
-          budgetEstimated: 50,
-          budgetActual: 20,
+describe("BudgetPage", () => {
+  it("affiche les totaux globaux (budget, engagé, réalisé, prévision, écart)", () => {
+    mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({
+      items: [
+        item({
+          id: "a",
+          budgeted: 1000,
+          committed: 300,
+          payments: [
+            { id: "p1", date: "2026-03-01", amount: 200, status: "paye", createdBy: "u1" },
+          ],
         }),
       ],
       loading: false,
     });
 
-    render(
-      <MemoryRouter>
-        <BudgetPage />
-      </MemoryRouter>,
-    );
+    renderPage();
 
-    // "170.00 MAD" (global dépensé) et "150.00 MAD" (global engagé, aussi le
-    // dépensé de l'objectif obj1) peuvent apparaître dans plusieurs blocs.
-    expect(screen.getAllByText(/170.00 MAD/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/150.00 MAD/).length).toBeGreaterThan(0);
-    expect(
-      screen.getByText("Au moins une tâche dépasse son budget estimé"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Engagé")).toBeInTheDocument();
+    expect(screen.getAllByText("300,00 MAD").length).toBeGreaterThan(0);
+    expect(screen.getByText("Réalisé")).toBeInTheDocument();
+    expect(screen.getAllByText("200,00 MAD").length).toBeGreaterThan(0);
   });
 
-  it("regroupe le budget par objectif (y compris les tâches libres) et par type", () => {
-    mockedUseTasks.mockReturnValue({
-      tasks: [
-        task({ id: "t1", objectiveId: "obj1", type: "achat", budgetEstimated: 100 }),
-        task({ id: "t2", objectiveId: null, type: "travaux", budgetEstimated: 200 }),
+  it("affiche les rubriques avec le nom de leur objectif et met en avant celles en dépassement", () => {
+    mockedUseObjectives.mockReturnValue({
+      objectives: [OBJECTIVE],
+      loading: false,
+    });
+    mockedUseBudgetItems.mockReturnValue({
+      items: [
+        item({ id: "ok", title: "Peinture", objectiveId: "obj1", budgeted: 1000 }),
+        item({
+          id: "over",
+          title: "Carrelage",
+          budgeted: 500,
+          payments: [
+            { id: "p1", date: "2026-03-01", amount: 800, status: "paye", createdBy: "u1" },
+          ],
+        }),
       ],
       loading: false,
     });
 
-    render(
-      <MemoryRouter>
-        <BudgetPage />
-      </MemoryRouter>,
-    );
+    renderPage();
 
-    expect(screen.getByText("Réaménager le salon")).toBeInTheDocument();
-    expect(screen.getByText("Tâches libres")).toBeInTheDocument();
-    expect(screen.getByText("Achat")).toBeInTheDocument();
-    expect(screen.getByText("Travaux")).toBeInTheDocument();
+    expect(screen.getByText("Peinture")).toBeInTheDocument();
+    expect(screen.getByText(/Réaménager le salon/)).toBeInTheDocument();
+    expect(screen.getByText("Carrelage")).toBeInTheDocument();
+    expect(screen.getByText("Dépassé")).toBeInTheDocument();
+  });
+
+  it("affiche un message quand il n'y a aucune rubrique", () => {
+    mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
+
+    renderPage();
+
+    expect(
+      screen.getByText("Aucune rubrique pour le moment."),
+    ).toBeInTheDocument();
   });
 });
