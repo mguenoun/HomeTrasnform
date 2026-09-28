@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../context/AuthContext";
+import { useBudgetItems } from "../../hooks/useBudgetItems";
 import { useFamilyMembers } from "../../hooks/useFamilyMembers";
 import { useFamilyUsers } from "../../hooks/useFamilyUsers";
 import { useObjectives } from "../../hooks/useObjectives";
@@ -13,12 +14,14 @@ vi.mock("../../hooks/useObjectives", () => ({ useObjectives: vi.fn() }));
 vi.mock("../../hooks/useTasks", () => ({ useTasks: vi.fn() }));
 vi.mock("../../hooks/useFamilyUsers", () => ({ useFamilyUsers: vi.fn() }));
 vi.mock("../../hooks/useFamilyMembers", () => ({ useFamilyMembers: vi.fn() }));
+vi.mock("../../hooks/useBudgetItems", () => ({ useBudgetItems: vi.fn() }));
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
 
 const mockedUseObjectives = vi.mocked(useObjectives);
 const mockedUseTasks = vi.mocked(useTasks);
 const mockedUseFamilyUsers = vi.mocked(useFamilyUsers);
 const mockedUseFamilyMembers = vi.mocked(useFamilyMembers);
+const mockedUseBudgetItems = vi.mocked(useBudgetItems);
 const mockedUseAuth = vi.mocked(useAuth);
 
 function mockAuth(uid: string | null) {
@@ -73,6 +76,7 @@ describe("DashboardPage", () => {
     mockedUseTasks.mockReturnValue({ tasks: [], loading: false });
     mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
     mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
     mockAuth(null);
 
     renderPage();
@@ -84,6 +88,7 @@ describe("DashboardPage", () => {
     mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
     mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
     mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
     mockAuth(null);
     const soon = new Date();
     soon.setDate(soon.getDate() + 2);
@@ -110,6 +115,7 @@ describe("DashboardPage", () => {
     mockedUseTasks.mockReturnValue({ tasks: [], loading: false });
     mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
     mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
     mockAuth(null);
 
     renderPage();
@@ -145,6 +151,7 @@ describe("DashboardPage", () => {
       ],
       loading: false,
     });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
     mockAuth(null);
 
     renderPage();
@@ -168,6 +175,7 @@ describe("DashboardPage", () => {
       loading: false,
     });
     mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
     mockAuth("b1");
 
     const soon = new Date();

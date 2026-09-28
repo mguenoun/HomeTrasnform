@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { BudgetItemCard } from "../components/BudgetItemCard";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { ObjectiveForm, type ObjectiveFormValues } from "../components/ObjectiveForm";
 import { TASK_STATUS_LABELS, TASK_TYPE_LABELS } from "../constants";
 import { computeProgress } from "../domain/progress";
+import { useBudgetItems } from "../hooks/useBudgetItems";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
 import {
@@ -17,10 +19,12 @@ export function ObjectiveDetailPage() {
   const navigate = useNavigate();
   const { objectives } = useObjectives();
   const { tasks } = useTasks();
+  const { items: budgetItems } = useBudgetItems();
   const [editing, setEditing] = useState(false);
 
   const objective = objectives.find((o) => o.id === id);
   const objectiveTasks = tasks.filter((t) => t.objectiveId === id);
+  const objectiveBudgetItems = budgetItems.filter((b) => b.objectiveId === id);
   const progress = computeProgress(objectiveTasks);
 
   if (!objective) {
@@ -153,6 +157,28 @@ export function ObjectiveDetailPage() {
 
       {objectiveTasks.length === 0 && (
         <p className="text-slate-500">Aucune tâche rattachée pour le moment.</p>
+      )}
+
+      <div className="mt-6 mb-4 flex items-center justify-between">
+        <h2 className="text-lg font-medium text-slate-900">
+          Rubriques budgétaires
+        </h2>
+        <Link
+          to={`/budget/new?objectiveId=${id}`}
+          className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+        >
+          Ajouter une rubrique
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {objectiveBudgetItems.map((item) => (
+          <BudgetItemCard key={item.id} item={item} />
+        ))}
+      </div>
+
+      {objectiveBudgetItems.length === 0 && (
+        <p className="text-slate-500">Aucune rubrique budgétaire pour le moment.</p>
       )}
     </div>
   );

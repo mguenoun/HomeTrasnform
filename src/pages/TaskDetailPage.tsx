@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AttachmentsSection } from "../components/AttachmentsSection";
+import { BudgetItemCard } from "../components/BudgetItemCard";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { CommentsSection } from "../components/CommentsSection";
 import { TaskForm, type TaskFormValues } from "../components/TaskForm";
@@ -13,6 +14,7 @@ import { useAuth } from "../context/AuthContext";
 import { summarizeTaskBudget } from "../domain/budget";
 import { canTransition } from "../domain/taskStatus";
 import { useAttachments } from "../hooks/useAttachments";
+import { useBudgetItems } from "../hooks/useBudgetItems";
 import { useComments } from "../hooks/useComments";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
@@ -32,6 +34,7 @@ export function TaskDetailPage() {
   const { users } = useFamilyUsers();
   const { attachments } = useAttachments(id);
   const { comments } = useComments(id);
+  const { items: budgetItems } = useBudgetItems();
   const [editing, setEditing] = useState(false);
 
   const task = tasks.find((t) => t.id === id);
@@ -107,6 +110,7 @@ export function TaskDetailPage() {
   const objectiveTitle = objective?.title;
   const budgetSummary = summarizeTaskBudget(task);
   const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
+  const taskBudgetItems = budgetItems.filter((b) => b.taskId === task.id);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -249,6 +253,30 @@ export function TaskDetailPage() {
               users={users}
             />
           )}
+
+          <div className="mt-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-sm font-medium text-slate-700">
+                Rubriques budgétaires
+              </p>
+              <Link
+                to={`/budget/new?taskId=${task.id}`}
+                className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
+              >
+                Ajouter une rubrique
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {taskBudgetItems.map((item) => (
+                <BudgetItemCard key={item.id} item={item} />
+              ))}
+            </div>
+            {taskBudgetItems.length === 0 && (
+              <p className="text-sm text-slate-400">
+                Aucune rubrique budgétaire pour le moment.
+              </p>
+            )}
+          </div>
 
           <div className="mt-4 flex gap-2">
             <button

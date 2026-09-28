@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import { BudgetItemCard } from "../components/BudgetItemCard";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { TASK_TYPE_LABELS } from "../constants";
 import { useAuth } from "../context/AuthContext";
+import { getWatchlist, summarizeBudgetItems } from "../domain/budgetItems";
 import {
   countClosedObjectives,
   countClosedTasks,
@@ -10,6 +12,8 @@ import {
   getUpcomingTasks,
   withCurrentFirst,
 } from "../domain/dashboard";
+import { formatMad } from "../domain/money";
+import { useBudgetItems } from "../hooks/useBudgetItems";
 import { useFamilyMembers } from "../hooks/useFamilyMembers";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
@@ -26,12 +30,17 @@ export function DashboardPage() {
   const { tasks, loading: tasksLoading } = useTasks();
   const { users, loading: usersLoading } = useFamilyUsers();
   const { members, loading: membersLoading } = useFamilyMembers();
+  const { items: budgetItems, loading: budgetLoading } = useBudgetItems();
 
   const activeObjectives = objectives.filter((o) => o.status === "active");
   const upcomingTasks = getUpcomingTasks(tasks);
   const blockedTasks = getBlockedTasks(tasks);
   const loading =
-    objectivesLoading || tasksLoading || usersLoading || membersLoading;
+    objectivesLoading ||
+    tasksLoading ||
+    usersLoading ||
+    membersLoading ||
+    budgetLoading;
 
   const objectivesKpi = countClosedObjectives(objectives);
   const tasksKpi = countClosedTasks(tasks);
@@ -42,6 +51,8 @@ export function DashboardPage() {
   const myUpcomingTasks = user
     ? getUpcomingTasks(tasks.filter((t) => t.assigneeIds.includes(user.uid)))
     : [];
+  const budgetTotals = summarizeBudgetItems(budgetItems);
+  const budgetWatchlist = getWatchlist(budgetItems);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -70,6 +81,33 @@ export function DashboardPage() {
                 {formatRatio(tasksKpi.closed, tasksKpi.total)}
               </p>
             </div>
+            <div className="col-span-2 rounded border border-slate-200 bg-white p-4">
+              <p className="text-sm font-medium text-slate-700">
+                Budget réalisé / budgété
+              </p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">
+                {formatMad(budgetTotals.realized)}{" "}
+                <span className="text-base font-normal text-slate-500">
+                  / {formatMad(budgetTotals.budgeted)}
+                </span>
+              </p>
+            </div>
+          </section>
+
+          <section className="mt-6">
+            <h2 className="mb-2 text-sm font-medium text-slate-700">
+              Rubriques à surveiller
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {budgetWatchlist.map((item) => (
+                <BudgetItemCard key={item.id} item={item} />
+              ))}
+            </div>
+            {budgetWatchlist.length === 0 && (
+              <p className="text-sm text-slate-500">
+                Aucune rubrique à surveiller.
+              </p>
+            )}
           </section>
 
           <section className="mt-6">
