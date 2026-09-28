@@ -97,6 +97,32 @@ describe("Firestore security rules", () => {
     );
   });
 
+  it("autorise un membre à créer et lire une rubrique budgétaire", async () => {
+    const member = testEnv.authenticatedContext("member-uid", {
+      email: "member@example.com",
+    });
+    await assertSucceeds(
+      setDoc(doc(member.firestore(), "budgetItems/b1"), {
+        title: "Carrelage",
+        budgeted: 1000,
+      }),
+    );
+    await assertSucceeds(getDoc(doc(member.firestore(), "budgetItems/b1")));
+  });
+
+  it("refuse la lecture d'une rubrique budgétaire à un non-membre", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await setDoc(doc(context.firestore(), "budgetItems/b1"), {
+        title: "Carrelage",
+        budgeted: 1000,
+      });
+    });
+    const outsider = testEnv.authenticatedContext("outsider-uid", {
+      email: "outsider@example.com",
+    });
+    await assertFails(getDoc(doc(outsider.firestore(), "budgetItems/b1")));
+  });
+
   it("empêche un membre d'écrire directement dans familymembers", async () => {
     const member = testEnv.authenticatedContext("member-uid", {
       email: "member@example.com",

@@ -62,6 +62,62 @@ export interface Task {
   closedBy?: string;
 }
 
+export type BudgetCategory =
+  | "materiaux"
+  | "main_oeuvre"
+  | "equipement"
+  | "mobilier"
+  | "transport"
+  | "honoraires"
+  | "etudes"
+  | "imprevus"
+  | "autre";
+
+export type BudgetPaymentStatus = "prevu" | "paye";
+
+export interface BudgetPayment {
+  id: string;
+  date: string;
+  amount: number;
+  comment?: string;
+  progress?: number;
+  status: BudgetPaymentStatus;
+  createdBy: string;
+}
+
+export interface BudgetForecastRevision {
+  date: number;
+  previousEstimate: number;
+  newEstimate: number;
+  comment?: string;
+  userId: string;
+}
+
+/**
+ * Rubrique budgétaire : budget prévu, éventuellement engagé (devis signé,
+ * commande passée), et suivi des paiements dans le temps. Le montant réalisé
+ * n'est jamais stocké : il se déduit toujours de la somme des paiements
+ * `payé` (voir src/domain/budgetItems.ts).
+ */
+export interface BudgetItem {
+  id: string;
+  title: string;
+  category: BudgetCategory;
+  objectiveId: string | null;
+  taskId: string | null;
+  vendor?: string;
+  budgeted: number;
+  revisedBudget?: number | null;
+  committed?: number | null;
+  remainingEstimate?: number | null;
+  forecastHistory: BudgetForecastRevision[];
+  notes?: string;
+  payments: BudgetPayment[];
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface TaskComment {
   id: string;
   taskId: string;

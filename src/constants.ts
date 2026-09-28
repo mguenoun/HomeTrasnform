@@ -1,4 +1,4 @@
-import type { TaskPriority, TaskStatus, TaskType } from "./types";
+import type { BudgetCategory, TaskPriority, TaskStatus, TaskType } from "./types";
 
 export const TASK_TYPE_LABELS: Record<TaskType, string> = {
   menage: "Ménage",
@@ -18,4 +18,16 @@ export const TASK_PRIORITY_LABELS: Record<TaskPriority, string> = {
   low: "Basse",
   medium: "Moyenne",
   high: "Haute",
+};
+
+export const BUDGET_CATEGORY_LABELS: Record<BudgetCategory, string> = {
+  materiaux: "Matériaux",
+  main_oeuvre: "Main d'œuvre",
+  equipement: "Équipement",
+  mobilier: "Mobilier",
+  transport: "Transport",
+  honoraires: "Honoraires",
+  etudes: "Études",
+  imprevus: "Imprévus",
+  autre: "Autre",
 };
