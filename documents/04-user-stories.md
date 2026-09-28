@@ -62,7 +62,7 @@ travaux / achat / sous-traitance), description, pièce et priorité, éventuelle
 rattachée à un objectif, afin de lister ce qu'il reste à faire.
 
 **US-3.2** (P0) — En tant que membre, je veux voir la liste de toutes les tâches avec
-filtres (type, statut, pièce, assigné, objectif) et tri (priorité, échéance, budget),
+filtres (type, statut, pièce, assigné, objectif) et tri (priorité, échéance),
 afin de retrouver rapidement une tâche.
 
 **US-3.3** (P0) — En tant que membre, je veux ouvrir le détail d'une tâche et modifier
@@ -70,8 +70,7 @@ tous ses champs, afin de tenir l'information à jour.
 
 **US-3.4** (P0) — En tant que membre, je veux changer le statut d'une tâche (à faire /
 en cours / bloqué / terminé), afin de suivre sa progression.
-- Critères : passage à "terminé" fige `budgetActual` et horodate la clôture (`closedAt`,
-  `closedBy`).
+- Critères : passage à "terminé" horodate la clôture (`closedAt`, `closedBy`).
 
 **US-3.5** (P1) — En tant que membre, je veux supprimer une tâche, afin de retirer une
 entrée créée par erreur.
@@ -84,12 +83,17 @@ membres (moi-même inclus), afin de clarifier qui s'en occupe.
 tâches sur "mes tâches", afin de voir rapidement ce qui m'est assigné.
 
 ## Epic 5 — Budget & suivi
-**US-5.1** (P0) — En tant que membre, je veux saisir un budget estimé et un budget réel
-sur une tâche de type achat ou sous-traitance, afin de suivre la dépense associée.
+**US-5.1** (P0) — En tant que membre, je veux créer une rubrique budgétaire (budget,
+engagé, fournisseur, catégorie), éventuellement liée à un objectif et/ou une tâche,
+afin de suivre une dépense prévue.
 
-**US-5.2** (P0) — En tant que membre, je veux consulter une vue budget agrégeant le
-total engagé et dépensé par objectif et par type de tâche, afin de piloter le budget
-global du projet.
+**US-5.2** (P0) — En tant que membre, je veux enregistrer des paiements datés sur une
+rubrique (prévu ou payé), afin que le réalisé se déduise automatiquement de ce qui a
+été payé.
+
+**US-5.3** (P0) — En tant que membre, je veux consulter une vue budget agrégeant
+budget, engagé, réalisé, prévision à terminaison et écart par rubrique, afin de piloter
+le budget global du projet et repérer les dépassements.
 
 **US-5.3** (P1) — En tant que membre, je veux que les tâches en dépassement (réel >
 estimé) soient visuellement mises en évidence, afin de repérer rapidement les

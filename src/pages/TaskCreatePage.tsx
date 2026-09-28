@@ -25,9 +25,6 @@ export function TaskCreatePage() {
       priority: values.priority,
       objectiveId: values.objectiveId,
       dueDate: values.dueDate || undefined,
-      budgetEstimated: values.budgetEstimated
-        ? Number(values.budgetEstimated)
-        : undefined,
       createdBy: user.uid,
     });
     navigate(`/tasks/${id}`);

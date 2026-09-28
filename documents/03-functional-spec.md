@@ -44,21 +44,19 @@
 - Historique des changements de statut (au minimum : qui a clos, quand).
 
 ### 2.7 Vue budget
-- Total engagé (somme des budgets estimés) vs dépensé (somme des budgets réels) sur
-  tâches non annulées.
-- Regroupement par objectif et par type de tâche.
-- Mise en évidence des dépassements (réel > estimé).
+- Suivi par rubrique budgétaire (`budgetItems`), liée à un objectif et/ou une tâche,
+  plutôt que par les champs d'une tâche.
+- Chaîne budget → engagé → réalisé → prévision à terminaison → écart, avec paiements
+  datés (`prevu`/`paye`) : le réalisé est toujours la somme des paiements payés.
+- Rubriques à surveiller mises en évidence (réalisé ou prévision au-delà du budget).
 
 ## 3. Règles métier
 
 **Statuts de tâche** : `à faire → en cours → terminé`, avec état parallèle `bloqué`
 (peut être atteint depuis "à faire" ou "en cours", et en sortir vers "en cours").
-- Passage à "terminé" fige budgetActual (dernière valeur saisie) et horodate la clôture.
 
-**Budget** :
-- budgetEstimated obligatoire seulement si type = achat ou sous-traitance (facultatif
-  sinon, ex: ménage n'a généralement pas de budget).
-- budgetActual saisi librement, à tout moment, éventuellement partiel (acompte).
+**Budget** : voir la rubrique budgétaire (`budgetItems`) — indépendante du cycle de
+vie de la tâche à laquelle elle est éventuellement liée.
 
 **Affectation** :
 - Une tâche peut avoir 0 (non affectée), 1 ou plusieurs assignés.

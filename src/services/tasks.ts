@@ -22,7 +22,6 @@ export interface NewTaskInput {
   priority: TaskPriority;
   objectiveId: string | null;
   dueDate?: string;
-  budgetEstimated?: number;
   createdBy: string;
 }
 
@@ -49,8 +48,6 @@ export async function createTask(input: NewTaskInput): Promise<string> {
     dueDate: input.dueDate ?? null,
     status: "todo" satisfies TaskStatus,
     assigneeIds: [],
-    budgetEstimated: input.budgetEstimated ?? null,
-    budgetActual: null,
     createdBy: input.createdBy,
     createdAt: now,
     updatedAt: now,
@@ -70,8 +67,6 @@ export async function updateTask(
       | "priority"
       | "objectiveId"
       | "dueDate"
-      | "budgetEstimated"
-      | "budgetActual"
       | "assigneeIds"
     >
   >,

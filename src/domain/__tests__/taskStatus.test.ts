@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  applyStatusChange,
-  canTransition,
-  isBudgetRequired,
-  isTaskValid,
-} from "../taskStatus";
+import { applyStatusChange, canTransition } from "../taskStatus";
 
 describe("canTransition", () => {
   it("autorise todo -> in_progress", () => {
@@ -60,52 +55,5 @@ describe("applyStatusChange", () => {
     expect(() =>
       applyStatusChange({ status: "todo" }, "done", "user-1"),
     ).toThrow(/Transition invalide/);
-  });
-});
-
-describe("isBudgetRequired", () => {
-  it("requiert un budget pour achat et sous-traitance", () => {
-    expect(isBudgetRequired("achat")).toBe(true);
-    expect(isBudgetRequired("soustraitance")).toBe(true);
-  });
-
-  it("ne requiert pas de budget pour ménage et travaux", () => {
-    expect(isBudgetRequired("menage")).toBe(false);
-    expect(isBudgetRequired("travaux")).toBe(false);
-  });
-});
-
-describe("isTaskValid", () => {
-  it("refuse un titre vide", () => {
-    const result = isTaskValid({ title: "  ", type: "menage" });
-    expect(result.valid).toBe(false);
-  });
-
-  it("refuse un achat sans budget estimé", () => {
-    const result = isTaskValid({ title: "Acheter une porte", type: "achat" });
-    expect(result.valid).toBe(false);
-  });
-
-  it("refuse un budget estimé à zéro pour un achat", () => {
-    const result = isTaskValid({
-      title: "Acheter une porte",
-      type: "achat",
-      budgetEstimated: 0,
-    });
-    expect(result.valid).toBe(false);
-  });
-
-  it("accepte un ménage sans budget", () => {
-    const result = isTaskValid({ title: "Nettoyer le garage", type: "menage" });
-    expect(result.valid).toBe(true);
-  });
-
-  it("accepte un achat avec budget estimé positif", () => {
-    const result = isTaskValid({
-      title: "Acheter une porte",
-      type: "achat",
-      budgetEstimated: 450,
-    });
-    expect(result.valid).toBe(true);
   });
 });

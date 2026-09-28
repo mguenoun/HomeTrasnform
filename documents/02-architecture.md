@@ -75,13 +75,22 @@ de config d'environnement.
   - priority, status: `todo | in_progress | blocked | done`
   - assigneeIds: string[]
   - dueDate
-  - budgetEstimated, budgetActual, currency
   - createdBy, createdAt, updatedAt
   - sous-collection `comments/{id}` : authorId, text, createdAt
   - sous-collection `attachments/{id}` : fileName, contentType, size, chunkCount,
     uploadedBy, uploadedAt
     - sous-sous-collection `chunks/{index}` : index, data (chaîne base64, ≤ ~700 Ko
       bruts par morceau, soit une dizaine de documents pour un fichier de 10 Mo)
+- `budgetItems/{id}` : rubrique budgétaire (montant en MAD), liée à un objectif et/ou
+  une tâche
+  - title, category, objectiveId, taskId, vendor
+  - budgeted, revisedBudget, committed (engagé)
+  - remainingEstimate (reste à prévoir, ajustable manuellement) et forecastHistory
+    (historique des révisions)
+  - payments[] : { id, date, amount, comment, progress, status: `prevu | paye`,
+    createdBy } — le réalisé se déduit toujours de la somme des paiements `paye`,
+    jamais stocké directement
+  - createdBy, createdAt, updatedAt
 
 Pas de notion multi-foyer : l'app est dédiée à une seule famille (les données ne sont pas
 cloisonnées par "household"), ce qui simplifie le modèle.

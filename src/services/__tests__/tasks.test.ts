@@ -39,24 +39,9 @@ describe("createTask", () => {
       title: "Nettoyer le garage",
       status: "todo",
       assigneeIds: [],
-      budgetEstimated: null,
       objectiveId: "obj1",
       createdBy: "user-1",
     });
-  });
-
-  it("enregistre le budget estimé fourni à la création", async () => {
-    await createTask({
-      title: "Acheter une porte",
-      type: "achat",
-      priority: "medium",
-      objectiveId: "obj1",
-      budgetEstimated: 450,
-      createdBy: "user-1",
-    });
-
-    const [, payload] = addDocMock.mock.calls[0];
-    expect(payload.budgetEstimated).toBe(450);
   });
 });
 
@@ -73,20 +58,17 @@ describe("updateTask", () => {
     await updateTask("task1", {
       title: "Repeindre le salon",
       dueDate: undefined,
-      budgetEstimated: undefined,
     });
 
     const [, payload] = updateDocMock.mock.calls[0];
     expect(payload).not.toHaveProperty("dueDate");
-    expect(payload).not.toHaveProperty("budgetEstimated");
     expect(payload.title).toBe("Repeindre le salon");
   });
 
   it("conserve les valeurs null (utilisées pour effacer un champ)", async () => {
-    await updateTask("task1", { dueDate: null, budgetEstimated: null });
+    await updateTask("task1", { dueDate: null });
     const [, payload] = updateDocMock.mock.calls[0];
     expect(payload.dueDate).toBeNull();
-    expect(payload.budgetEstimated).toBeNull();
   });
 
   it("réinitialise le rappel d'échéance quand la date change (pour qu'un nouveau rappel puisse être envoyé)", async () => {

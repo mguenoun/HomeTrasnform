@@ -1,19 +1,22 @@
 import { Link } from "react-router-dom";
-import { summarizeBudget } from "../domain/budget";
+import { summarizeBudgetItems } from "../domain/budgetItems";
+import { formatMad } from "../domain/money";
 import { computeProgress } from "../domain/progress";
-import type { Objective, Task } from "../types";
+import type { BudgetItem, Objective, Task } from "../types";
 
 export interface ObjectiveSummaryCardProps {
   objective: Objective;
   tasks: Task[];
+  budgetItems?: BudgetItem[];
 }
 
 export function ObjectiveSummaryCard({
   objective,
   tasks,
+  budgetItems = [],
 }: ObjectiveSummaryCardProps) {
   const progress = computeProgress(tasks);
-  const budget = summarizeBudget(tasks);
+  const budget = summarizeBudgetItems(budgetItems);
 
   return (
     <li className="rounded border border-slate-200 bg-white p-4">
@@ -38,12 +41,12 @@ export function ObjectiveSummaryCard({
           {progress.percent}%)
         </p>
       </div>
-      {(budget.estimated > 0 || budget.actual > 0) && (
+      {budgetItems.length > 0 && (
         <p className="mt-2 flex items-center gap-2 text-xs text-slate-500">
           <span>
-            Budget : {budget.actual.toFixed(2)} MAD / {budget.estimated.toFixed(2)} MAD
+            Budget : {formatMad(budget.realized)} / {formatMad(budget.budgeted)}
           </span>
-          {budget.overBudget && (
+          {budget.realized > budget.budgeted && (
             <span className="rounded bg-red-100 px-1.5 py-0.5 font-medium text-red-700">
               Dépassement
             </span>

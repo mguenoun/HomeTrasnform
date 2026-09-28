@@ -7,7 +7,6 @@ import {
   TASK_TYPE_LABELS,
 } from "../constants";
 import { useAuth } from "../context/AuthContext";
-import { summarizeTaskBudget } from "../domain/budget";
 import { filterTasks, sortTasks, type TaskFilters, type TaskSortKey } from "../domain/taskFilters";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
@@ -142,7 +141,6 @@ export function TasksPage() {
           >
             <option value="priority">Priorité</option>
             <option value="dueDate">Échéance</option>
-            <option value="budgetEstimated">Budget</option>
           </select>
         </label>
 
@@ -193,11 +191,6 @@ export function TasksPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {summarizeTaskBudget(task).overBudget && (
-                  <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700">
-                    Dépassement
-                  </span>
-                )}
                 <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
                   {TASK_STATUS_LABELS[task.status]}
                 </span>

@@ -52,9 +52,6 @@ export interface Task {
   assigneeIds: string[];
   dueDate?: string | null;
   dueReminderSentAt?: number | null;
-  budgetEstimated?: number | null;
-  budgetActual?: number | null;
-  currency?: string;
   createdBy: string;
   createdAt: number;
   updatedAt: number;

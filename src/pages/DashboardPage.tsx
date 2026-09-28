@@ -186,6 +186,9 @@ export function DashboardPage() {
                   key={objective.id}
                   objective={objective}
                   tasks={tasks.filter((t) => t.objectiveId === objective.id)}
+                  budgetItems={budgetItems.filter(
+                    (b) => b.objectiveId === objective.id,
+                  )}
                 />
               ))}
             </ul>

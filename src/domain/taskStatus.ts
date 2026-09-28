@@ -1,4 +1,4 @@
-import type { Task, TaskStatus, TaskType } from "../types";
+import type { Task, TaskStatus } from "../types";
 
 const ALLOWED_TRANSITIONS: Record<TaskStatus, TaskStatus[]> = {
   todo: ["in_progress", "blocked"],
@@ -31,28 +31,4 @@ export function applyStatusChange(
     return { status: to, closedAt: now, closedBy: actorId };
   }
   return { status: to };
-}
-
-const TYPES_REQUIRING_BUDGET: TaskType[] = ["achat", "soustraitance"];
-
-export function isBudgetRequired(type: TaskType): boolean {
-  return TYPES_REQUIRING_BUDGET.includes(type);
-}
-
-export function isTaskValid(
-  task: Pick<Task, "title" | "type" | "budgetEstimated">,
-): { valid: boolean; error?: string } {
-  if (!task.title.trim()) {
-    return { valid: false, error: "Le titre est obligatoire." };
-  }
-  if (
-    isBudgetRequired(task.type) &&
-    (task.budgetEstimated == null || task.budgetEstimated <= 0)
-  ) {
-    return {
-      valid: false,
-      error: "Un budget estimé est requis pour ce type de tâche.",
-    };
-  }
-  return { valid: true };
 }

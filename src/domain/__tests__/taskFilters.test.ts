@@ -92,19 +92,6 @@ describe("sortTasks", () => {
     ]);
   });
 
-  it("trie par budget estimé décroissant", () => {
-    const tasks = [
-      makeTask({ id: "small", budgetEstimated: 50 }),
-      makeTask({ id: "big", budgetEstimated: 500 }),
-      makeTask({ id: "none" }),
-    ];
-    expect(sortTasks(tasks, "budgetEstimated").map((t) => t.id)).toEqual([
-      "big",
-      "small",
-      "none",
-    ]);
-  });
-
   it("ne modifie pas le tableau d'origine", () => {
     const tasks = [
       makeTask({ id: "a", priority: "low" }),

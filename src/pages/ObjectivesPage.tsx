@@ -3,6 +3,7 @@ import { Breadcrumb } from "../components/Breadcrumb";
 import { ObjectiveForm, type ObjectiveFormValues } from "../components/ObjectiveForm";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { useAuth } from "../context/AuthContext";
+import { useBudgetItems } from "../hooks/useBudgetItems";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
 import { createObjective } from "../services/objectives";
@@ -11,6 +12,7 @@ export function ObjectivesPage() {
   const { user } = useAuth();
   const { objectives, loading } = useObjectives();
   const { tasks } = useTasks();
+  const { items: budgetItems } = useBudgetItems();
   const [showForm, setShowForm] = useState(false);
 
   const activeObjectives = objectives.filter((o) => o.status === "active");
@@ -56,6 +58,9 @@ export function ObjectivesPage() {
             key={objective.id}
             objective={objective}
             tasks={tasks.filter((t) => t.objectiveId === objective.id)}
+            budgetItems={budgetItems.filter(
+              (b) => b.objectiveId === objective.id,
+            )}
           />
         ))}
       </ul>

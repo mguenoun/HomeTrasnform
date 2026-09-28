@@ -1,10 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { isBudgetRequired, isTaskValid } from "../domain/taskStatus";
-import type {
-  Objective,
-  TaskPriority,
-  TaskType,
-} from "../types";
+import type { Objective, TaskPriority, TaskType } from "../types";
 
 export interface TaskFormValues {
   title: string;
@@ -14,8 +9,6 @@ export interface TaskFormValues {
   priority: TaskPriority;
   objectiveId: string | null;
   dueDate: string;
-  budgetEstimated: string;
-  budgetActual: string;
 }
 
 const EMPTY_VALUES: TaskFormValues = {
@@ -26,8 +19,6 @@ const EMPTY_VALUES: TaskFormValues = {
   priority: "medium",
   objectiveId: null,
   dueDate: "",
-  budgetEstimated: "",
-  budgetActual: "",
 };
 
 export interface TaskFormProps {
@@ -50,19 +41,10 @@ export function TaskForm({
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const budgetRequired = isBudgetRequired(values.type);
-
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    const validation = isTaskValid({
-      title: values.title,
-      type: values.type,
-      budgetEstimated: values.budgetEstimated
-        ? Number(values.budgetEstimated)
-        : undefined,
-    });
-    if (!validation.valid) {
-      setError(validation.error ?? "Formulaire invalide.");
+    if (!values.title.trim()) {
+      setError("Le titre est obligatoire.");
       return;
     }
     setError(null);
@@ -185,40 +167,6 @@ export function TaskForm({
           ))}
         </select>
       </label>
-
-      {budgetRequired && (
-        <div className="flex gap-3">
-          <label className="flex flex-1 flex-col gap-1">
-            <span className="text-sm font-medium">
-              Budget estimé (MAD) — requis pour ce type de tâche
-            </span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={values.budgetEstimated}
-              onChange={(e) =>
-                setValues({ ...values, budgetEstimated: e.target.value })
-              }
-              className="rounded border border-slate-300 px-3 py-2"
-            />
-          </label>
-
-          <label className="flex flex-1 flex-col gap-1">
-            <span className="text-sm font-medium">Budget réel (MAD)</span>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={values.budgetActual}
-              onChange={(e) =>
-                setValues({ ...values, budgetActual: e.target.value })
-              }
-              className="rounded border border-slate-300 px-3 py-2"
-            />
-          </label>
-        </div>
-      )}
 
       <button
         type="submit"

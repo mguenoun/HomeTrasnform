@@ -11,7 +11,6 @@ import {
   TASK_TYPE_LABELS,
 } from "../constants";
 import { useAuth } from "../context/AuthContext";
-import { summarizeTaskBudget } from "../domain/budget";
 import { canTransition } from "../domain/taskStatus";
 import { useAttachments } from "../hooks/useAttachments";
 import { useBudgetItems } from "../hooks/useBudgetItems";
@@ -84,12 +83,6 @@ export function TaskDetailPage() {
       priority: values.priority,
       objectiveId: values.objectiveId,
       dueDate: values.dueDate || null,
-      budgetEstimated: values.budgetEstimated
-        ? Number(values.budgetEstimated)
-        : null,
-      budgetActual: values.budgetActual
-        ? Number(values.budgetActual)
-        : null,
     });
     setEditing(false);
   }
@@ -108,7 +101,6 @@ export function TaskDetailPage() {
 
   const objective = objectives.find((o) => o.id === task.objectiveId);
   const objectiveTitle = objective?.title;
-  const budgetSummary = summarizeTaskBudget(task);
   const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
   const taskBudgetItems = budgetItems.filter((b) => b.taskId === task.id);
 
@@ -143,8 +135,6 @@ export function TaskDetailPage() {
               priority: task.priority,
               objectiveId: task.objectiveId,
               dueDate: task.dueDate ?? "",
-              budgetEstimated: task.budgetEstimated?.toString() ?? "",
-              budgetActual: task.budgetActual?.toString() ?? "",
             }}
             submitLabel="Enregistrer"
             onSubmit={handleUpdate}
@@ -169,20 +159,6 @@ export function TaskDetailPage() {
               Échéance : {task.dueDate}
             </p>
           )}
-          {(task.budgetEstimated || task.budgetActual) && (
-            <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-slate-500">
-              <span>
-                Budget estimé : {task.budgetEstimated ?? 0} MAD · Budget réel :{" "}
-                {task.budgetActual ?? 0} MAD
-              </span>
-              {budgetSummary.overBudget && (
-                <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                  Dépassement de budget
-                </span>
-              )}
-            </p>
-          )}
-
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="rounded bg-slate-100 px-2 py-1 text-sm font-medium text-slate-700">
               {TASK_STATUS_LABELS[task.status]}

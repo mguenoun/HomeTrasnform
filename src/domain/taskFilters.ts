@@ -32,7 +32,7 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
   });
 }
 
-export type TaskSortKey = "priority" | "dueDate" | "budgetEstimated";
+export type TaskSortKey = "priority" | "dueDate";
 
 const PRIORITY_WEIGHT: Record<TaskPriority, number> = {
   high: 0,
@@ -50,8 +50,6 @@ export function sortTasks(tasks: Task[], sortBy: TaskSortKey): Task[] {
         return (a.dueDate ?? "9999-99-99").localeCompare(
           b.dueDate ?? "9999-99-99",
         );
-      case "budgetEstimated":
-        return (b.budgetEstimated ?? 0) - (a.budgetEstimated ?? 0);
       default:
         return 0;
     }
