@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { AttachmentsSection } from "../components/AttachmentsSection";
-import { BudgetItemCard } from "../components/BudgetItemCard";
 import { Breadcrumb } from "../components/Breadcrumb";
+import { BudgetItemsTable } from "../components/BudgetItemsTable";
 import { CommentsSection } from "../components/CommentsSection";
 import { TaskForm, type TaskFormValues } from "../components/TaskForm";
 import {
@@ -231,27 +231,11 @@ export function TaskDetailPage() {
           )}
 
           <div className="mt-4">
-            <div className="mb-2 flex items-center justify-between">
-              <p className="text-sm font-medium text-slate-700">
-                Rubriques budgétaires
-              </p>
-              <Link
-                to={`/budget/new?taskId=${task.id}`}
-                className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
-              >
-                Ajouter une rubrique
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {taskBudgetItems.map((item) => (
-                <BudgetItemCard key={item.id} item={item} />
-              ))}
-            </div>
-            {taskBudgetItems.length === 0 && (
-              <p className="text-sm text-slate-400">
-                Aucune rubrique budgétaire pour le moment.
-              </p>
-            )}
+            <BudgetItemsTable
+              title="Rubriques budgétaires"
+              items={taskBudgetItems}
+              addHref={`/budget/new?taskId=${task.id}`}
+            />
           </div>
 
           <div className="mt-4 flex gap-2">

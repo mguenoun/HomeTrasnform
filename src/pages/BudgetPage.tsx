@@ -1,18 +1,14 @@
-import { Link } from "react-router-dom";
 import { Breadcrumb } from "../components/Breadcrumb";
-import { BudgetItemCard } from "../components/BudgetItemCard";
+import { BudgetItemsTable } from "../components/BudgetItemsTable";
 import { statusOf, summarizeBudgetItems } from "../domain/budgetItems";
 import { formatMad } from "../domain/money";
 import { useBudgetItems } from "../hooks/useBudgetItems";
-import { useObjectives } from "../hooks/useObjectives";
 
 const STATUS_RANK: Record<string, number> = { over: 0, watch: 1, ok: 2 };
 
 export function BudgetPage() {
   const { items, loading } = useBudgetItems();
-  const { objectives } = useObjectives();
 
-  const objectiveTitleById = new Map(objectives.map((o) => [o.id, o.title]));
   const totals = summarizeBudgetItems(items);
   const sortedItems = [...items].sort((a, b) => {
     const rank = STATUS_RANK[statusOf(a)] - STATUS_RANK[statusOf(b)];
@@ -24,15 +20,9 @@ export function BudgetPage() {
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Budget" }]}
       />
-      <header className="mt-4 mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Budget</h1>
-        <Link
-          to="/budget/new"
-          className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
-        >
-          Nouvelle rubrique
-        </Link>
-      </header>
+      <h1 className="mt-4 mb-6 text-xl font-semibold text-slate-900">
+        Budget
+      </h1>
 
       {loading && <p className="text-slate-500">Chargement...</p>}
 
@@ -77,24 +67,11 @@ export function BudgetPage() {
             </div>
           </section>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {sortedItems.map((item) => (
-              <BudgetItemCard
-                key={item.id}
-                item={item}
-                objectiveTitle={
-                  item.objectiveId
-                    ? objectiveTitleById.get(item.objectiveId)
-                    : undefined
-                }
-              />
-            ))}
-          </div>
-          {sortedItems.length === 0 && (
-            <p className="text-sm text-slate-500">
-              Aucune rubrique pour le moment.
-            </p>
-          )}
+          <BudgetItemsTable
+            title="Rubriques"
+            items={sortedItems}
+            addHref="/budget/new"
+          />
         </>
       )}
     </div>

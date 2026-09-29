@@ -8,6 +8,7 @@ import {
   effectiveBudget,
   forecastFinal,
   getWatchlist,
+  latestProgress,
   removePayment,
   reviseForecast,
   statusOf,
@@ -247,5 +248,25 @@ describe("reviseForecast", () => {
       comment: undefined,
       userId: "u2",
     });
+  });
+});
+
+describe("latestProgress", () => {
+  it("retourne l'avancement du paiement le plus récent qui en renseigne un", () => {
+    const item = makeItem({
+      payments: [
+        makePayment({ id: "a", date: "2026-01-01", progress: 20 }),
+        makePayment({ id: "b", date: "2026-03-01", progress: 60 }),
+        makePayment({ id: "c", date: "2026-02-01" }),
+      ],
+    });
+    expect(latestProgress(item)).toBe(60);
+  });
+
+  it("retourne null si aucun paiement ne renseigne d'avancement", () => {
+    const item = makeItem({
+      payments: [makePayment({ id: "a" })],
+    });
+    expect(latestProgress(item)).toBeNull();
   });
 });

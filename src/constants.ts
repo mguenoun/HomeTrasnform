@@ -1,3 +1,4 @@
+import type { BudgetItemStatus } from "./domain/budgetItems";
 import type {
   BudgetCategory,
   BudgetPaymentStatus,
@@ -41,4 +42,16 @@ export const BUDGET_CATEGORY_LABELS: Record<BudgetCategory, string> = {
 export const BUDGET_PAYMENT_STATUS_LABELS: Record<BudgetPaymentStatus, string> = {
   prevu: "Prévu",
   paye: "Payé",
+};
+
+export const BUDGET_ITEM_STATUS_LABELS: Record<BudgetItemStatus, string> = {
+  over: "Dépassé",
+  watch: "À surveiller",
+  ok: "Dans les clous",
+};
+
+export const BUDGET_ITEM_STATUS_BADGE_CLASSES: Record<BudgetItemStatus, string> = {
+  over: "bg-red-100 text-red-700",
+  watch: "bg-orange-100 text-orange-700",
+  ok: "bg-green-100 text-green-700",
 };

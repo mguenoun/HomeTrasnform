@@ -1,5 +1,9 @@
 import { Link } from "react-router-dom";
-import { BUDGET_CATEGORY_LABELS } from "../constants";
+import {
+  BUDGET_CATEGORY_LABELS,
+  BUDGET_ITEM_STATUS_BADGE_CLASSES,
+  BUDGET_ITEM_STATUS_LABELS,
+} from "../constants";
 import {
   computeRealized,
   effectiveBudget,
@@ -9,18 +13,6 @@ import {
 } from "../domain/budgetItems";
 import { formatMad } from "../domain/money";
 import type { BudgetItem } from "../types";
-
-const STATUS_BADGE: Record<string, string> = {
-  over: "bg-red-100 text-red-700",
-  watch: "bg-orange-100 text-orange-700",
-  ok: "bg-green-100 text-green-700",
-};
-
-const STATUS_LABEL: Record<string, string> = {
-  over: "Dépassé",
-  watch: "À surveiller",
-  ok: "Dans les clous",
-};
 
 export interface BudgetItemCardProps {
   item: BudgetItem;
@@ -50,9 +42,9 @@ export function BudgetItemCard({ item, objectiveTitle }: BudgetItemCardProps) {
           </p>
         </div>
         <span
-          className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_BADGE[status]}`}
+          className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-medium ${BUDGET_ITEM_STATUS_BADGE_CLASSES[status]}`}
         >
-          {STATUS_LABEL[status]}
+          {BUDGET_ITEM_STATUS_LABELS[status]}
         </span>
       </div>
 

@@ -74,6 +74,14 @@ export function getWatchlist(items: BudgetItem[]): BudgetItem[] {
     .sort((a, b) => variance(a) - variance(b));
 }
 
+/** Avancement du paiement le plus récent qui en renseigne un, sinon aucun. */
+export function latestProgress(item: BudgetItem): number | null {
+  const withProgress = item.payments.filter((p) => p.progress != null);
+  if (withProgress.length === 0) return null;
+  const latest = [...withProgress].sort((a, b) => b.date.localeCompare(a.date))[0];
+  return latest.progress ?? null;
+}
+
 export function addPayment(
   item: BudgetItem,
   payment: BudgetPayment,
