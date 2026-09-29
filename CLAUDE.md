@@ -124,6 +124,26 @@ npm run typecheck          # tsc --noEmit
   affecté. Utiliser `signInWithRedirect` + `getRedirectResult()` — c'est le
   flux retenu dans `src/context/AuthContext.tsx`, ne pas revenir à
   `signInWithPopup`.
+- **`signInWithRedirect` restait bloqué sur l'écran de connexion en PWA
+  installée sur iOS** (systématique, sans erreur affichée) alors qu'il
+  fonctionnait en navigateur classique. Cause : `authDomain` pointait vers le
+  domaine par défaut `hometransform-c2ac9.firebaseapp.com`, différent de
+  l'origine d'hébergement (`hometransform-c2ac9.web.app`) — le relais du
+  résultat de redirection passe par une iframe cachée sur `authDomain` qui
+  communique via `postMessage`/stockage avec l'origine de l'app ; en PWA
+  standalone iOS, l'Intelligent Tracking Prevention de Safari bloque cet
+  accès au stockage cross-origin dans l'iframe, donc `getRedirectResult()` se
+  résout silencieusement sans utilisateur (pas d'erreur à catcher). **Corrigé**
+  en pointant `authDomain` vers le domaine d'hébergement lui-même
+  (`VITE_FIREBASE_AUTH_DOMAIN=hometransform-c2ac9.web.app` dans `.env.local`,
+  non commité — Firebase Hosting sert automatiquement `/__/auth/**` sur son
+  propre domaine quand Auth est activé sur le projet, donc aucune config
+  `firebase.json` supplémentaire n'est nécessaire) : tout reste alors
+  same-origin, plus d'iframe cross-origin à bloquer. Si le souci reperçait
+  malgré tout, vérifier dans la console Firebase (Authentication > Settings >
+  Authorized domains) que `hometransform-c2ac9.web.app` y figure bien (ajouté
+  automatiquement par Firebase à la création du projet, à confirmer si un
+  domaine personnalisé est ajouté plus tard).
 - **Une PWA déjà installée peut servir un bundle JS périmé plus d'une heure**
   après un déploi : Firebase Hosting appliquait `Cache-Control: max-age=3600`
   par défaut, y compris sur `index.html`. Corrigé via `firebase.json` →
