@@ -42,8 +42,6 @@ export function DashboardPage() {
     membersLoading ||
     budgetLoading;
 
-  const objectivesKpi = countClosedObjectives(objectives);
-  const tasksKpi = countClosedTasks(tasks);
   const personKpis = withCurrentFirst(
     getTaskKpisByPerson(tasks, users, members),
     user?.uid,
@@ -51,13 +49,30 @@ export function DashboardPage() {
   const myUpcomingTasks = user
     ? getUpcomingTasks(tasks.filter((t) => t.assigneeIds.includes(user.uid)))
     : [];
-  const budgetTotals = summarizeBudgetItems(budgetItems);
   const budgetWatchlist = getWatchlist(budgetItems);
   const privateObjectiveIds = new Set(
     objectives.filter((o) => o.visibility === "private").map((o) => o.id),
   );
   const isTaskPrivate = (task: { objectiveId: string | null }) =>
     task.objectiveId != null && privateObjectiveIds.has(task.objectiveId);
+  const isBudgetItemPrivate = (item: { objectiveId: string | null }) =>
+    item.objectiveId != null && privateObjectiveIds.has(item.objectiveId);
+
+  const sharedObjectives = objectives.filter((o) => o.visibility !== "private");
+  const privateObjectives = objectives.filter((o) => o.visibility === "private");
+  const sharedTasks = tasks.filter((t) => !isTaskPrivate(t));
+  const privateTasks = tasks.filter((t) => isTaskPrivate(t));
+  const sharedBudgetItems = budgetItems.filter((b) => !isBudgetItemPrivate(b));
+  const privateBudgetItems = budgetItems.filter((b) => isBudgetItemPrivate(b));
+
+  const sharedObjectivesKpi = countClosedObjectives(sharedObjectives);
+  const sharedTasksKpi = countClosedTasks(sharedTasks);
+  const sharedBudgetTotals = summarizeBudgetItems(sharedBudgetItems);
+
+  const privateObjectivesKpi = countClosedObjectives(privateObjectives);
+  const privateTasksKpi = countClosedTasks(privateTasks);
+  const privateBudgetTotals = summarizeBudgetItems(privateBudgetItems);
+  const hasPrivateObjectives = privateObjectives.length > 0;
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -69,35 +84,86 @@ export function DashboardPage() {
 
       {!loading && (
         <>
-          <section className="grid grid-cols-2 gap-4">
-            <div className="rounded border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-slate-700">
-                Objectifs clôturés
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">
-                {formatRatio(objectivesKpi.closed, objectivesKpi.total)}
-              </p>
-            </div>
-            <div className="rounded border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-slate-700">
-                Tâches clôturées
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">
-                {formatRatio(tasksKpi.closed, tasksKpi.total)}
-              </p>
-            </div>
-            <div className="col-span-2 rounded border border-slate-200 bg-white p-4">
-              <p className="text-sm font-medium text-slate-700">
-                Budget réalisé / budgété
-              </p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">
-                {formatMad(budgetTotals.realized)}{" "}
-                <span className="text-base font-normal text-slate-500">
-                  / {formatMad(budgetTotals.budgeted)}
-                </span>
-              </p>
+          <section>
+            <h2 className="mb-2 text-sm font-medium text-slate-700">
+              Objectifs partagés
+            </h2>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="rounded border border-slate-200 bg-white p-4">
+                <p className="text-sm font-medium text-slate-700">
+                  Objectifs clôturés
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
+                  {formatRatio(
+                    sharedObjectivesKpi.closed,
+                    sharedObjectivesKpi.total,
+                  )}
+                </p>
+              </div>
+              <div className="rounded border border-slate-200 bg-white p-4">
+                <p className="text-sm font-medium text-slate-700">
+                  Tâches clôturées
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
+                  {formatRatio(sharedTasksKpi.closed, sharedTasksKpi.total)}
+                </p>
+              </div>
+              <div className="col-span-2 rounded border border-slate-200 bg-white p-4">
+                <p className="text-sm font-medium text-slate-700">
+                  Budget réalisé / budgété
+                </p>
+                <p className="mt-1 text-2xl font-semibold text-slate-900">
+                  {formatMad(sharedBudgetTotals.realized)}{" "}
+                  <span className="text-base font-normal text-slate-500">
+                    / {formatMad(sharedBudgetTotals.budgeted)}
+                  </span>
+                </p>
+              </div>
             </div>
           </section>
+
+          {hasPrivateObjectives && (
+            <section className="mt-6">
+              <h2 className="mb-2 text-sm font-medium text-slate-700">
+                Objectifs privés
+              </h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-medium text-slate-700">
+                    Objectifs clôturés
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">
+                    {formatRatio(
+                      privateObjectivesKpi.closed,
+                      privateObjectivesKpi.total,
+                    )}
+                  </p>
+                </div>
+                <div className="rounded border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-medium text-slate-700">
+                    Tâches clôturées
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">
+                    {formatRatio(
+                      privateTasksKpi.closed,
+                      privateTasksKpi.total,
+                    )}
+                  </p>
+                </div>
+                <div className="col-span-2 rounded border border-slate-200 bg-white p-4">
+                  <p className="text-sm font-medium text-slate-700">
+                    Budget réalisé / budgété
+                  </p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">
+                    {formatMad(privateBudgetTotals.realized)}{" "}
+                    <span className="text-base font-normal text-slate-500">
+                      / {formatMad(privateBudgetTotals.budgeted)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
 
           <section className="mt-6">
             <h2 className="mb-2 text-sm font-medium text-slate-700">

@@ -165,6 +165,62 @@ describe("DashboardPage", () => {
     expect(screen.getByText("hajar@example.com")).toBeInTheDocument();
   });
 
+  it("n'affiche pas le bloc d'objectifs privés quand l'utilisateur n'en a aucun", () => {
+    mockedUseObjectives.mockReturnValue({
+      objectives: [OBJECTIVE],
+      loading: false,
+    });
+    mockedUseTasks.mockReturnValue({ tasks: [], loading: false });
+    mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+    mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
+    mockAuth(null);
+
+    renderPage();
+
+    expect(screen.getByText("Objectifs partagés")).toBeInTheDocument();
+    expect(screen.queryByText("Objectifs privés")).not.toBeInTheDocument();
+  });
+
+  it("sépare les KPI des objectifs partagés et privés dans deux blocs distincts", () => {
+    const sharedObjective = { ...OBJECTIVE, id: "shared1", status: "archived" as const };
+    const privateObjective = {
+      ...OBJECTIVE,
+      id: "priv1",
+      visibility: "private" as const,
+      status: "archived" as const,
+    };
+    mockedUseObjectives.mockReturnValue({
+      objectives: [sharedObjective, privateObjective],
+      loading: false,
+    });
+    mockedUseTasks.mockReturnValue({
+      tasks: [
+        task({ id: "st1", objectiveId: "shared1", status: "done" }),
+        task({ id: "st2", objectiveId: "shared1", status: "todo" }),
+        task({ id: "pt1", objectiveId: "priv1", status: "done" }),
+      ],
+      loading: false,
+    });
+    mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+    mockedUseFamilyMembers.mockReturnValue({ members: [], loading: false });
+    mockedUseBudgetItems.mockReturnValue({ items: [], loading: false });
+    mockAuth(null);
+
+    renderPage();
+
+    const sharedSection = screen
+      .getByText("Objectifs partagés")
+      .closest("section") as HTMLElement;
+    expect(within(sharedSection).getByText("1 / 1 (100%)")).toBeInTheDocument();
+    expect(within(sharedSection).getByText("1 / 2 (50%)")).toBeInTheDocument();
+
+    const privateSection = screen
+      .getByText("Objectifs privés")
+      .closest("section") as HTMLElement;
+    expect(within(privateSection).getAllByText("1 / 1 (100%)")).toHaveLength(2);
+  });
+
   it("met en avant la carte de la personne connectée et lui montre ses tâches à échéance proche", () => {
     mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
     mockedUseFamilyUsers.mockReturnValue({
