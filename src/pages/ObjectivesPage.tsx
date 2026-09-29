@@ -16,6 +16,12 @@ export function ObjectivesPage() {
   const [showForm, setShowForm] = useState(false);
 
   const activeObjectives = objectives.filter((o) => o.status === "active");
+  const sharedObjectives = activeObjectives.filter(
+    (o) => o.visibility !== "private",
+  );
+  const privateObjectives = activeObjectives.filter(
+    (o) => o.visibility === "private",
+  );
 
   async function handleCreate(values: ObjectiveFormValues) {
     if (!user) return;
@@ -53,21 +59,51 @@ export function ObjectivesPage() {
 
       {loading && <p className="text-slate-500">Chargement...</p>}
 
-      <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {activeObjectives.map((objective) => (
-          <ObjectiveSummaryCard
-            key={objective.id}
-            objective={objective}
-            tasks={tasks.filter((t) => t.objectiveId === objective.id)}
-            budgetItems={budgetItems.filter(
-              (b) => b.objectiveId === objective.id,
+      {!loading && (
+        <>
+          <section>
+            <h2 className="mb-2 text-sm font-medium text-slate-700">
+              Objectifs partagés
+            </h2>
+            <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {sharedObjectives.map((objective) => (
+                <ObjectiveSummaryCard
+                  key={objective.id}
+                  objective={objective}
+                  tasks={tasks.filter((t) => t.objectiveId === objective.id)}
+                  budgetItems={budgetItems.filter(
+                    (b) => b.objectiveId === objective.id,
+                  )}
+                />
+              ))}
+            </ul>
+            {sharedObjectives.length === 0 && (
+              <p className="text-slate-500">
+                Aucun objectif partagé pour le moment.
+              </p>
             )}
-          />
-        ))}
-      </ul>
+          </section>
 
-      {!loading && activeObjectives.length === 0 && (
-        <p className="text-slate-500">Aucun objectif pour le moment.</p>
+          {privateObjectives.length > 0 && (
+            <section className="mt-6">
+              <h2 className="mb-2 text-sm font-medium text-slate-700">
+                Objectifs privés
+              </h2>
+              <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {privateObjectives.map((objective) => (
+                  <ObjectiveSummaryCard
+                    key={objective.id}
+                    objective={objective}
+                    tasks={tasks.filter((t) => t.objectiveId === objective.id)}
+                    budgetItems={budgetItems.filter(
+                      (b) => b.objectiveId === objective.id,
+                    )}
+                  />
+                ))}
+              </ul>
+            </section>
+          )}
+        </>
       )}
     </div>
   );

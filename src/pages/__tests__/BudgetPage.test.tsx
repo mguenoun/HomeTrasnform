@@ -1,13 +1,16 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useBudgetItems } from "../../hooks/useBudgetItems";
-import type { BudgetItem } from "../../types";
+import { useObjectives } from "../../hooks/useObjectives";
+import type { BudgetItem, Objective } from "../../types";
 import { BudgetPage } from "../BudgetPage";
 
 vi.mock("../../hooks/useBudgetItems", () => ({ useBudgetItems: vi.fn() }));
+vi.mock("../../hooks/useObjectives", () => ({ useObjectives: vi.fn() }));
 
 const mockedUseBudgetItems = vi.mocked(useBudgetItems);
+const mockedUseObjectives = vi.mocked(useObjectives);
 
 function item(overrides: Partial<BudgetItem>): BudgetItem {
   return {
@@ -35,6 +38,10 @@ function renderPage() {
 }
 
 describe("BudgetPage", () => {
+  beforeEach(() => {
+    mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
+  });
+
   it("affiche les totaux globaux (budget, engagé, réalisé, prévision, écart)", () => {
     mockedUseBudgetItems.mockReturnValue({
       items: [
@@ -90,7 +97,61 @@ describe("BudgetPage", () => {
     renderPage();
 
     expect(
-      screen.getByText("Aucune rubrique budgétaire pour le moment."),
+      screen.getByText("Aucune rubrique budgétaire partagée pour le moment."),
     ).toBeInTheDocument();
+  });
+
+  it("sépare les rubriques et les totaux en blocs partagé/privé", () => {
+    const sharedObjective: Objective = {
+      id: "shared1",
+      title: "Objectif partagé",
+      status: "active",
+      createdBy: "u1",
+      createdAt: 0,
+    };
+    const privateObjective: Objective = {
+      ...sharedObjective,
+      id: "priv1",
+      visibility: "private",
+    };
+    mockedUseObjectives.mockReturnValue({
+      objectives: [sharedObjective, privateObjective],
+      loading: false,
+    });
+    mockedUseBudgetItems.mockReturnValue({
+      items: [
+        item({ id: "s1", title: "Peinture", objectiveId: "shared1", budgeted: 1000 }),
+        item({ id: "p1", title: "Coffre-fort", objectiveId: "priv1", budgeted: 500 }),
+      ],
+      loading: false,
+    });
+
+    renderPage();
+
+    expect(screen.getByText("Budget partagé")).toBeInTheDocument();
+    expect(screen.getByText("Budget privé")).toBeInTheDocument();
+    expect(screen.getByText("Rubriques partagées")).toBeInTheDocument();
+    expect(screen.getByText("Rubriques privées")).toBeInTheDocument();
+    expect(screen.getByText("Peinture")).toBeInTheDocument();
+    expect(screen.getByText("Coffre-fort")).toBeInTheDocument();
+
+    const privateBudgetSection = screen
+      .getByText("Budget privé")
+      .closest("section") as HTMLElement;
+    expect(
+      within(privateBudgetSection).getAllByText("500,00 MAD").length,
+    ).toBeGreaterThan(0);
+  });
+
+  it("n'affiche pas de bloc privé quand aucune rubrique n'est privée", () => {
+    mockedUseBudgetItems.mockReturnValue({
+      items: [item({ id: "s1", title: "Peinture", budgeted: 1000 })],
+      loading: false,
+    });
+
+    renderPage();
+
+    expect(screen.queryByText("Budget privé")).not.toBeInTheDocument();
+    expect(screen.queryByText("Rubriques privées")).not.toBeInTheDocument();
   });
 });

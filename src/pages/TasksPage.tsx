@@ -8,6 +8,7 @@ import {
 } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { filterTasks, sortTasks, type TaskFilters, type TaskSortKey } from "../domain/taskFilters";
+import { getPrivateObjectiveIds, isTaskPrivate } from "../domain/visibility";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
@@ -29,6 +30,47 @@ export function TasksPage() {
   const objectiveTitleById = new Map(objectives.map((o) => [o.id, o.title]));
   const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
   const onlyMyTasks = Boolean(user) && filters.assigneeId === user?.uid;
+
+  const privateObjectiveIds = getPrivateObjectiveIds(objectives);
+  const sharedTasks = visibleTasks.filter(
+    (t) => !isTaskPrivate(t, privateObjectiveIds),
+  );
+  const privateTasks = visibleTasks.filter((t) =>
+    isTaskPrivate(t, privateObjectiveIds),
+  );
+
+  function renderTaskItem(task: (typeof visibleTasks)[number]) {
+    return (
+      <li key={task.id}>
+        <Link
+          to={`/tasks/${task.id}`}
+          className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
+        >
+          <div>
+            <p className="font-medium text-slate-900">{task.title}</p>
+            <p className="text-sm text-slate-500">
+              {TASK_TYPE_LABELS[task.type]} ·{" "}
+              {TASK_PRIORITY_LABELS[task.priority]}
+              {task.objectiveId &&
+                ` · ${objectiveTitleById.get(task.objectiveId) ?? ""}`}
+            </p>
+            {task.assigneeIds.length > 0 && (
+              <p className="text-xs text-slate-400">
+                {task.assigneeIds
+                  .map((assigneeId) => userNameById.get(assigneeId) ?? "?")
+                  .join(", ")}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+              {TASK_STATUS_LABELS[task.status]}
+            </span>
+          </div>
+        </Link>
+      </li>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -167,41 +209,33 @@ export function TasksPage() {
 
       {loading && <p className="text-slate-500">Chargement...</p>}
 
-      <ul className="flex flex-col gap-2">
-        {visibleTasks.map((task) => (
-          <li key={task.id}>
-            <Link
-              to={`/tasks/${task.id}`}
-              className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
-            >
-              <div>
-                <p className="font-medium text-slate-900">{task.title}</p>
-                <p className="text-sm text-slate-500">
-                  {TASK_TYPE_LABELS[task.type]} ·{" "}
-                  {TASK_PRIORITY_LABELS[task.priority]}
-                  {task.objectiveId &&
-                    ` · ${objectiveTitleById.get(task.objectiveId) ?? ""}`}
-                </p>
-                {task.assigneeIds.length > 0 && (
-                  <p className="text-xs text-slate-400">
-                    {task.assigneeIds
-                      .map((assigneeId) => userNameById.get(assigneeId) ?? "?")
-                      .join(", ")}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
-                  {TASK_STATUS_LABELS[task.status]}
-                </span>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
+      {!loading && (
+        <>
+          <section>
+            <h2 className="mb-2 text-sm font-medium text-slate-700">
+              Tâches partagées
+            </h2>
+            <ul className="flex flex-col gap-2">
+              {sharedTasks.map(renderTaskItem)}
+            </ul>
+            {sharedTasks.length === 0 && (
+              <p className="text-slate-500">
+                Aucune tâche partagée ne correspond aux filtres.
+              </p>
+            )}
+          </section>
 
-      {!loading && visibleTasks.length === 0 && (
-        <p className="text-slate-500">Aucune tâche ne correspond aux filtres.</p>
+          {privateTasks.length > 0 && (
+            <section className="mt-6">
+              <h2 className="mb-2 text-sm font-medium text-slate-700">
+                Tâches privées
+              </h2>
+              <ul className="flex flex-col gap-2">
+                {privateTasks.map(renderTaskItem)}
+              </ul>
+            </section>
+          )}
+        </>
       )}
     </div>
   );

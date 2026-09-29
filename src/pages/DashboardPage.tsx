@@ -13,6 +13,11 @@ import {
   withCurrentFirst,
 } from "../domain/dashboard";
 import { formatMad } from "../domain/money";
+import {
+  getPrivateObjectiveIds,
+  isBudgetItemPrivate,
+  isTaskPrivate,
+} from "../domain/visibility";
 import { useBudgetItems } from "../hooks/useBudgetItems";
 import { useFamilyMembers } from "../hooks/useFamilyMembers";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
@@ -50,20 +55,18 @@ export function DashboardPage() {
     ? getUpcomingTasks(tasks.filter((t) => t.assigneeIds.includes(user.uid)))
     : [];
   const budgetWatchlist = getWatchlist(budgetItems);
-  const privateObjectiveIds = new Set(
-    objectives.filter((o) => o.visibility === "private").map((o) => o.id),
-  );
-  const isTaskPrivate = (task: { objectiveId: string | null }) =>
-    task.objectiveId != null && privateObjectiveIds.has(task.objectiveId);
-  const isBudgetItemPrivate = (item: { objectiveId: string | null }) =>
-    item.objectiveId != null && privateObjectiveIds.has(item.objectiveId);
+  const privateObjectiveIds = getPrivateObjectiveIds(objectives);
+  const taskIsPrivate = (task: { objectiveId: string | null }) =>
+    isTaskPrivate(task, privateObjectiveIds);
+  const budgetItemIsPrivate = (item: { objectiveId: string | null }) =>
+    isBudgetItemPrivate(item, privateObjectiveIds);
 
   const sharedObjectives = objectives.filter((o) => o.visibility !== "private");
   const privateObjectives = objectives.filter((o) => o.visibility === "private");
-  const sharedTasks = tasks.filter((t) => !isTaskPrivate(t));
-  const privateTasks = tasks.filter((t) => isTaskPrivate(t));
-  const sharedBudgetItems = budgetItems.filter((b) => !isBudgetItemPrivate(b));
-  const privateBudgetItems = budgetItems.filter((b) => isBudgetItemPrivate(b));
+  const sharedTasks = tasks.filter((t) => !taskIsPrivate(t));
+  const privateTasks = tasks.filter((t) => taskIsPrivate(t));
+  const sharedBudgetItems = budgetItems.filter((b) => !budgetItemIsPrivate(b));
+  const privateBudgetItems = budgetItems.filter((b) => budgetItemIsPrivate(b));
 
   const sharedObjectivesKpi = countClosedObjectives(sharedObjectives);
   const sharedTasksKpi = countClosedTasks(sharedTasks);
@@ -284,7 +287,7 @@ export function DashboardPage() {
                       budgetItems={budgetItems.filter(
                         (b) => b.taskId === task.id,
                       )}
-                      isPrivate={isTaskPrivate(task)}
+                      isPrivate={taskIsPrivate(task)}
                     />
                   </li>
                 ))}
@@ -311,7 +314,7 @@ export function DashboardPage() {
                       budgetItems={budgetItems.filter(
                         (b) => b.taskId === task.id,
                       )}
-                      isPrivate={isTaskPrivate(task)}
+                      isPrivate={taskIsPrivate(task)}
                     />
                   </li>
                 ))}
@@ -336,7 +339,7 @@ export function DashboardPage() {
                       budgetItems={budgetItems.filter(
                         (b) => b.taskId === task.id,
                       )}
-                      isPrivate={isTaskPrivate(task)}
+                      isPrivate={taskIsPrivate(task)}
                     />
                   </li>
                 ))}

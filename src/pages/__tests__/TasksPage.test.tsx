@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,7 +6,7 @@ import { useAuth } from "../../context/AuthContext";
 import { useFamilyUsers } from "../../hooks/useFamilyUsers";
 import { useObjectives } from "../../hooks/useObjectives";
 import { useTasks } from "../../hooks/useTasks";
-import type { Task } from "../../types";
+import type { Objective, Task } from "../../types";
 import { TasksPage } from "../TasksPage";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
@@ -101,5 +101,83 @@ describe("TasksPage — filtre Mes tâches et affichage des assignés", () => {
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-pressed", "false");
     expect(screen.getByText("Tâche de Paul")).toBeInTheDocument();
+  });
+});
+
+describe("TasksPage — séparation partagé/privé", () => {
+  beforeEach(() => {
+    mockedUseAuth.mockReturnValue({
+      user: { uid: "user-1" } as never,
+      loading: false,
+      isAuthorized: true,
+      error: null,
+      signInWithGoogle: vi.fn(),
+      signOutUser: vi.fn(),
+    });
+    mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+  });
+
+  it("sépare les tâches partagées et privées dans deux blocs, le bloc privé seulement s'il y a des tâches privées", () => {
+    const sharedObjective: Objective = {
+      id: "shared1",
+      title: "Objectif partagé",
+      status: "active",
+      createdBy: "user-1",
+      createdAt: 0,
+    };
+    const privateObjective: Objective = {
+      ...sharedObjective,
+      id: "priv1",
+      visibility: "private",
+    };
+    mockedUseObjectives.mockReturnValue({
+      objectives: [sharedObjective, privateObjective],
+      loading: false,
+    });
+    mockedUseTasks.mockReturnValue({
+      tasks: [
+        task({ id: "s1", title: "Tâche partagée", objectiveId: "shared1" }),
+        task({ id: "p1", title: "Tâche privée", objectiveId: "priv1" }),
+      ],
+      loading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <TasksPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Tâches partagées")).toBeInTheDocument();
+    expect(screen.getByText("Tâches privées")).toBeInTheDocument();
+
+    const sharedSection = screen
+      .getByText("Tâches partagées")
+      .closest("section") as HTMLElement;
+    expect(within(sharedSection).getByText("Tâche partagée")).toBeInTheDocument();
+    expect(
+      within(sharedSection).queryByText("Tâche privée"),
+    ).not.toBeInTheDocument();
+
+    const privateSection = screen
+      .getByText("Tâches privées")
+      .closest("section") as HTMLElement;
+    expect(within(privateSection).getByText("Tâche privée")).toBeInTheDocument();
+  });
+
+  it("n'affiche pas le bloc privé quand il n'y a aucune tâche privée", () => {
+    mockedUseObjectives.mockReturnValue({ objectives: [], loading: false });
+    mockedUseTasks.mockReturnValue({
+      tasks: [task({ id: "s1", title: "Tâche partagée" })],
+      loading: false,
+    });
+
+    render(
+      <MemoryRouter>
+        <TasksPage />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("Tâches privées")).not.toBeInTheDocument();
   });
 });
