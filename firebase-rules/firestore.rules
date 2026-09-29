@@ -26,35 +26,92 @@ service cloud.firestore {
       allow write: if isFamilyMember() && request.auth.uid == userId;
     }
 
+    // Un objectif "private" n'est visible/modifiable que par son créateur ; les
+    // objectifs sans champ visibility (créés avant cette fonctionnalité) ou avec
+    // visibility == "shared" restent visibles par toute la famille, comme avant.
+    // .get('visibility', 'shared') (plutôt que .visibility) : accès sûr, retombe
+    // explicitement sur 'shared' si le champ est absent, au lieu de dépendre du
+    // comportement du moteur de règles sur un champ manquant.
+    function isPrivateObjective(objectiveId) {
+      return objectiveId != null &&
+        exists(/databases/$(database)/documents/objectives/$(objectiveId)) &&
+        get(/databases/$(database)/documents/objectives/$(objectiveId)).data.get('visibility', 'shared') == 'private';
+    }
+
+    function ownsObjective(objectiveId) {
+      return objectiveId != null &&
+        exists(/databases/$(database)/documents/objectives/$(objectiveId)) &&
+        get(/databases/$(database)/documents/objectives/$(objectiveId)).data.createdBy == request.auth.uid;
+    }
+
+    // Une tâche libre (objectiveId == null) est toujours partagée. Une tâche liée
+    // à un objectif hérite de sa visibilité — c'est la seule source de vérité,
+    // la tâche elle-même n'a pas son propre champ de visibilité.
+    function canAccessObjectiveId(objectiveId) {
+      return !isPrivateObjective(objectiveId) || ownsObjective(objectiveId);
+    }
+
     match /objectives/{objectiveId} {
-      allow read: if isFamilyMember();
-      allow create, update, delete: if isFamilyMember();
+      allow read: if isFamilyMember() &&
+        (resource.data.get('visibility', 'shared') != 'private' ||
+          resource.data.createdBy == request.auth.uid);
+      allow create: if isFamilyMember();
+      allow update, delete: if isFamilyMember() &&
+        (resource.data.get('visibility', 'shared') != 'private' ||
+          resource.data.createdBy == request.auth.uid);
     }
 
     match /budgetItems/{budgetItemId} {
-      allow read: if isFamilyMember();
-      allow create, update, delete: if isFamilyMember();
+      allow read: if isFamilyMember() &&
+        canAccessObjectiveId(resource.data.get('objectiveId', null));
+      allow create: if isFamilyMember() &&
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+      // update vérifie l'objectif actuel ET le nouveau (sinon on pourrait
+      // rattacher une rubrique à l'objectif privé de quelqu'un d'autre sans y
+      // avoir accès). delete n'a pas de request.resource, donc règle séparée.
+      allow update: if isFamilyMember() &&
+        canAccessObjectiveId(resource.data.get('objectiveId', null)) &&
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+      allow delete: if isFamilyMember() &&
+        canAccessObjectiveId(resource.data.get('objectiveId', null));
     }
 
     match /tasks/{taskId} {
-      allow read: if isFamilyMember();
-      allow create, update, delete: if isFamilyMember();
+      allow read: if isFamilyMember() &&
+        canAccessObjectiveId(resource.data.get('objectiveId', null));
+      allow create: if isFamilyMember() &&
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+      allow update: if isFamilyMember() &&
+        canAccessObjectiveId(resource.data.get('objectiveId', null)) &&
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+      allow delete: if isFamilyMember() &&
+        canAccessObjectiveId(resource.data.get('objectiveId', null));
+
+      // Le parent (la tâche) est déjà chargé par le match ci-dessus, mais les
+      // règles des sous-collections ont leur propre contexte `resource` : on
+      // relit la tâche pour retrouver son objectif et appliquer la même
+      // restriction (commentaires/pièces jointes d'une tâche privée = privés).
+      function canAccessParentTask() {
+        return canAccessObjectiveId(
+          get(/databases/$(database)/documents/tasks/$(taskId)).data.get('objectiveId', null)
+        );
+      }
 
       match /comments/{commentId} {
-        allow read: if isFamilyMember();
-        allow create, update, delete: if isFamilyMember();
+        allow read: if isFamilyMember() && canAccessParentTask();
+        allow create, update, delete: if isFamilyMember() && canAccessParentTask();
       }
 
       match /attachments/{attachmentId} {
-        allow read: if isFamilyMember();
-        allow create, update, delete: if isFamilyMember();
+        allow read: if isFamilyMember() && canAccessParentTask();
+        allow create, update, delete: if isFamilyMember() && canAccessParentTask();
 
         // Le contenu du fichier (encodé en base64) est découpé en morceaux
         // de documents ici, pour rester sous la limite de 1 Mio par document
         // Firestore — voir src/domain/attachments.ts.
         match /chunks/{chunkId} {
-          allow read: if isFamilyMember();
-          allow create, update, delete: if isFamilyMember();
+          allow read: if isFamilyMember() && canAccessParentTask();
+          allow create, update, delete: if isFamilyMember() && canAccessParentTask();
         }
       }
     }

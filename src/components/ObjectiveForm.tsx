@@ -1,15 +1,18 @@
 import { useState, type FormEvent } from "react";
+import type { ObjectiveVisibility } from "../types";
 
 export interface ObjectiveFormValues {
   title: string;
   description: string;
   targetDate: string;
+  visibility: ObjectiveVisibility;
 }
 
 const EMPTY_VALUES: ObjectiveFormValues = {
   title: "",
   description: "",
   targetDate: "",
+  visibility: "shared",
 };
 
 export interface ObjectiveFormProps {
@@ -90,6 +93,28 @@ export function ObjectiveForm({
           className="rounded border border-slate-300 px-3 py-2"
         />
       </label>
+
+      <fieldset className="flex flex-col gap-1">
+        <legend className="text-sm font-medium">Visibilité</legend>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="radio"
+            name="visibility"
+            checked={values.visibility === "shared"}
+            onChange={() => setValues({ ...values, visibility: "shared" })}
+          />
+          Partagé avec la famille
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="radio"
+            name="visibility"
+            checked={values.visibility === "private"}
+            onChange={() => setValues({ ...values, visibility: "private" })}
+          />
+          Privé (visible par vous seul, ainsi que ses tâches et rubriques)
+        </label>
+      </fieldset>
 
       <button
         type="submit"

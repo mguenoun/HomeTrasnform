@@ -44,6 +44,7 @@ export function ObjectiveDetailPage() {
       title: values.title,
       description: values.description,
       targetDate: values.targetDate || null,
+      visibility: values.visibility,
     });
     setEditing(false);
   }
@@ -86,6 +87,7 @@ export function ObjectiveDetailPage() {
               title: objective.title,
               description: objective.description ?? "",
               targetDate: objective.targetDate ?? "",
+              visibility: objective.visibility ?? "shared",
             }}
             submitLabel="Enregistrer"
             onSubmit={handleUpdate}
@@ -93,9 +95,16 @@ export function ObjectiveDetailPage() {
         </div>
       ) : (
         <header className="mt-4 mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900">
-            {objective.title}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-semibold text-slate-900">
+              {objective.title}
+            </h1>
+            {objective.visibility === "private" && (
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+                Privé
+              </span>
+            )}
+          </div>
           {objective.description && (
             <p className="mt-1 text-slate-600">{objective.description}</p>
           )}

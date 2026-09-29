@@ -23,6 +23,7 @@ export function ObjectivesPage() {
       title: values.title,
       description: values.description,
       targetDate: values.targetDate || undefined,
+      visibility: values.visibility,
       createdBy: user.uid,
     });
     setShowForm(false);

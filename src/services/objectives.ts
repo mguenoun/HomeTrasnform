@@ -12,7 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { stripUndefined } from "../firebase/sanitize";
-import type { Objective, ObjectiveStatus } from "../types";
+import type { Objective, ObjectiveStatus, ObjectiveVisibility } from "../types";
 
 const OBJECTIVES_COLLECTION = "objectives";
 const TASKS_COLLECTION = "tasks";
@@ -21,6 +21,7 @@ export interface NewObjectiveInput {
   title: string;
   description?: string;
   targetDate?: string;
+  visibility: ObjectiveVisibility;
   createdBy: string;
 }
 
@@ -44,6 +45,7 @@ export async function createObjective(
     description: input.description ?? "",
     targetDate: input.targetDate ?? null,
     status: "active" satisfies ObjectiveStatus,
+    visibility: input.visibility,
     createdBy: input.createdBy,
     createdAt: Date.now(),
   });
@@ -52,7 +54,9 @@ export async function createObjective(
 
 export async function updateObjective(
   objectiveId: string,
-  changes: Partial<Pick<Objective, "title" | "description" | "targetDate">>,
+  changes: Partial<
+    Pick<Objective, "title" | "description" | "targetDate" | "visibility">
+  >,
 ): Promise<void> {
   await updateDoc(
     doc(db, OBJECTIVES_COLLECTION, objectiveId),

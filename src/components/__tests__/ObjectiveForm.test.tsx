@@ -34,6 +34,27 @@ describe("ObjectiveForm", () => {
     );
   });
 
+  it("soumet 'shared' par défaut et 'private' après sélection", async () => {
+    const onSubmit = vi.fn();
+    render(<ObjectiveForm onSubmit={onSubmit} />);
+
+    await userEvent.type(screen.getByLabelText(/titre/i), "Cadeau surprise");
+    await userEvent.click(
+      screen.getByRole("button", { name: /créer l'objectif/i }),
+    );
+    expect(onSubmit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visibility: "shared" }),
+    );
+
+    await userEvent.click(screen.getByLabelText(/privé/i));
+    await userEvent.click(
+      screen.getByRole("button", { name: /créer l'objectif/i }),
+    );
+    expect(onSubmit).toHaveBeenLastCalledWith(
+      expect.objectContaining({ visibility: "private" }),
+    );
+  });
+
   it("affiche l'erreur si l'enregistrement échoue, au lieu de rester silencieusement bloqué", async () => {
     const onSubmit = vi.fn().mockRejectedValue(new Error("Erreur réseau."));
     render(<ObjectiveForm onSubmit={onSubmit} />);

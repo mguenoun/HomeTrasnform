@@ -5,7 +5,7 @@ import {
   initializeTestEnvironment,
   type RulesTestEnvironment,
 } from "@firebase/rules-unit-testing";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
 
 let testEnv: RulesTestEnvironment;
@@ -141,5 +141,150 @@ describe("Firestore security rules", () => {
     await assertFails(
       setDoc(doc(outsider.firestore(), "tasks/task1"), { title: "Intrus" }),
     );
+  });
+
+  describe("objectifs privés", () => {
+    beforeEach(async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "familymembers/member2@example.com"), {
+          uid: "member2-uid",
+        });
+        await setDoc(doc(context.firestore(), "objectives/private-obj"), {
+          title: "Cadeau surprise",
+          visibility: "private",
+          createdBy: "member-uid",
+        });
+      });
+    });
+
+    function asOwner() {
+      return testEnv.authenticatedContext("member-uid", {
+        email: "member@example.com",
+      });
+    }
+
+    function asOtherMember() {
+      return testEnv.authenticatedContext("member2-uid", {
+        email: "member2@example.com",
+      });
+    }
+
+    it("autorise le créateur à lire son objectif privé", async () => {
+      await assertSucceeds(
+        getDoc(doc(asOwner().firestore(), "objectives/private-obj")),
+      );
+    });
+
+    it("refuse la lecture d'un objectif privé à un autre membre de la famille", async () => {
+      await assertFails(
+        getDoc(doc(asOtherMember().firestore(), "objectives/private-obj")),
+      );
+    });
+
+    it("refuse la modification d'un objectif privé par un autre membre", async () => {
+      await assertFails(
+        updateDoc(doc(asOtherMember().firestore(), "objectives/private-obj"), {
+          title: "Détourné",
+        }),
+      );
+    });
+
+    it("un objectif partagé (visibility absente) reste lisible par tous les membres", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "objectives/shared-obj"), {
+          title: "Objectif commun",
+          createdBy: "member-uid",
+        });
+      });
+      await assertSucceeds(
+        getDoc(doc(asOtherMember().firestore(), "objectives/shared-obj")),
+      );
+    });
+
+    it("refuse la lecture d'une tâche liée à un objectif privé à un autre membre", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "tasks/private-task"), {
+          title: "Réserver le restaurant",
+          objectiveId: "private-obj",
+        });
+      });
+      await assertSucceeds(
+        getDoc(doc(asOwner().firestore(), "tasks/private-task")),
+      );
+      await assertFails(
+        getDoc(doc(asOtherMember().firestore(), "tasks/private-task")),
+      );
+    });
+
+    it("une tâche libre (sans objectif) reste lisible par tous les membres", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "tasks/free-task"), {
+          title: "Tâche libre",
+          objectiveId: null,
+        });
+      });
+      await assertSucceeds(
+        getDoc(doc(asOtherMember().firestore(), "tasks/free-task")),
+      );
+    });
+
+    it("refuse la lecture d'une rubrique budgétaire liée à un objectif privé à un autre membre", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "budgetItems/private-budget"), {
+          title: "Bijou",
+          objectiveId: "private-obj",
+          budgeted: 500,
+        });
+      });
+      await assertSucceeds(
+        getDoc(doc(asOwner().firestore(), "budgetItems/private-budget")),
+      );
+      await assertFails(
+        getDoc(doc(asOtherMember().firestore(), "budgetItems/private-budget")),
+      );
+    });
+
+    it("refuse la lecture des commentaires et pièces jointes d'une tâche privée à un autre membre", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "tasks/private-task"), {
+          title: "Réserver le restaurant",
+          objectiveId: "private-obj",
+        });
+        await setDoc(
+          doc(context.firestore(), "tasks/private-task/comments/c1"),
+          { text: "Chut" },
+        );
+        await setDoc(
+          doc(context.firestore(), "tasks/private-task/attachments/a1"),
+          { fileName: "devis.pdf" },
+        );
+      });
+
+      await assertSucceeds(
+        getDoc(doc(asOwner().firestore(), "tasks/private-task/comments/c1")),
+      );
+      await assertFails(
+        getDoc(
+          doc(asOtherMember().firestore(), "tasks/private-task/comments/c1"),
+        ),
+      );
+      await assertFails(
+        getDoc(
+          doc(
+            asOtherMember().firestore(),
+            "tasks/private-task/attachments/a1",
+          ),
+        ),
+      );
+    });
+
+    it("refuse la création d'une tâche sur l'objectif privé d'un autre membre", async () => {
+      await assertFails(
+        setDoc(doc(asOtherMember().firestore(), "tasks/sneaky-task"), {
+          title: "Intrus",
+          objectiveId: "private-obj",
+        }),
+      );
+    });
   });
 });

@@ -103,6 +103,13 @@ export function TaskDetailPage() {
   const objectiveTitle = objective?.title;
   const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
   const taskBudgetItems = budgetItems.filter((b) => b.taskId === task.id);
+  // Un objectif privé n'est visible que par son créateur (règles Firestore) :
+  // inutile de proposer d'autres assignés, ils ne pourraient de toute façon
+  // pas voir la tâche.
+  const assignableUsers =
+    objective?.visibility === "private"
+      ? users.filter((u) => u.uid === objective.createdBy)
+      : users;
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -150,6 +157,11 @@ export function TaskDetailPage() {
             {TASK_PRIORITY_LABELS[task.priority]}
             {task.room && ` · ${task.room}`}
             {objectiveTitle && ` · ${objectiveTitle}`}
+            {objective?.visibility === "private" && (
+              <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+                Privé
+              </span>
+            )}
           </p>
           {task.description && (
             <p className="mt-2 text-slate-700">{task.description}</p>
@@ -188,7 +200,7 @@ export function TaskDetailPage() {
           <div className="mt-4">
             <p className="text-sm font-medium text-slate-700">Assignés</p>
             <div className="mt-1 flex flex-wrap gap-2">
-              {users.map((familyUser) => {
+              {assignableUsers.map((familyUser) => {
                 const assigned = task.assigneeIds.includes(familyUser.uid);
                 return (
                   <button
@@ -206,7 +218,7 @@ export function TaskDetailPage() {
                   </button>
                 );
               })}
-              {users.length === 0 && (
+              {assignableUsers.length === 0 && (
                 <p className="text-sm text-slate-400">Aucun membre trouvé.</p>
               )}
             </div>

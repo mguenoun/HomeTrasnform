@@ -30,12 +30,23 @@ export interface FamilyMemberRecord {
 
 export type ObjectiveStatus = "active" | "archived";
 
+/**
+ * "shared" (par défaut) : visible par toute la famille, comme avant cette
+ * fonctionnalité. "private" : visible uniquement par `createdBy`, ainsi que
+ * ses tâches, rubriques budgétaires, commentaires et pièces jointes — la
+ * règle Firestore applique cette restriction, ce n'est pas qu'un filtre
+ * d'affichage. Absent sur les objectifs créés avant cette fonctionnalité,
+ * traité comme "shared" partout (client et règles).
+ */
+export type ObjectiveVisibility = "shared" | "private";
+
 export interface Objective {
   id: string;
   title: string;
   description?: string;
   targetDate?: string | null;
   status: ObjectiveStatus;
+  visibility?: ObjectiveVisibility;
   createdBy: string;
   createdAt: number;
 }

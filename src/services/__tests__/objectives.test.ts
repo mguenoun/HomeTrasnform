@@ -41,6 +41,7 @@ describe("createObjective", () => {
   it("crée un objectif actif avec les champs par défaut", async () => {
     const id = await createObjective({
       title: "Réaménager le salon",
+      visibility: "shared",
       createdBy: "user-1",
     });
 
@@ -50,9 +51,21 @@ describe("createObjective", () => {
     expect(payload).toMatchObject({
       title: "Réaménager le salon",
       status: "active",
+      visibility: "shared",
       createdBy: "user-1",
     });
     expect(typeof payload.createdAt).toBe("number");
+  });
+
+  it("crée un objectif privé", async () => {
+    await createObjective({
+      title: "Cadeau surprise",
+      visibility: "private",
+      createdBy: "user-1",
+    });
+
+    const [, payload] = addDocMock.mock.calls[0];
+    expect(payload.visibility).toBe("private");
   });
 });
 
@@ -81,6 +94,14 @@ describe("updateObjective", () => {
     expect(updateDocMock).toHaveBeenCalledWith(
       { __doc: "objectives", id: "obj1" },
       { targetDate: null },
+    );
+  });
+
+  it("permet de basculer la visibilité", async () => {
+    await updateObjective("obj1", { visibility: "private" });
+    expect(updateDocMock).toHaveBeenCalledWith(
+      { __doc: "objectives", id: "obj1" },
+      { visibility: "private" },
     );
   });
 });
