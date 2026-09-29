@@ -82,6 +82,17 @@ export function latestProgress(item: BudgetItem): number | null {
   return latest.progress ?? null;
 }
 
+/** Même chose que latestProgress, mais à travers plusieurs rubriques (ex. celles
+ * liées à un même objectif ou une même tâche). */
+export function latestProgressAcrossItems(items: BudgetItem[]): number | null {
+  const withProgress = items
+    .flatMap((item) => item.payments)
+    .filter((p) => p.progress != null);
+  if (withProgress.length === 0) return null;
+  const latest = [...withProgress].sort((a, b) => b.date.localeCompare(a.date))[0];
+  return latest.progress ?? null;
+}
+
 export function addPayment(
   item: BudgetItem,
   payment: BudgetPayment,

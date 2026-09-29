@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
 import { BudgetItemCard } from "../components/BudgetItemCard";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
+import { TaskRow } from "../components/TaskRow";
 import { TASK_TYPE_LABELS } from "../constants";
 import { useAuth } from "../context/AuthContext";
 import { getWatchlist, summarizeBudgetItems } from "../domain/budgetItems";
@@ -53,6 +53,11 @@ export function DashboardPage() {
     : [];
   const budgetTotals = summarizeBudgetItems(budgetItems);
   const budgetWatchlist = getWatchlist(budgetItems);
+  const privateObjectiveIds = new Set(
+    objectives.filter((o) => o.visibility === "private").map((o) => o.id),
+  );
+  const isTaskPrivate = (task: { objectiveId: string | null }) =>
+    task.objectiveId != null && privateObjectiveIds.has(task.objectiveId);
 
   return (
     <div className="min-h-screen bg-slate-50 p-6">
@@ -207,17 +212,14 @@ export function DashboardPage() {
               <ul className="flex flex-col gap-2">
                 {myUpcomingTasks.map((task) => (
                   <li key={task.id}>
-                    <Link
-                      to={`/tasks/${task.id}`}
-                      className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
-                    >
-                      <span className="font-medium text-slate-900">
-                        {task.title}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {task.dueDate}
-                      </span>
-                    </Link>
+                    <TaskRow
+                      task={task}
+                      meta={task.dueDate}
+                      budgetItems={budgetItems.filter(
+                        (b) => b.taskId === task.id,
+                      )}
+                      isPrivate={isTaskPrivate(task)}
+                    />
                   </li>
                 ))}
               </ul>
@@ -237,17 +239,14 @@ export function DashboardPage() {
               <ul className="flex flex-col gap-2">
                 {upcomingTasks.map((task) => (
                   <li key={task.id}>
-                    <Link
-                      to={`/tasks/${task.id}`}
-                      className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
-                    >
-                      <span className="font-medium text-slate-900">
-                        {task.title}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {task.dueDate}
-                      </span>
-                    </Link>
+                    <TaskRow
+                      task={task}
+                      meta={task.dueDate}
+                      budgetItems={budgetItems.filter(
+                        (b) => b.taskId === task.id,
+                      )}
+                      isPrivate={isTaskPrivate(task)}
+                    />
                   </li>
                 ))}
               </ul>
@@ -265,17 +264,14 @@ export function DashboardPage() {
               <ul className="flex flex-col gap-2">
                 {blockedTasks.map((task) => (
                   <li key={task.id}>
-                    <Link
-                      to={`/tasks/${task.id}`}
-                      className="flex items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
-                    >
-                      <span className="font-medium text-slate-900">
-                        {task.title}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        {TASK_TYPE_LABELS[task.type]}
-                      </span>
-                    </Link>
+                    <TaskRow
+                      task={task}
+                      meta={TASK_TYPE_LABELS[task.type]}
+                      budgetItems={budgetItems.filter(
+                        (b) => b.taskId === task.id,
+                      )}
+                      isPrivate={isTaskPrivate(task)}
+                    />
                   </li>
                 ))}
               </ul>

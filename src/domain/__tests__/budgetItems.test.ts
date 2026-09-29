@@ -9,6 +9,7 @@ import {
   forecastFinal,
   getWatchlist,
   latestProgress,
+  latestProgressAcrossItems,
   removePayment,
   reviseForecast,
   statusOf,
@@ -268,5 +269,25 @@ describe("latestProgress", () => {
       payments: [makePayment({ id: "a" })],
     });
     expect(latestProgress(item)).toBeNull();
+  });
+});
+
+describe("latestProgressAcrossItems", () => {
+  it("retourne l'avancement le plus récent parmi plusieurs rubriques", () => {
+    const items = [
+      makeItem({
+        id: "a",
+        payments: [makePayment({ id: "p1", date: "2026-01-01", progress: 20 })],
+      }),
+      makeItem({
+        id: "b",
+        payments: [makePayment({ id: "p2", date: "2026-03-01", progress: 90 })],
+      }),
+    ];
+    expect(latestProgressAcrossItems(items)).toBe(90);
+  });
+
+  it("retourne null si aucune rubrique ne renseigne d'avancement", () => {
+    expect(latestProgressAcrossItems([makeItem()])).toBeNull();
   });
 });

@@ -74,25 +74,35 @@ describe("ObjectiveSummaryCard", () => {
     expect(screen.getByText("1/2 tâches terminées (50%)")).toBeInTheDocument();
   });
 
-  it("n'affiche pas de ligne budget si aucune rubrique n'est liée", () => {
+  it("n'affiche pas le bloc budget si aucune rubrique n'est liée", () => {
     renderCard([task({ id: "t1" })], []);
-    expect(screen.queryByText(/Budget :/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Payé")).not.toBeInTheDocument();
   });
 
-  it("affiche le budget et le badge de dépassement si le réalisé dépasse le budgété", () => {
+  it("affiche budget/avancement/payé/reste et le badge de dépassement si le réalisé dépasse le budgété", () => {
     renderCard(
       [task({ id: "t1" })],
       [
         budgetItem({
           budgeted: 100,
           payments: [
-            { id: "p1", date: "2026-03-01", amount: 150, status: "paye", createdBy: "u1" },
+            {
+              id: "p1",
+              date: "2026-03-01",
+              amount: 150,
+              status: "paye",
+              createdBy: "u1",
+              progress: 80,
+            },
           ],
         }),
       ],
     );
 
-    expect(screen.getByText(/Budget : 150,00 MAD \/ 100,00 MAD/)).toBeInTheDocument();
+    expect(screen.getByText("100,00 MAD")).toBeInTheDocument();
+    expect(screen.getByText("80%")).toBeInTheDocument();
+    expect(screen.getByText("150,00 MAD")).toBeInTheDocument();
+    expect(screen.getByText("-50,00 MAD")).toBeInTheDocument();
     expect(screen.getByText("Dépassement")).toBeInTheDocument();
   });
 
