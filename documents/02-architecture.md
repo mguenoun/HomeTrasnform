@@ -1,5 +1,7 @@
 # Architecture fonctionnelle et technique — HomeTransform
 
+**Statut** : ✅ Fait · 🚧 Partiel · ⬜ Prévu. Mis à jour au 2026-09-28.
+
 ## Vue d'ensemble
 ```
 [Navigateur] --SPA React statique--> Firebase Hosting
@@ -8,9 +10,16 @@
       v
 [Firebase — plan Spark, gratuit, sans carte bancaire]
  ├─ Auth        : connexion des membres de la famille (Google Sign-In)
- ├─ Firestore   : objectifs, tâches, commentaires, pièces jointes (voir ci-dessous)
- └─ Hosting     : sert le bundle React (dist/)
+ ├─ Firestore   : objectifs, tâches, budgetItems, commentaires, pièces jointes
+ └─ Hosting     : sert le bundle React (dist/) + le service worker (public/sw.js)
+
+[Navigateur] --POST /notify (à l'affectation)--> [Cloudflare Worker]
+[Cloudflare Cron (07:00, quotidien)]            --> [Cloudflare Worker] --rappels d'échéance-->
+                                                     Firestore (REST) + Web Push --> [Navigateur]
 ```
+Le Worker Cloudflare (`hometransform-notifications`, dossier `worker/`) est un second
+déployable, indépendant du SPA, pour les notifications push — voir *Notifications
+push* ci-dessous.
 Après une évaluation initiale de Cloudflare Pages pour l'hébergement du frontend,
 tout a finalement été consolidé sur **Firebase** (Auth + Firestore + Hosting) : un
 seul tableau de bord à gérer, un seul flux de déploiement (`firebase deploy`), pas
@@ -98,19 +107,62 @@ cloisonnées par "household"), ce qui simplifie le modèle.
 ## Sécurité
 - Firestore rules : accès en lecture/écriture réservé aux utilisateurs authentifiés
   dont l'email figure dans la collection `familymembers` — pas d'auto-inscription libre.
-  Règle identique pour les sous-collections `attachments` et `attachments/{id}/chunks`.
+  Règle identique pour les sous-collections `attachments` et `attachments/{id}/chunks`,
+  et pour `budgetItems`.
 - Limite de taille (10 Mo) et de type de fichier (PDF/JPG/PNG) validées côté client
   avant le découpage (`src/domain/attachments.ts`). Pas de vérification serveur
   supplémentaire : l'app est privée (derrière Firebase Auth), pas exposée à des
   utilisateurs non authentifiés.
 - Tout membre authentifié et autorisé peut créer/modifier/supprimer n'importe quelle
-  tâche, objectif, commentaire ou pièce jointe (pas de granularité de droits en v1).
+  tâche, objectif, rubrique budgétaire, commentaire ou pièce jointe (pas de granularité
+  de droits en v1).
+
+## Notifications push — ✅ Fait
+Un Worker Cloudflare dédié (`worker/`, nommé `hometransform-notifications`) porte
+l'envoi des notifications push, séparé du SPA :
+- **Déclenchées par l'app** (`POST /notify`) : à l'affectation d'une tâche à un membre.
+  Le Worker vérifie le token d'identité Firebase du membre qui affecte
+  (`worker/src/auth.ts`), vérifie que son email est autorisé, puis envoie la
+  notification Web Push (VAPID) aux abonnements du membre nouvellement assigné.
+- **Planifiées** (cron Cloudflare, `0 7 * * *`, voir `worker/wrangler.jsonc`) : chaque
+  jour, le Worker liste les tâches non terminées dont l'échéance est proche (fenêtre de
+  2 jours) ou dépassée et n'ont pas encore été rappelées (`dueReminderSentAt`), envoie
+  un push à leurs assignés, puis marque la tâche comme rappelée. Une nouvelle échéance
+  (`updateTask` avec un `dueDate` modifié) réinitialise ce marqueur pour permettre un
+  nouveau rappel.
+- **Accès Firestore côté Worker** : pas d'Admin SDK (non disponible sur le runtime
+  Cloudflare Workers). Le Worker utilise un compte de service Firebase (email + clé
+  privée en secrets Wrangler) et signe lui-même une assertion JWT (flux
+  *JWT-bearer*, RFC 7523, `worker/src/googleAuth.ts`) pour obtenir un token OAuth2 avec
+  un accès complet à Firestore (équivalent Admin SDK), puis appelle l'API REST
+  Firestore directement (`worker/src/firestoreClient.ts`). Ce token contourne les
+  règles de sécurité côté client — normal et attendu pour un accès serveur de confiance,
+  mais implique de garder le compte de service strictement secret (jamais dans le
+  dépôt).
+- Abonnement/désabonnement côté client : `src/services/push.ts`, stocké sur
+  `users/{uid}.pushSubscriptions`.
+- Coût : gratuit (plan Cloudflare Workers gratuit, web-push sans service tiers payant).
+
+## Installation (PWA) — ✅ Fait
+- `public/manifest.webmanifest` + icônes : rend l'app installable sur l'écran d'accueil
+  (Android/Chrome via l'invite native `beforeinstallprompt`, iOS/Safari via
+  Partager → Sur l'écran d'accueil, sans invite automatique — d'où les instructions
+  dédiées dans `InstallPrompt.tsx`).
+- `public/sw.js` : service worker minimal, uniquement pour recevoir/afficher les
+  notifications push (`push`, `notificationclick`). Pas de cache applicatif : l'app a
+  besoin d'une connexion à Firestore de toute façon, donc pas de mode hors-ligne.
+- Cache HTTP (`firebase.json` → `hosting.headers`) : `index.html`, `sw.js` et
+  `manifest.webmanifest` sont servis en `no-cache` (toujours revalidés), alors que les
+  bundles `/assets/**` (nom haché par build) sont `immutable`. Sans ça, une PWA déjà
+  installée pouvait continuer à servir l'ancien code plus d'une heure après un déploi.
 
 ## Hébergement & CI/CD
-- Déploiement manuel pour l'instant : `npm run build` puis `firebase deploy --only
-  hosting` (et `--only firestore:rules` quand les règles changent). Le dépôt GitHub
-  n'est pas encore relié à un déploiement continu (piste v2 : GitHub Actions avec un
-  compte de service Firebase en secret du repo).
+- **SPA** : déploiement manuel, `npm run build` puis `firebase deploy --only hosting`
+  (et `--only firestore:rules` quand les règles changent). — ✅ Fait
+- **Worker de notifications** : déploiement manuel séparé depuis `worker/`
+  (`wrangler deploy`), secrets gérés via `wrangler secret put`. — ✅ Fait
+- Le dépôt GitHub n'est pas encore relié à un déploiement continu pour l'un ou l'autre
+  déployable (piste v2 : GitHub Actions). — ⬜ Prévu
 
 ## Documents du projet
 Les artefacts de cadrage (brief, architecture, spec fonctionnelle, user stories) sont
@@ -120,10 +172,17 @@ versionnés en Markdown dans `documents/` :
 - `03-functional-spec.md`
 - `04-user-stories.md`
 
-## Tests prévus par couche
-- Unitaire : logique métier pure (calculs de budget, agrégations d'avancement,
-  découpage/réassemblage des pièces jointes en morceaux).
-- Composants : rendu et interactions (formulaires tâche, liste filtrée, upload).
-- Intégration : règles de sécurité Firestore via l'émulateur (vérifier qu'un email hors
-  liste est bien rejeté, y compris sur les morceaux de pièces jointes, etc.).
-- E2E (optionnel v1) : parcours "créer tâche → affecter → uploader devis → clôturer".
+## Tests par couche
+- Unitaire (`domain/*`) : logique métier pure (calculs de budget par rubrique,
+  agrégations d'avancement, découpage/réassemblage des pièces jointes en morceaux,
+  rappels de tâches, filtres/tri). — ✅ Fait
+- Composants (`components/`, `pages/`) : rendu et interactions (formulaires,
+  listes filtrées, upload, tableau de bord). — ✅ Fait
+- Worker de notifications (`worker/src/*.test.ts`) : auth, validation, client Firestore
+  REST, logique de rappel — testés indépendamment du runtime Cloudflare. — ✅ Fait
+- Intégration : règles de sécurité Firestore via l'émulateur (`npm run test:rules`,
+  nécessite un JDK ≥ 21 en local ; vérifie qu'un email hors liste est bien rejeté, y
+  compris sur les morceaux de pièces jointes et sur `budgetItems`). — ✅ Fait
+- Suite complète au 2026-09-28 : 245 tests (Vitest, hors règles Firestore).
+- E2E — ⬜ Prévu (optionnel v1) : parcours "créer tâche → affecter → uploader devis →
+  clôturer".
