@@ -28,6 +28,7 @@ import { formatMad } from "../domain/money";
 import { useBudgetItems } from "../hooks/useBudgetItems";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
+import { useTasks } from "../hooks/useTasks";
 import {
   createPaymentId,
   deleteBudgetItem,
@@ -53,6 +54,7 @@ export function BudgetItemDetailPage() {
   const { user } = useAuth();
   const { items } = useBudgetItems();
   const { objectives } = useObjectives();
+  const { tasks } = useTasks();
   const { users } = useFamilyUsers();
 
   const [editing, setEditing] = useState(false);
@@ -79,6 +81,7 @@ export function BudgetItemDetailPage() {
   }
 
   const objective = objectives.find((o) => o.id === item.objectiveId);
+  const task = tasks.find((t) => t.id === item.taskId);
   const userNameById = new Map(users.map((u) => [u.uid, u.displayName]));
   const realized = computeRealized(item);
   const planned = computePlanned(item);
@@ -186,15 +189,29 @@ export function BudgetItemDetailPage() {
     setRevisingForecast(false);
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <Breadcrumb
-        items={[
+  const breadcrumbItems = task
+    ? [
+        { label: "Tableau de bord", to: "/" },
+        { label: "Tâches", to: "/tasks" },
+        { label: task.title, to: `/tasks/${task.id}` },
+        { label: item.title },
+      ]
+    : objective
+      ? [
+          { label: "Tableau de bord", to: "/" },
+          { label: "Objectifs", to: "/objectives" },
+          { label: objective.title, to: `/objectives/${objective.id}` },
+          { label: item.title },
+        ]
+      : [
           { label: "Tableau de bord", to: "/" },
           { label: "Budget", to: "/budget" },
           { label: item.title },
-        ]}
-      />
+        ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-6">
+      <Breadcrumb items={breadcrumbItems} />
 
       {editing ? (
         <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4">
