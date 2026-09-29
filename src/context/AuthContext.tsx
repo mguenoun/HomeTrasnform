@@ -1,7 +1,8 @@
 import {
   GoogleAuthProvider,
+  getRedirectResult,
   onAuthStateChanged,
-  signInWithPopup,
+  signInWithRedirect,
   signOut,
   type User,
 } from "firebase/auth";
@@ -34,6 +35,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // signInWithPopup déclenche des avertissements de sécurité Google ("navigateur
+    // non sécurisé") quand l'app tourne en PWA installée (contexte proche d'une
+    // WebView) — signInWithRedirect fonctionne à l'identique dans un navigateur
+    // classique et évite ce faux positif. getRedirectResult() récupère le résultat
+    // au retour de redirection ; onAuthStateChanged ci-dessous capte ensuite l'état
+    // connecté, mais lui seul ne remonte pas les erreurs de connexion.
+    getRedirectResult(auth).catch((err) => {
+      setError(
+        `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}). Réessayez.`,
+      );
+    });
+
     return onAuthStateChanged(auth, async (nextUser) => {
       setLoading(true);
 
@@ -91,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signInWithGoogle() {
     setError(null);
     try {
-      await signInWithPopup(auth, new GoogleAuthProvider());
+      await signInWithRedirect(auth, new GoogleAuthProvider());
     } catch (err) {
       setError(
         `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}). Réessayez.`,

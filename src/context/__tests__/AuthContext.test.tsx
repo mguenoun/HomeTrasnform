@@ -6,7 +6,8 @@ vi.mock("../../firebase/config", () => ({ auth: {}, db: {} }));
 
 const getDocMock = vi.fn();
 const signOutMock = vi.fn().mockResolvedValue(undefined);
-const signInWithPopupMock = vi.fn().mockResolvedValue(undefined);
+const signInWithRedirectMock = vi.fn().mockResolvedValue(undefined);
+const getRedirectResultMock = vi.fn().mockResolvedValue(null);
 const upsertUserProfileMock = vi.fn().mockResolvedValue(undefined);
 
 vi.mock("../../services/users", () => ({
@@ -28,7 +29,8 @@ vi.mock("firebase/auth", () => ({
     });
     return () => {};
   },
-  signInWithPopup: (...args: unknown[]) => signInWithPopupMock(...args),
+  signInWithRedirect: (...args: unknown[]) => signInWithRedirectMock(...args),
+  getRedirectResult: (...args: unknown[]) => getRedirectResultMock(...args),
   signOut: (...args: unknown[]) => signOutMock(...args),
 }));
 
@@ -49,11 +51,12 @@ function Probe() {
 
 describe("AuthProvider", () => {
   beforeEach(() => {
-    signInWithPopupMock.mockReset().mockResolvedValue(undefined);
+    signInWithRedirectMock.mockReset().mockResolvedValue(undefined);
+    getRedirectResultMock.mockReset().mockResolvedValue(null);
     upsertUserProfileMock.mockReset().mockResolvedValue(undefined);
   });
 
-  it("utilise signInWithPopup pour se connecter", async () => {
+  it("utilise signInWithRedirect pour se connecter (évite les alertes de sécurité Google en PWA)", async () => {
     getDocMock.mockResolvedValue({ exists: () => true });
 
     function TriggerSignIn() {
@@ -69,31 +72,36 @@ describe("AuthProvider", () => {
     );
 
     await waitFor(() => {
-      expect(signInWithPopupMock).toHaveBeenCalled();
+      expect(signInWithRedirectMock).toHaveBeenCalled();
     });
   });
 
-  it("affiche une erreur si la connexion par popup échoue", async () => {
+  it("affiche une erreur si la redirection de connexion échoue", async () => {
     // Ne jamais résoudre : évite que le flux onAuthStateChanged (déclenché par le
-    // mock ci-dessus dès le montage) efface l'erreur de popup via son setError(null)
-    // de succès, ce qui n'a aucun rapport avec ce que ce test vérifie.
+    // mock ci-dessus dès le montage) efface l'erreur via son setError(null) de
+    // succès, ce qui n'a aucun rapport avec ce que ce test vérifie. Lit `error`
+    // directement (sans passer par le garde `loading` de Probe), puisque le
+    // chargement reste bloqué tant que getDoc() ne se résout pas.
     getDocMock.mockReturnValue(new Promise(() => {}));
-    signInWithPopupMock.mockRejectedValueOnce(new Error("auth/popup-closed-by-user"));
+    getRedirectResultMock.mockRejectedValueOnce(
+      new Error("auth/redirect-cancelled-by-user"),
+    );
 
-    function TriggerSignIn() {
-      const { signInWithGoogle, error } = useAuth();
-      signInWithGoogle();
+    function ErrorProbe() {
+      const { error } = useAuth();
       return <p>error: {error ?? "aucune"}</p>;
     }
 
     render(
       <AuthProvider>
-        <TriggerSignIn />
+        <ErrorProbe />
       </AuthProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/error:/)).toHaveTextContent(/popup-closed-by-user/i);
+      expect(screen.getByText(/error:/)).toHaveTextContent(
+        /redirect-cancelled-by-user/i,
+      );
     });
   });
 
