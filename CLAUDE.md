@@ -143,7 +143,19 @@ npm run typecheck          # tsc --noEmit
   malgré tout, vérifier dans la console Firebase (Authentication > Settings >
   Authorized domains) que `hometransform-c2ac9.web.app` y figure bien (ajouté
   automatiquement par Firebase à la création du projet, à confirmer si un
-  domaine personnalisé est ajouté plus tard).
+  domaine personnalisé est ajouté plus tard). **Étape supplémentaire
+  nécessaire, distincte des Authorized domains Firebase** : le client OAuth
+  Google (Google Cloud Console → « Google Auth Platform » → Clients → le
+  client web auto-créé par Firebase, ex. `93942982710-kch...`) a sa propre
+  liste blanche « URI de redirection autorisés », indépendante de la config
+  Firebase. Il faut y ajouter `https://hometransform-c2ac9.web.app/__/auth/handler`
+  (en plus de l'URI `firebaseapp.com` existante, ne pas la retirer) — sans ça,
+  Google refuse avec `Erreur 400 : redirect_uri_mismatch`. Cette console a des
+  échecs de sauvegarde transitoires fréquents (« Échec de l'action. Veuillez
+  réessayer. ») sans rapport avec la saisie — réessayer suffit. Propagation
+  annoncée « 5 minutes à quelques heures », effective en pratique en
+  quelques minutes le plus souvent. Confirmé fonctionnel en PWA iOS après ce
+  double correctif (`authDomain` + URI de redirection OAuth).
 - **Une PWA déjà installée peut servir un bundle JS périmé plus d'une heure**
   après un déploi : Firebase Hosting appliquait `Cache-Control: max-age=3600`
   par défaut, y compris sur `index.html`. Corrigé via `firebase.json` →
