@@ -96,10 +96,12 @@ export function BudgetItemDetailPage() {
 
   async function handleUpdate(values: BudgetItemFormValues) {
     if (!item) return;
+    const newObjective = objectives.find((o) => o.id === values.objectiveId);
     await updateBudgetItem(item.id, {
       title: values.title,
       category: values.category,
       objectiveId: values.objectiveId,
+      visibility: newObjective?.visibility ?? "shared",
       vendor: values.vendor || undefined,
       budgeted: Number(values.budgeted),
       notes: values.notes || undefined,

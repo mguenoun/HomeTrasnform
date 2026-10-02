@@ -17,6 +17,7 @@ export function TaskCreatePage() {
 
   async function handleCreate(values: TaskFormValues) {
     if (!user) return;
+    const objective = objectives.find((o) => o.id === values.objectiveId);
     const id = await createTask({
       title: values.title,
       description: values.description,
@@ -24,6 +25,7 @@ export function TaskCreatePage() {
       room: values.room,
       priority: values.priority,
       objectiveId: values.objectiveId,
+      visibility: objective?.visibility ?? "shared",
       dueDate: values.dueDate || undefined,
       createdBy: user.uid,
     });

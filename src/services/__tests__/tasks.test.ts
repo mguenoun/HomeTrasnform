@@ -30,6 +30,7 @@ describe("createTask", () => {
       type: "menage",
       priority: "medium",
       objectiveId: "obj1",
+      visibility: "shared",
       createdBy: "user-1",
     });
 
@@ -40,6 +41,7 @@ describe("createTask", () => {
       status: "todo",
       assigneeIds: [],
       objectiveId: "obj1",
+      visibility: "shared",
       createdBy: "user-1",
     });
   });

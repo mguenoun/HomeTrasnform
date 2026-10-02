@@ -3,13 +3,14 @@ import {
   collection,
   deleteDoc,
   doc,
-  onSnapshot,
   updateDoc,
   type Unsubscribe,
 } from "firebase/firestore";
 import { applyStatusChange } from "../domain/taskStatus";
 import { db } from "../firebase/config";
+import { subscribeSharedOrOwn } from "../firebase/sharedOrOwnSubscription";
 import { stripUndefined } from "../firebase/sanitize";
+import { getObjectiveVisibility } from "./objectives";
 import type { Task, TaskPriority, TaskStatus, TaskType } from "../types";
 
 const TASKS_COLLECTION = "tasks";
@@ -21,19 +22,38 @@ export interface NewTaskInput {
   room?: string;
   priority: TaskPriority;
   objectiveId: string | null;
+  // Visibilité héritée de l'objectif référencé (voir Task.visibility) — à la
+  // charge de l'appelant, qui a déjà la liste des objectifs sous la main
+  // (évite une lecture Firestore supplémentaire ici à chaque création). La
+  // règle Firestore revérifie de toute façon que la valeur envoyée est
+  // correcte, donc une erreur ici est rejetée, jamais une fuite silencieuse.
+  visibility: "shared" | "private";
   dueDate?: string;
   createdBy: string;
 }
 
 export function subscribeToTasks(
+  uid: string,
   onChange: (tasks: Task[]) => void,
 ): Unsubscribe {
-  return onSnapshot(collection(db, TASKS_COLLECTION), (snapshot) => {
-    const tasks = snapshot.docs.map(
-      (docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }) as Task,
-    );
-    onChange(tasks);
-  });
+  return subscribeSharedOrOwn(
+    collection(db, TASKS_COLLECTION),
+    uid,
+    (docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }) as Task,
+    onChange,
+    (mineDocs) => {
+      // Auto-guérison des tâches créées avant l'ajout de ce champ dénormalisé
+      // — même raisonnement que dans subscribeToObjectives.
+      for (const docSnapshot of mineDocs) {
+        const data = docSnapshot.data();
+        if (data.visibility == null) {
+          void getObjectiveVisibility(data.objectiveId ?? null).then(
+            (visibility) => updateDoc(docSnapshot.ref, { visibility }),
+          );
+        }
+      }
+    },
+  );
 }
 
 export async function createTask(input: NewTaskInput): Promise<string> {
@@ -45,6 +65,7 @@ export async function createTask(input: NewTaskInput): Promise<string> {
     room: input.room ?? "",
     priority: input.priority,
     objectiveId: input.objectiveId,
+    visibility: input.visibility,
     dueDate: input.dueDate ?? null,
     status: "todo" satisfies TaskStatus,
     assigneeIds: [],
@@ -66,6 +87,7 @@ export async function updateTask(
       | "room"
       | "priority"
       | "objectiveId"
+      | "visibility"
       | "dueDate"
       | "assigneeIds"
     >

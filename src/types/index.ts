@@ -54,6 +54,12 @@ export interface Objective {
 export interface Task {
   id: string;
   objectiveId: string | null;
+  // Recopié depuis l'objectif référencé (ou "shared" si pas d'objectif) —
+  // voir ObjectiveVisibility et la note dans firebase-rules/firestore.rules
+  // sur pourquoi ce n'est pas qu'un confort : c'est ce qui permet à Firestore
+  // de sécuriser une requête de liste. Absent sur les tâches créées avant
+  // cette dénormalisation, traité comme "shared" par les règles.
+  visibility?: ObjectiveVisibility;
   title: string;
   description?: string;
   type: TaskType;
@@ -112,6 +118,8 @@ export interface BudgetItem {
   title: string;
   category: BudgetCategory;
   objectiveId: string | null;
+  // Même logique de dénormalisation que Task.visibility — voir ce commentaire.
+  visibility?: ObjectiveVisibility;
   taskId: string | null;
   vendor?: string;
   budgeted: number;

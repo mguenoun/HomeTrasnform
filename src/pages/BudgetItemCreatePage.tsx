@@ -24,10 +24,12 @@ export function BudgetItemCreatePage() {
 
   async function handleCreate(values: BudgetItemFormValues) {
     if (!user) return;
+    const objective = objectives.find((o) => o.id === values.objectiveId);
     const id = await createBudgetItem({
       title: values.title,
       category: values.category,
       objectiveId: values.objectiveId,
+      visibility: objective?.visibility ?? "shared",
       taskId: preselectedTask?.id ?? null,
       vendor: values.vendor || undefined,
       budgeted: Number(values.budgeted),

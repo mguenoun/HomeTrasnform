@@ -35,6 +35,9 @@ const {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Repli par défaut pour les lectures de cascade (updateObjective) : aucune
+  // tâche/rubrique liée, sauf si un test précis override cette valeur.
+  getDocsMock.mockResolvedValue({ docs: [], empty: true });
 });
 
 describe("createObjective", () => {
@@ -104,6 +107,30 @@ describe("updateObjective", () => {
       { visibility: "private" },
     );
   });
+
+  it("répercute le changement de visibilité sur les tâches et rubriques liées", async () => {
+    getDocsMock
+      .mockResolvedValueOnce({ docs: [{ ref: { __task: "task1" } }] })
+      .mockResolvedValueOnce({ docs: [{ ref: { __item: "item1" } }] });
+
+    await updateObjective("obj1", { visibility: "private" });
+
+    expect(batchUpdateMock).toHaveBeenCalledWith(
+      { __task: "task1" },
+      { visibility: "private" },
+    );
+    expect(batchUpdateMock).toHaveBeenCalledWith(
+      { __item: "item1" },
+      { visibility: "private" },
+    );
+    expect(batchCommitMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne touche pas aux tâches/rubriques si la visibilité ne change pas", async () => {
+    await updateObjective("obj1", { title: "Nouveau titre" });
+    expect(getDocsMock).not.toHaveBeenCalled();
+    expect(batchCommitMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("setObjectiveStatus", () => {
@@ -127,7 +154,7 @@ describe("deleteObjective", () => {
     expect(batchUpdateMock).toHaveBeenCalledTimes(2);
     expect(batchUpdateMock).toHaveBeenCalledWith(
       { __task: "task1" },
-      { objectiveId: null },
+      { objectiveId: null, visibility: "shared" },
     );
     expect(batchDeleteMock).toHaveBeenCalledWith({
       __doc: "objectives",

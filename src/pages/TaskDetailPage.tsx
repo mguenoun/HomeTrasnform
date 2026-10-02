@@ -75,6 +75,7 @@ export function TaskDetailPage() {
 
   async function handleUpdate(values: TaskFormValues) {
     if (!task) return;
+    const newObjective = objectives.find((o) => o.id === values.objectiveId);
     await updateTask(task.id, {
       title: values.title,
       description: values.description,
@@ -82,6 +83,7 @@ export function TaskDetailPage() {
       room: values.room,
       priority: values.priority,
       objectiveId: values.objectiveId,
+      visibility: newObjective?.visibility ?? "shared",
       dueDate: values.dueDate || null,
     });
     setEditing(false);

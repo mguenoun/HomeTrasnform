@@ -51,39 +51,77 @@ service cloud.firestore {
       return !isPrivateObjective(objectiveId) || ownsObjective(objectiveId);
     }
 
+    // Visibilité héritée de l'objectif référencé (ou "shared" si pas d'objectif
+    // ou objectif introuvable) — utilisée pour vérifier que le champ
+    // `visibility` recopié sur une tâche/rubrique (voir plus bas) est correct.
+    function visibilityOfObjectiveId(objectiveId) {
+      return objectiveId == null ||
+        !exists(/databases/$(database)/documents/objectives/$(objectiveId))
+        ? 'shared'
+        : get(/databases/$(database)/documents/objectives/$(objectiveId)).data.get('visibility', 'shared');
+    }
+
     match /objectives/{objectiveId} {
       allow read: if isFamilyMember() &&
         (resource.data.get('visibility', 'shared') != 'private' ||
-          resource.data.createdBy == request.auth.uid);
+          resource.data.get('createdBy', null) == request.auth.uid);
       allow create: if isFamilyMember();
       allow update, delete: if isFamilyMember() &&
         (resource.data.get('visibility', 'shared') != 'private' ||
-          resource.data.createdBy == request.auth.uid);
+          resource.data.get('createdBy', null) == request.auth.uid);
     }
 
+    // IMPORTANT — pourquoi `visibility` est recopié sur chaque tâche/rubrique :
+    // Firestore n'applique PAS les règles document par document sur une requête
+    // de liste (`list`/onSnapshot sans filtre) quand la condition dépend d'un
+    // get() sur un AUTRE document (ici l'objectif référencé) : la requête est
+    // alors autorisée dans son ensemble sans filtrer les résultats, et un
+    // document qui aurait dû être refusé (ex. tâche liée à l'objectif privé de
+    // quelqu'un d'autre) est quand même renvoyé — vérifié empiriquement avec
+    // l'émulateur (firebase-rules/__tests__/firestore.rules.test.ts). Un champ
+    // `visibility` propre au document, lui, peut être ciblé par un `where()`
+    // (`where('visibility','==','shared')` / `where('createdBy','==',uid)`
+    // côté client, voir src/services/tasks.ts et budgetItems.ts) que Firestore
+    // sait prouver sûr à partir de la requête elle-même, donc correctement
+    // appliqué même en liste. `canAccessObjectiveId` (get() sur l'objectif)
+    // reste utilisé en écriture (création/modification, jamais en liste) pour
+    // empêcher de rattacher une tâche/rubrique à l'objectif privé d'un autre
+    // membre ; le check d'égalité ci-dessous garantit en plus que la valeur de
+    // `visibility` envoyée par le client correspond bien à la vraie visibilité
+    // de l'objectif référencé (pas de mensonge possible côté client).
     match /budgetItems/{budgetItemId} {
       allow read: if isFamilyMember() &&
-        canAccessObjectiveId(resource.data.get('objectiveId', null));
+        (resource.data.get('visibility', 'shared') != 'private' ||
+          resource.data.get('createdBy', null) == request.auth.uid);
       allow create: if isFamilyMember() &&
-        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null)) &&
+        request.resource.data.get('visibility', 'shared') ==
+          visibilityOfObjectiveId(request.resource.data.get('objectiveId', null));
       // update vérifie l'objectif actuel ET le nouveau (sinon on pourrait
       // rattacher une rubrique à l'objectif privé de quelqu'un d'autre sans y
       // avoir accès). delete n'a pas de request.resource, donc règle séparée.
       allow update: if isFamilyMember() &&
         canAccessObjectiveId(resource.data.get('objectiveId', null)) &&
-        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null)) &&
+        request.resource.data.get('visibility', 'shared') ==
+          visibilityOfObjectiveId(request.resource.data.get('objectiveId', null));
       allow delete: if isFamilyMember() &&
         canAccessObjectiveId(resource.data.get('objectiveId', null));
     }
 
     match /tasks/{taskId} {
       allow read: if isFamilyMember() &&
-        canAccessObjectiveId(resource.data.get('objectiveId', null));
+        (resource.data.get('visibility', 'shared') != 'private' ||
+          resource.data.get('createdBy', null) == request.auth.uid);
       allow create: if isFamilyMember() &&
-        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null)) &&
+        request.resource.data.get('visibility', 'shared') ==
+          visibilityOfObjectiveId(request.resource.data.get('objectiveId', null));
       allow update: if isFamilyMember() &&
         canAccessObjectiveId(resource.data.get('objectiveId', null)) &&
-        canAccessObjectiveId(request.resource.data.get('objectiveId', null));
+        canAccessObjectiveId(request.resource.data.get('objectiveId', null)) &&
+        request.resource.data.get('visibility', 'shared') ==
+          visibilityOfObjectiveId(request.resource.data.get('objectiveId', null));
       allow delete: if isFamilyMember() &&
         canAccessObjectiveId(resource.data.get('objectiveId', null));
 
