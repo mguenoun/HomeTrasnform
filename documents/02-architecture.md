@@ -113,9 +113,25 @@ cloisonnées par "household"), ce qui simplifie le modèle.
   avant le découpage (`src/domain/attachments.ts`). Pas de vérification serveur
   supplémentaire : l'app est privée (derrière Firebase Auth), pas exposée à des
   utilisateurs non authentifiés.
-- Tout membre authentifié et autorisé peut créer/modifier/supprimer n'importe quelle
-  tâche, objectif, rubrique budgétaire, commentaire ou pièce jointe (pas de granularité
-  de droits en v1).
+- Tout membre authentifié et autorisé peut créer/modifier/supprimer n'importe quel
+  objectif/tâche/rubrique **partagé** — seule exception : un objectif `visibility:
+  "private"` (et ses tâches/rubriques/commentaires/pièces jointes, qui héritent de
+  cette visibilité) n'est lisible/modifiable que par son créateur.
+- **Visibilité dénormalisée sur `Task.visibility`/`BudgetItem.visibility`** (recopiée
+  depuis l'objectif référencé, "shared" si aucun) : nécessaire pour que les règles
+  Firestore protègent aussi les requêtes de LISTE (`onSnapshot(collection(...))`),
+  pas seulement les lectures document par document (`getDoc`). Sans ce champ propre
+  au document, Firestore n'applique pas la règle document par document sur une
+  requête de liste quand la condition dépend d'un `get()` sur un autre document (ici
+  l'objectif) — un document qui aurait dû être refusé pouvait être renvoyé quand même.
+  Bug réel observé en production (objectif privé visible par un autre membre de la
+  famille via le tableau de bord), corrigé en dénormalisant `visibility` + en
+  interrogeant Firestore avec deux requêtes `where()` fusionnées côté client
+  (`where('visibility','==','shared')` + `where('createdBy','==',uid)`) au lieu d'un
+  `onSnapshot` sans filtre. Voir `src/firebase/sharedOrOwnSubscription.ts`,
+  `firebase-rules/firestore.rules` (fonction `visibilityOfObjectiveId`) et
+  `firebase-rules/__tests__/firestore.rules.test.ts` pour la reproduction et la
+  non-régression.
 
 ## Notifications push — ✅ Fait
 Un Worker Cloudflare dédié (`worker/`, nommé `hometransform-notifications`) porte

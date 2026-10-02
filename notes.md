@@ -6,7 +6,7 @@ exhaustif reste dans [`documents/`](documents/) (avec statut par item) ; ce
 fichier donne la vue synthétique et le contexte des décisions qui n'ont pas
 forcément leur place dans un document de spec.
 
-Dernière mise à jour : 2026-09-29.
+Dernière mise à jour : 2026-10-03.
 
 ## État d'avancement
 
@@ -25,11 +25,22 @@ détail épique par épique ; en résumé :
 - **Non fait** : CI/CD (déploiement 100% manuel), justificatif de paiement
   (facture/devis attaché à un paiement — le modèle de données le permet,
   pas d'UI).
-- **Non vérifié** : les nouvelles règles Firestore (objectifs privés) n'ont
-  pas pu être testées via l'émulateur dans cet environnement (pas de JDK 21,
-  voir `CLAUDE.md`) — validées seulement par compilation (`--dry-run`) et
-  relecture manuelle scénario par scénario. À confirmer avec
-  `npm run test:rules` sur un poste équipé.
+- **Corrigé le 2026-10-03** : fuite de confidentialité réelle en production —
+  un objectif privé (+ ses tâches/rubriques) était visible par un autre
+  membre de la famille via le tableau de bord. Cause : Firestore n'applique
+  pas les règles de sécurité document par document sur une requête de liste
+  (`onSnapshot(collection(...))` sans `where()`) quand la condition dépend
+  d'un `get()` sur un autre document (ici l'objectif référencé) — confirmé
+  via l'émulateur (JDK 21 en fait disponible sur ce poste, voir `CLAUDE.md`,
+  la note "Non vérifié" précédente était fondée sur une fausse hypothèse
+  d'environnement). Corrigé en dénormalisant `visibility` sur `Task` et
+  `BudgetItem` (recopiée depuis l'objectif, "shared" par défaut) et en
+  interrogeant Firestore via deux requêtes `where()` fusionnées côté client
+  au lieu d'un `onSnapshot` sans filtre — voir `documents/02-architecture.md`
+  section Sécurité pour le détail technique complet et les fichiers
+  concernés. `npm run test:rules` passe (26 tests, dont 3 qui reproduisent
+  explicitement la fuite sur une requête non contrainte pour documenter
+  pourquoi ne jamais y revenir).
 
 ## Décisions prises (et pourquoi)
 
@@ -71,8 +82,6 @@ détail épique par épique ; en résumé :
 
 ## Prochaines étapes (proposées, non priorisées par l'utilisateur)
 
-- Faire vérifier les règles Firestore des objectifs privés avec
-  `npm run test:rules` sur un poste avec JDK 21 (voir `CLAUDE.md`).
 - CI/CD : automatiser au moins `npm run build && npm run test && npm run lint`
   sur push (GitHub Actions), le déploiement peut rester manuel dans un
   premier temps.

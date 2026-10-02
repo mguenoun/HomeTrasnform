@@ -46,18 +46,30 @@ npm run typecheck          # tsc --noEmit
 
 ## Ce qui NE marche PAS ici, et pourquoi
 
-- **`npm run test:rules` échoue dans cet environnement** :
-  `firebase emulators:exec --only firestore,auth ...` nécessite un JDK ≥ 21
-  sur le PATH pour l'émulateur Firestore ; aucun n'est installé ici. Erreur
-  observée : `firebase-tools no longer supports Java version before 21.`
-  Ne pas essayer d'installer/mettre à jour Java système pour contourner —
-  c'est un changement d'environnement hors périmètre d'une tâche de code, à
-  faire faire par l'utilisateur s'il veut vérifier les règles localement.
-  **Repli validé** : `npx firebase deploy --only firestore:rules --dry-run`
-  valide la compilation (erreurs de syntaxe) mais **pas** la logique
-  (permissions accordées/refusées). Pour la logique, retracer chaque scénario
-  à la main contre le fichier de règles, et/ou demander à l'utilisateur de
-  lancer `npm run test:rules` sur une machine avec JDK 21.
+- **`npm run test:rules` marche en fait dans cet environnement — correctif
+  d'une note précédente qui était fausse.** `firebase emulators:exec
+  --only firestore,auth ...` nécessite un JDK ≥ 21 sur le PATH, et `java
+  -version` par défaut sur ce poste montre bien 1.8 (trop ancien) — mais un
+  second JDK 21 est installé à part, à `D:\Java21\bin\java.exe` (Temurin
+  21.0.7), juste pas en tête de PATH. **Commande qui marche** (Bash/Git Bash) :
+  ```bash
+  PATH="/d/Java21/bin:$PATH" npm run test:rules
+  ```
+  (en PowerShell : `$env:Path = "D:\Java21\bin;" + $env:Path` avant la
+  commande). Vérifié en conditions réelles : a permis de détecter puis
+  corriger une vraie fuite de confidentialité en production (objectif privé
+  visible par un autre membre de la famille, cf. `notes.md` 2026-10-03) que
+  la seule relecture manuelle + `--dry-run` n'avait pas révélée. **Ne plus
+  répéter l'ancienne conclusion "JDK non disponible, repli sur relecture
+  manuelle"** — toujours essayer la commande ci-dessus en premier ; se
+  rabattre sur `--dry-run` + relecture manuelle seulement si elle échoue
+  réellement sur le poste utilisé. `--dry-run` seul valide la compilation
+  (erreurs de syntaxe) mais **pas** la logique (permissions accordées/
+  refusées), et surtout **pas le comportement des requêtes de liste**, qui
+  peut différer de celui d'un `getDoc()` ciblé (voir l'entrée "Pièges
+  rencontrés" ci-dessous sur la dénormalisation de `visibility`) — un point
+  qu'une relecture manuelle du fichier de règles ne permet pas de détecter
+  de façon fiable, seul l'émulateur le peut.
 - **Ne jamais explorer/extraire les identifiants stockés** (token OAuth de
   `firebase-tools`, ADC `gcloud`, clés de compte de service) pour tenter un
   accès Firestore "admin" depuis ce poste — un classificateur de sécurité
@@ -118,6 +130,55 @@ npm run typecheck          # tsc --noEmit
   `resource.data.get('visibility', 'shared')` (méthode documentée, valeur
   par défaut explicite), qui lève toute ambiguïté et reste rétro-compatible
   sans script de migration.
+- **Firestore n'applique PAS les règles de sécurité document par document sur
+  une requête de LISTE** (`onSnapshot(collection(...))`/`getDocs()` sans
+  `where()` correspondant à la condition de la règle) quand cette condition
+  dépend d'un `get()`/`exists()` sur un AUTRE document — contrairement à un
+  `getDoc()` ciblé sur un seul document, qui lui applique bien la règle
+  correctement. Résultat concret et déjà vécu : la règle `objectives` (et
+  `tasks`/`budgetItems`, qui vérifiaient la visibilité de l'objectif
+  référencé via `get()`) refusait bien un `getDoc()` direct sur l'objectif
+  privé de quelqu'un d'autre, mais un `onSnapshot(collection(db,
+  "objectives"))` sans filtre — exactement ce que faisaient `useObjectives`/
+  `useTasks`/`useBudgetItems` — renvoyait quand même ce document à tout le
+  monde : **fuite de confidentialité réelle en production**, découverte via
+  un signalement utilisateur ("ma fille a vu mon objectif privé"), confirmée
+  et reproduite avec l'émulateur (voir l'entrée juste au-dessus sur
+  `npm run test:rules`), avant d'être corrigée le 2026-10-03.
+  **Seul correctif fiable** : la condition de la règle doit pouvoir être
+  prouvée par Firestore à partir du `where()` de la requête elle-même, donc
+  dépendre uniquement de champs du document lui-même, jamais d'un `get()` sur
+  un autre document. Pour `objectives`, la règle était déjà basée sur ses
+  propres champs (`visibility`, `createdBy`) : il suffisait de remplacer le
+  `onSnapshot(collection(...))` sans filtre par deux requêtes `where()`
+  fusionnées côté client (`where('visibility','==','shared')` +
+  `where('createdBy','==',uid)`, voir `src/firebase/sharedOrOwnSubscription.ts`)
+  — Firestore sait alors prouver chaque requête sûre à partir de sa propre
+  contrainte. Pour `tasks`/`budgetItems`, dont la visibilité dépendait d'un
+  `get()` sur l'objectif référencé (pas un champ propre), il a fallu en plus
+  **dénormaliser un champ `visibility` directement sur chaque tâche/rubrique**
+  (recopié depuis l'objectif à la création/modification, re-vérifié
+  côté règles via une contrainte d'égalité pour empêcher un client de mentir
+  dessus, et re-propagé en cascade si la visibilité de l'objectif change
+  après coup — voir `updateObjective`/`cascadeVisibilityToChildren` dans
+  `src/services/objectives.ts`) avant de pouvoir appliquer la même technique
+  de requêtes fusionnées. **Auto-guérison des documents créés avant l'ajout
+  de ce champ** : plutôt qu'un script de migration, chaque abonnement
+  "mine" (`where('createdBy','==',uid)`, qui ne dépend pas du champ
+  `visibility` et voit donc toujours mes propres documents même sans ce
+  champ) corrige silencieusement `visibility` en arrière-plan dès qu'il
+  rencontre un de MES documents qui ne l'a pas encore — jamais les documents
+  des autres, donc toujours autorisé par les règles sans droits élevés.
+  **Leçon générale, à vérifier systématiquement pour toute nouvelle règle de
+  confidentialité par document dans une collection par ailleurs partiellement
+  publique** : écrire un test d'émulateur qui fait un `getDocs()`/
+  `onSnapshot()` SANS filtre (liste complète) en plus des tests `getDoc()`
+  ciblés habituels — ce sont deux chemins distincts dans Firestore, et seul
+  le second est couvert par un `getDoc()` qui passe. Voir
+  `firebase-rules/__tests__/firestore.rules.test.ts` pour le test de
+  non-régression qui documente volontairement qu'une requête non filtrée
+  reste dangereuse même après correctif (pour ne pas en réintroduire une par
+  erreur côté client).
 - **`signInWithPopup` déclenche une alerte de sécurité Google** ("navigateur
   non sécurisé") quand l'app tourne en PWA installée (contexte proche d'une
   WebView pour la détection Google), alors que le web classique n'est pas
