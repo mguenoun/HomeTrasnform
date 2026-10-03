@@ -2,13 +2,16 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import { LoginPage } from "../LoginPage";
 
 vi.mock("../../context/AuthContext", () => ({
   useAuth: vi.fn(),
 }));
+vi.mock("../../context/ThemeContext", () => ({ useTheme: vi.fn() }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedUseTheme = vi.mocked(useTheme);
 
 describe("LoginPage", () => {
   it("affiche le bouton de connexion Google et déclenche la connexion au clic", async () => {
@@ -21,6 +24,7 @@ describe("LoginPage", () => {
       signInWithGoogle,
       signOutUser: vi.fn(),
     });
+    mockedUseTheme.mockReturnValue({ theme: "dark", setTheme: vi.fn() });
 
     render(<LoginPage />);
 
@@ -41,6 +45,7 @@ describe("LoginPage", () => {
       signInWithGoogle: vi.fn(),
       signOutUser: vi.fn(),
     });
+    mockedUseTheme.mockReturnValue({ theme: "dark", setTheme: vi.fn() });
 
     render(<LoginPage />);
 

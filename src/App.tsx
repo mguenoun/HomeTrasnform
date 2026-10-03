@@ -3,6 +3,7 @@ import { AppNav } from "./components/AppNav";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import { BudgetItemCreatePage } from "./pages/BudgetItemCreatePage";
 import { BudgetItemDetailPage } from "./pages/BudgetItemDetailPage";
 import { BudgetPage } from "./pages/BudgetPage";
@@ -16,21 +17,23 @@ import { TasksPage } from "./pages/TasksPage";
 function App() {
   return (
     <AuthProvider>
-      <ProtectedRoute>
-        <AppNav />
-        <InstallPrompt />
-        <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/objectives" element={<ObjectivesPage />} />
-          <Route path="/objectives/:id" element={<ObjectiveDetailPage />} />
-          <Route path="/tasks" element={<TasksPage />} />
-          <Route path="/tasks/new" element={<TaskCreatePage />} />
-          <Route path="/tasks/:id" element={<TaskDetailPage />} />
-          <Route path="/budget" element={<BudgetPage />} />
-          <Route path="/budget/new" element={<BudgetItemCreatePage />} />
-          <Route path="/budget/:id" element={<BudgetItemDetailPage />} />
-        </Routes>
-      </ProtectedRoute>
+      <ThemeProvider>
+        <ProtectedRoute>
+          <AppNav />
+          <InstallPrompt />
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/objectives" element={<ObjectivesPage />} />
+            <Route path="/objectives/:id" element={<ObjectiveDetailPage />} />
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/tasks/new" element={<TaskCreatePage />} />
+            <Route path="/tasks/:id" element={<TaskDetailPage />} />
+            <Route path="/budget" element={<BudgetPage />} />
+            <Route path="/budget/new" element={<BudgetItemCreatePage />} />
+            <Route path="/budget/:id" element={<BudgetItemDetailPage />} />
+          </Routes>
+        </ProtectedRoute>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

@@ -9,6 +9,8 @@ export interface PushSubscriptionRecord {
   keys: { p256dh: string; auth: string };
 }
 
+export type ThemePreference = "light" | "dark";
+
 export interface FamilyUser {
   uid: string;
   displayName: string;
@@ -16,6 +18,10 @@ export interface FamilyUser {
   photoURL?: string;
   colorTag?: string;
   pushSubscriptions?: PushSubscriptionRecord[];
+  // Absent = pas encore choisi explicitement -> sombre par défaut (voir
+  // ThemeContext). Synchronisé entre appareils via le profil Firestore,
+  // pas seulement en local.
+  themePreference?: ThemePreference;
 }
 
 /**

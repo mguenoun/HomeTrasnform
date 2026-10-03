@@ -74,10 +74,15 @@ export function AttachmentsSection({
 
   return (
     <div className="mt-4">
-      <p className="text-sm font-medium text-slate-700">Pièces jointes</p>
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+        Pièces jointes
+      </p>
 
       {error && (
-        <p role="alert" className="mt-1 rounded bg-red-100 px-3 py-2 text-sm text-red-700">
+        <p
+          role="alert"
+          className="mt-1 rounded bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
+        >
           {error}
         </p>
       )}
@@ -86,13 +91,13 @@ export function AttachmentsSection({
         {attachments.map((attachment) => (
           <li
             key={attachment.id}
-            className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white p-2 text-sm"
+            className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white p-2 text-sm dark:border-white/10 dark:bg-white/[0.04]"
           >
             <div>
-              <p className="font-medium text-slate-900">
+              <p className="font-medium text-slate-900 dark:text-slate-50">
                 {attachment.fileName}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {formatFileSize(attachment.size)} ·{" "}
                 {userNameById.get(attachment.uploadedBy) ?? "?"} ·{" "}
                 {new Date(attachment.uploadedAt).toLocaleDateString("fr-FR")}
@@ -102,14 +107,14 @@ export function AttachmentsSection({
               <button
                 type="button"
                 onClick={() => handleDownload(attachment)}
-                className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100"
+                className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
               >
                 Télécharger
               </button>
               <button
                 type="button"
                 onClick={() => handleDelete(attachment)}
-                className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50"
+                className="rounded border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
               >
                 Supprimer
               </button>
@@ -117,7 +122,9 @@ export function AttachmentsSection({
           </li>
         ))}
         {attachments.length === 0 && (
-          <p className="text-sm text-slate-400">Aucune pièce jointe.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">
+            Aucune pièce jointe.
+          </p>
         )}
       </ul>
 
@@ -130,11 +137,13 @@ export function AttachmentsSection({
           accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
           onChange={handleFilesSelected}
           disabled={uploading}
-          className="text-sm text-slate-600 file:mr-3 file:rounded file:border file:border-slate-300 file:bg-white file:px-3 file:py-1 file:text-sm file:hover:bg-slate-100 disabled:opacity-50"
+          className="text-sm text-slate-600 file:mr-3 file:rounded file:border file:border-slate-300 file:bg-white file:px-3 file:py-1 file:text-sm file:hover:bg-slate-100 disabled:opacity-50 dark:text-slate-400 dark:file:border-white/15 dark:file:bg-white/5 dark:file:text-slate-200 dark:file:hover:bg-white/10"
         />
       </label>
       {uploading && (
-        <p className="mt-1 text-xs text-slate-500">Envoi en cours...</p>
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+          Envoi en cours...
+        </p>
       )}
     </div>
   );

@@ -78,46 +78,50 @@ export function DashboardPage() {
   const hasPrivateObjectives = privateObjectives.length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <h1 className="mb-6 text-xl font-semibold text-slate-900">
+    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+      <h1 className="mb-6 text-xl font-semibold text-slate-900 dark:text-slate-50">
         Tableau de bord
       </h1>
 
-      {loading && <p className="mt-6 text-slate-500">Chargement...</p>}
+      {loading && (
+        <p className="mt-6 text-slate-500 dark:text-slate-400">Chargement...</p>
+      )}
 
       {!loading && (
         <>
           <section>
-            <h2 className="mb-2 text-sm font-medium text-slate-700">
+            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
               Objectifs partagés
             </h2>
             <div className="grid grid-cols-2 gap-4">
-              <div className="rounded border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-slate-700">
+              <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
                   Objectifs clôturés
                 </p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
                   {formatRatio(
                     sharedObjectivesKpi.closed,
                     sharedObjectivesKpi.total,
                   )}
                 </p>
               </div>
-              <div className="rounded border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-slate-700">
+              <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
                   Tâches clôturées
                 </p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
+                <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
                   {formatRatio(sharedTasksKpi.closed, sharedTasksKpi.total)}
                 </p>
               </div>
-              <div className="col-span-2 rounded border border-slate-200 bg-white p-4">
-                <p className="text-sm font-medium text-slate-700">
+              <div className="col-span-2 rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
                   Budget réalisé / budgété
                 </p>
-                <p className="mt-1 text-2xl font-semibold text-slate-900">
-                  {formatMad(sharedBudgetTotals.realized)}{" "}
-                  <span className="text-base font-normal text-slate-500">
+                <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+                  <span className="dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:bg-clip-text dark:text-transparent">
+                    {formatMad(sharedBudgetTotals.realized)}
+                  </span>{" "}
+                  <span className="text-base font-normal text-slate-500 dark:text-slate-400">
                     / {formatMad(sharedBudgetTotals.budgeted)}
                   </span>
                 </p>
@@ -127,39 +131,41 @@ export function DashboardPage() {
 
           {hasPrivateObjectives && (
             <section className="mt-6">
-              <h2 className="mb-2 text-sm font-medium text-slate-700">
+              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
                 Objectifs privés
               </h2>
               <div className="grid grid-cols-2 gap-4">
-                <div className="rounded border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-medium text-slate-700">
+                <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
                     Objectifs clôturés
                   </p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-900">
+                  <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
                     {formatRatio(
                       privateObjectivesKpi.closed,
                       privateObjectivesKpi.total,
                     )}
                   </p>
                 </div>
-                <div className="rounded border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-medium text-slate-700">
+                <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
                     Tâches clôturées
                   </p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-900">
+                  <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
                     {formatRatio(
                       privateTasksKpi.closed,
                       privateTasksKpi.total,
                     )}
                   </p>
                 </div>
-                <div className="col-span-2 rounded border border-slate-200 bg-white p-4">
-                  <p className="text-sm font-medium text-slate-700">
+                <div className="col-span-2 rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
                     Budget réalisé / budgété
                   </p>
-                  <p className="mt-1 text-2xl font-semibold text-slate-900">
-                    {formatMad(privateBudgetTotals.realized)}{" "}
-                    <span className="text-base font-normal text-slate-500">
+                  <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+                    <span className="dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:bg-clip-text dark:text-transparent">
+                      {formatMad(privateBudgetTotals.realized)}
+                    </span>{" "}
+                    <span className="text-base font-normal text-slate-500 dark:text-slate-400">
                       / {formatMad(privateBudgetTotals.budgeted)}
                     </span>
                   </p>
@@ -169,7 +175,7 @@ export function DashboardPage() {
           )}
 
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-medium text-slate-700">
+            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
               Rubriques à surveiller
             </h2>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -178,14 +184,14 @@ export function DashboardPage() {
               ))}
             </div>
             {budgetWatchlist.length === 0 && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Aucune rubrique à surveiller.
               </p>
             )}
           </section>
 
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-medium text-slate-700">
+            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
               Tâches par personne
             </h2>
             <div className="grid grid-cols-2 gap-4">
@@ -196,45 +202,47 @@ export function DashboardPage() {
                     key={kpi.uid}
                     className={`rounded border p-4 ${
                       isMe
-                        ? "border-blue-300 bg-blue-50"
-                        : "border-slate-200 bg-white"
+                        ? "border-blue-300 bg-blue-50 dark:border-sky-400/50 dark:bg-white/[0.04] dark:shadow-[inset_0_0_0_1px_rgba(56,189,248,0.5)]"
+                        : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
                     }`}
                   >
                     <p
                       className={`truncate text-sm ${
                         isMe
-                          ? "font-semibold text-blue-900"
-                          : "font-medium text-slate-700"
+                          ? "font-semibold text-blue-900 dark:text-slate-50"
+                          : "font-medium text-slate-700 dark:text-slate-300"
                       }`}
                     >
                       {kpi.displayName}
                     </p>
                     <dl className="mt-2 grid grid-cols-3 gap-1 text-center">
                       <div>
-                        <dt className="whitespace-nowrap text-xs text-slate-500">
+                        <dt className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-500">
                           Retard
                         </dt>
                         <dd
                           className={`text-lg font-semibold ${
-                            kpi.overdue > 0 ? "text-red-700" : "text-slate-900"
+                            kpi.overdue > 0
+                              ? "text-red-700 dark:text-red-400"
+                              : "text-slate-900 dark:text-slate-50"
                           }`}
                         >
                           {kpi.overdue}
                         </dd>
                       </div>
                       <div>
-                        <dt className="whitespace-nowrap text-xs text-slate-500">
+                        <dt className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-500">
                           Clôturées
                         </dt>
-                        <dd className="text-lg font-semibold text-slate-900">
+                        <dd className="text-lg font-semibold text-slate-900 dark:text-slate-50">
                           {kpi.closed}
                         </dd>
                       </div>
                       <div>
-                        <dt className="whitespace-nowrap text-xs text-slate-500">
+                        <dt className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-500">
                           Total
                         </dt>
-                        <dd className="text-lg font-semibold text-slate-900">
+                        <dd className="text-lg font-semibold text-slate-900 dark:text-slate-50">
                           {kpi.total}
                         </dd>
                       </div>
@@ -244,14 +252,14 @@ export function DashboardPage() {
               })}
             </div>
             {personKpis.length === 0 && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Aucune personne pour le moment.
               </p>
             )}
           </section>
 
           <section className="mt-6">
-            <h2 className="mb-2 text-sm font-medium text-slate-700">
+            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
               Objectifs
             </h2>
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -267,7 +275,7 @@ export function DashboardPage() {
               ))}
             </ul>
             {activeObjectives.length === 0 && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Aucun objectif pour le moment.
               </p>
             )}
@@ -275,7 +283,7 @@ export function DashboardPage() {
 
           {user && (
             <section className="mt-6">
-              <h2 className="mb-2 text-sm font-medium text-slate-700">
+              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
                 Mes tâches à échéance proche
               </h2>
               <ul className="flex flex-col gap-2">
@@ -293,7 +301,7 @@ export function DashboardPage() {
                 ))}
               </ul>
               {myUpcomingTasks.length === 0 && (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Vous n'avez aucune tâche à échéance proche.
                 </p>
               )}
@@ -302,7 +310,7 @@ export function DashboardPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
             <section>
-              <h2 className="mb-2 text-sm font-medium text-slate-700">
+              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
                 À échéance proche
               </h2>
               <ul className="flex flex-col gap-2">
@@ -320,14 +328,14 @@ export function DashboardPage() {
                 ))}
               </ul>
               {upcomingTasks.length === 0 && (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Aucune tâche à échéance proche.
                 </p>
               )}
             </section>
 
             <section>
-              <h2 className="mb-2 text-sm font-medium text-slate-700">
+              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
                 Tâches bloquées
               </h2>
               <ul className="flex flex-col gap-2">
@@ -345,7 +353,7 @@ export function DashboardPage() {
                 ))}
               </ul>
               {blockedTasks.length === 0 && (
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Aucune tâche bloquée.
                 </p>
               )}

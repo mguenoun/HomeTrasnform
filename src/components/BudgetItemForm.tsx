@@ -70,23 +70,26 @@ export function BudgetItemForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {error && (
-        <p role="alert" className="rounded bg-red-100 px-3 py-2 text-red-700">
+        <p
+          role="alert"
+          className="rounded bg-red-100 px-3 py-2 text-red-700 dark:bg-red-500/10 dark:text-red-300"
+        >
           {error}
         </p>
       )}
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Titre</span>
+        <span className="text-sm font-medium dark:text-slate-300">Titre</span>
         <input
           value={values.title}
           onChange={(e) => setValues({ ...values, title: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2"
+          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
         />
       </label>
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium">Catégorie</span>
+          <span className="text-sm font-medium dark:text-slate-300">Catégorie</span>
           <select
             value={values.category}
             onChange={(e) =>
@@ -95,7 +98,7 @@ export function BudgetItemForm({
                 category: e.target.value as BudgetCategory,
               })
             }
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
           >
             {CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -106,7 +109,7 @@ export function BudgetItemForm({
         </label>
 
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium">Budget (MAD)</span>
+          <span className="text-sm font-medium dark:text-slate-300">Budget (MAD)</span>
           <input
             type="number"
             min="0"
@@ -115,22 +118,22 @@ export function BudgetItemForm({
             onChange={(e) =>
               setValues({ ...values, budgeted: e.target.value })
             }
-            className="rounded border border-slate-300 px-3 py-2"
+            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
           />
         </label>
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Fournisseur / prestataire</span>
+        <span className="text-sm font-medium dark:text-slate-300">Fournisseur / prestataire</span>
         <input
           value={values.vendor}
           onChange={(e) => setValues({ ...values, vendor: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2"
+          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Objectif</span>
+        <span className="text-sm font-medium dark:text-slate-300">Objectif</span>
         <select
           value={values.objectiveId ?? ""}
           onChange={(e) =>
@@ -139,7 +142,7 @@ export function BudgetItemForm({
               objectiveId: e.target.value === "" ? null : e.target.value,
             })
           }
-          className="rounded border border-slate-300 px-3 py-2"
+          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
         >
           <option value="">Rubrique libre (aucun objectif)</option>
           {objectives.map((objective) => (
@@ -151,18 +154,18 @@ export function BudgetItemForm({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium">Notes</span>
+        <span className="text-sm font-medium dark:text-slate-300">Notes</span>
         <textarea
           value={values.notes}
           onChange={(e) => setValues({ ...values, notes: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2"
+          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
         />
       </label>
 
       <button
         type="submit"
         disabled={submitting}
-        className="self-start rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+        className="self-start rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
       >
         {submitLabel}
       </button>

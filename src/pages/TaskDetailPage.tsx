@@ -40,9 +40,14 @@ export function TaskDetailPage() {
 
   if (!task) {
     return (
-      <div className="p-6">
-        <p className="text-slate-500">Tâche introuvable.</p>
-        <Link to="/tasks" className="text-blue-700 hover:underline">
+      <div className="p-6 dark:bg-[#0c1628] dark:text-slate-100">
+        <p className="text-slate-500 dark:text-slate-400">
+          Tâche introuvable.
+        </p>
+        <Link
+          to="/tasks"
+          className="text-blue-700 hover:underline dark:text-sky-400"
+        >
           Retour aux tâches
         </Link>
       </div>
@@ -114,7 +119,7 @@ export function TaskDetailPage() {
       : users;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={
           objective
@@ -133,7 +138,7 @@ export function TaskDetailPage() {
       />
 
       {editing ? (
-        <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4">
+        <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
           <TaskForm
             objectives={objectives}
             initialValues={{
@@ -151,30 +156,32 @@ export function TaskDetailPage() {
         </div>
       ) : (
         <header className="mt-4 mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900">
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
             {task.title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {TASK_TYPE_LABELS[task.type]} ·{" "}
             {TASK_PRIORITY_LABELS[task.priority]}
             {task.room && ` · ${task.room}`}
             {objectiveTitle && ` · ${objectiveTitle}`}
             {objective?.visibility === "private" && (
-              <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+              <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
                 Privé
               </span>
             )}
           </p>
           {task.description && (
-            <p className="mt-2 text-slate-700">{task.description}</p>
+            <p className="mt-2 text-slate-700 dark:text-slate-300">
+              {task.description}
+            </p>
           )}
           {task.dueDate && (
-            <p className="mt-2 text-sm text-slate-500">
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
               Échéance : {task.dueDate}
             </p>
           )}
           <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="rounded bg-slate-100 px-2 py-1 text-sm font-medium text-slate-700">
+            <span className="rounded bg-slate-100 px-2 py-1 text-sm font-medium text-slate-700 dark:bg-white/10 dark:text-slate-300">
               {TASK_STATUS_LABELS[task.status]}
             </span>
             {ALL_STATUSES.filter((status) =>
@@ -184,7 +191,7 @@ export function TaskDetailPage() {
                 key={status}
                 type="button"
                 onClick={() => handleStatusChange(status)}
-                className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
+                className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
               >
                 → {TASK_STATUS_LABELS[status]}
               </button>
@@ -192,7 +199,7 @@ export function TaskDetailPage() {
           </div>
 
           {task.status === "done" && task.closedAt && (
-            <p className="mt-2 text-xs text-slate-400">
+            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
               Clôturée le {new Date(task.closedAt).toLocaleDateString("fr-FR")}
               {task.closedBy &&
                 ` par ${userNameById.get(task.closedBy) ?? "?"}`}
@@ -200,7 +207,9 @@ export function TaskDetailPage() {
           )}
 
           <div className="mt-4">
-            <p className="text-sm font-medium text-slate-700">Assignés</p>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+              Assignés
+            </p>
             <div className="mt-1 flex flex-wrap gap-2">
               {assignableUsers.map((familyUser) => {
                 const assigned = task.assigneeIds.includes(familyUser.uid);
@@ -212,8 +221,8 @@ export function TaskDetailPage() {
                     aria-pressed={assigned}
                     className={`rounded-full border px-3 py-1 text-sm ${
                       assigned
-                        ? "border-blue-600 bg-blue-600 text-white"
-                        : "border-slate-300 text-slate-700 hover:bg-slate-100"
+                        ? "border-blue-600 bg-blue-600 text-white dark:border-amber-400 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950"
+                        : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
                     }`}
                   >
                     {familyUser.displayName}
@@ -221,7 +230,9 @@ export function TaskDetailPage() {
                 );
               })}
               {assignableUsers.length === 0 && (
-                <p className="text-sm text-slate-400">Aucun membre trouvé.</p>
+                <p className="text-sm text-slate-400 dark:text-slate-500">
+                  Aucun membre trouvé.
+                </p>
               )}
             </div>
           </div>
@@ -256,14 +267,14 @@ export function TaskDetailPage() {
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
+              className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
             >
               Éditer
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50"
+              className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
             >
               Supprimer
             </button>

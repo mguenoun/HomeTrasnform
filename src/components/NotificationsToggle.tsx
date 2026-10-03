@@ -50,11 +50,13 @@ export function NotificationsToggle() {
         onClick={handleToggle}
         disabled={busy}
         aria-pressed={subscribed}
-        className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 disabled:opacity-50"
+        className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
       >
         {subscribed ? "Désactiver les notifications" : "Activer les notifications"}
       </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+      {error && (
+        <span className="text-xs text-red-600 dark:text-red-400">{error}</span>
+      )}
     </div>
   );
 }

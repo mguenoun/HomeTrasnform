@@ -21,31 +21,33 @@ export function ObjectiveSummaryCard({
   const budgetProgress = latestProgressAcrossItems(budgetItems);
 
   return (
-    <li className="rounded border border-slate-200 bg-white p-4">
+    <li className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
       <div className="flex items-center gap-2">
         <Link
           to={`/objectives/${objective.id}`}
-          className="text-lg font-medium text-blue-700 hover:underline"
+          className="text-lg font-medium text-blue-700 hover:underline dark:text-sky-400"
         >
           {objective.title}
         </Link>
         {objective.visibility === "private" && (
-          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
             Privé
           </span>
         )}
       </div>
       {objective.description && (
-        <p className="mt-1 text-sm text-slate-600">{objective.description}</p>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+          {objective.description}
+        </p>
       )}
       <div className="mt-3">
-        <div className="h-2 w-full rounded bg-slate-200">
+        <div className="h-2 w-full rounded bg-slate-200 dark:bg-white/10">
           <div
             className="h-2 rounded bg-green-500"
             style={{ width: `${progress.percent}%` }}
           />
         </div>
-        <p className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
           {progress.done}/{progress.total} tâches terminées (
           {progress.percent}%)
         </p>
@@ -54,40 +56,42 @@ export function ObjectiveSummaryCard({
         <>
           <dl className="mt-3 grid grid-cols-4 gap-1 text-center">
             <div>
-              <dt className="whitespace-nowrap text-xs text-slate-500">
+              <dt className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-500">
                 Budget
               </dt>
-              <dd className="text-sm font-semibold text-slate-900">
+              <dd className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                 {formatMad(budget.budgeted)}
               </dd>
             </div>
             <div>
-              <dt className="whitespace-nowrap text-xs text-slate-500">
+              <dt className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-500">
                 Avancement
               </dt>
-              <dd className="text-sm font-semibold text-slate-900">
+              <dd className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                 {budgetProgress != null ? `${budgetProgress}%` : "—"}
               </dd>
             </div>
             <div>
-              <dt className="whitespace-nowrap text-xs text-slate-500">Payé</dt>
-              <dd className="text-sm font-semibold text-slate-900">
+              <dt className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-500">
+                Payé
+              </dt>
+              <dd className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                 {formatMad(budget.realized)}
               </dd>
             </div>
             <div>
-              <dt className="whitespace-nowrap text-xs text-slate-500">
+              <dt className="whitespace-nowrap text-xs text-slate-500 dark:text-slate-500">
                 Reste
               </dt>
               <dd
-                className={`text-sm font-semibold ${remaining < 0 ? "text-red-700" : "text-slate-900"}`}
+                className={`text-sm font-semibold ${remaining < 0 ? "text-red-700 dark:text-red-400" : "text-slate-900 dark:text-slate-50"}`}
               >
                 {formatMad(remaining)}
               </dd>
             </div>
           </dl>
           {remaining < 0 && (
-            <span className="mt-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700">
+            <span className="mt-1 inline-block rounded bg-red-100 px-1.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-500/15 dark:text-red-400 dark:ring-1 dark:ring-red-500/30">
               Dépassement
             </span>
           )}

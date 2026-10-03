@@ -3,11 +3,14 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../context/AuthContext";
+import { useTheme } from "../../context/ThemeContext";
 import { AppNav } from "../AppNav";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../../context/ThemeContext", () => ({ useTheme: vi.fn() }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedUseTheme = vi.mocked(useTheme);
 
 function renderNav(initialPath: string) {
   return render(
@@ -30,6 +33,7 @@ describe("AppNav", () => {
       signInWithGoogle: vi.fn(),
       signOutUser,
     });
+    mockedUseTheme.mockReturnValue({ theme: "dark", setTheme: vi.fn() });
   });
 
   it("propose un lien vers chaque page, y compris depuis la liste des tâches", () => {

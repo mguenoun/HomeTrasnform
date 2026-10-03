@@ -1,11 +1,26 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Organiser, planifier et suivre les tâches et travaux de la maison en famille." />
-    <meta name="theme-color" content="#2563eb" />
+    <meta name="theme-color" content="#0c1628" />
+    <!-- Évite un flash clair au chargement : le thème par défaut est sombre
+         (class="dark" ci-dessus) ; ce script, exécuté avant le premier rendu
+         React, retire juste la classe si l'appareil a déjà mémorisé une
+         préférence "clair". Le profil Firestore (synchronisé entre
+         appareils, voir src/context/ThemeContext.tsx) reste la source de
+         vérité et corrige ce cache si besoin dès qu'il est chargé. -->
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem("ht-theme") === "light") {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="manifest" href="/manifest.webmanifest" />
 
     <!-- Installation sur l'écran d'accueil iOS (Safari ne lit pas le manifest) -->

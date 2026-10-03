@@ -29,9 +29,14 @@ export function ObjectiveDetailPage() {
 
   if (!objective) {
     return (
-      <div className="p-6">
-        <p className="text-slate-500">Objectif introuvable.</p>
-        <Link to="/objectives" className="text-blue-700 hover:underline">
+      <div className="p-6 dark:bg-[#0c1628] dark:text-slate-100">
+        <p className="text-slate-500 dark:text-slate-400">
+          Objectif introuvable.
+        </p>
+        <Link
+          to="/objectives"
+          className="text-blue-700 hover:underline dark:text-sky-400"
+        >
           Retour aux objectifs
         </Link>
       </div>
@@ -71,7 +76,7 @@ export function ObjectiveDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={[
           { label: "Tableau de bord", to: "/" },
@@ -81,7 +86,7 @@ export function ObjectiveDetailPage() {
       />
 
       {editing ? (
-        <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4">
+        <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
           <ObjectiveForm
             initialValues={{
               title: objective.title,
@@ -96,42 +101,44 @@ export function ObjectiveDetailPage() {
       ) : (
         <header className="mt-4 mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-slate-900">
+            <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
               {objective.title}
             </h1>
             {objective.visibility === "private" && (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600">
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
                 Privé
               </span>
             )}
           </div>
           {objective.description && (
-            <p className="mt-1 text-slate-600">{objective.description}</p>
+            <p className="mt-1 text-slate-600 dark:text-slate-400">
+              {objective.description}
+            </p>
           )}
           <div className="mt-3 flex gap-2">
             <button
               type="button"
               onClick={() => setEditing(true)}
-              className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
+              className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
             >
               Éditer
             </button>
             <button
               type="button"
               onClick={handleArchive}
-              className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
+              className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
             >
               {objective.status === "active" ? "Archiver" : "Réactiver"}
             </button>
             <button
               type="button"
               onClick={handleDelete}
-              className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50"
+              className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
             >
               Supprimer
             </button>
           </div>
-          <p className="mt-3 text-sm text-slate-500">
+          <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
             {progress.done}/{progress.total} tâches terminées ({progress.percent}
             %)
           </p>
@@ -139,10 +146,12 @@ export function ObjectiveDetailPage() {
       )}
 
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-medium text-slate-900">Tâches</h2>
+        <h2 className="text-lg font-medium text-slate-900 dark:text-slate-50">
+          Tâches
+        </h2>
         <Link
           to={`/tasks/new?objectiveId=${id}`}
-          className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
         >
           Ajouter une tâche
         </Link>
@@ -153,10 +162,10 @@ export function ObjectiveDetailPage() {
           <li key={task.id}>
             <Link
               to={`/tasks/${task.id}`}
-              className="flex items-center justify-between rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
+              className="flex items-center justify-between rounded border border-slate-200 bg-white p-3 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]"
             >
-              <span>{task.title}</span>
-              <span className="text-sm text-slate-500">
+              <span className="dark:text-slate-50">{task.title}</span>
+              <span className="text-sm text-slate-500 dark:text-slate-400">
                 {TASK_TYPE_LABELS[task.type]} · {TASK_STATUS_LABELS[task.status]}
               </span>
             </Link>
@@ -165,7 +174,9 @@ export function ObjectiveDetailPage() {
       </ul>
 
       {objectiveTasks.length === 0 && (
-        <p className="text-slate-500">Aucune tâche rattachée pour le moment.</p>
+        <p className="text-slate-500 dark:text-slate-400">
+          Aucune tâche rattachée pour le moment.
+        </p>
       )}
 
       <div className="mt-6">

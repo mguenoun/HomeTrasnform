@@ -38,31 +38,38 @@ export function CommentsSection({
 
   return (
     <div className="mt-4">
-      <p className="text-sm font-medium text-slate-700">Commentaires</p>
+      <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+        Commentaires
+      </p>
 
       <ul className="mt-2 flex flex-col gap-2">
         {comments.map((comment) => (
           <li
             key={comment.id}
-            className="rounded border border-slate-200 bg-white p-2 text-sm"
+            className="rounded border border-slate-200 bg-white p-2 text-sm dark:border-white/10 dark:bg-white/[0.04]"
           >
-            <p className="text-xs font-medium text-slate-600">
+            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
               {userNameById.get(comment.authorId) ?? "?"} ·{" "}
               {new Date(comment.createdAt).toLocaleString("fr-FR")}
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-slate-800">
+            <p className="mt-1 whitespace-pre-wrap text-slate-800 dark:text-slate-200">
               {comment.text}
             </p>
           </li>
         ))}
         {comments.length === 0 && (
-          <p className="text-sm text-slate-400">Aucun commentaire.</p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">
+            Aucun commentaire.
+          </p>
         )}
       </ul>
 
       <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2">
         {error && (
-          <p role="alert" className="rounded bg-red-100 px-3 py-2 text-sm text-red-700">
+          <p
+            role="alert"
+            className="rounded bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
+          >
             {error}
           </p>
         )}
@@ -73,13 +80,13 @@ export function CommentsSection({
             onChange={(e) => setText(e.target.value)}
             placeholder="Ajouter un commentaire..."
             rows={2}
-            className="rounded border border-slate-300 px-3 py-2 text-sm"
+            className="rounded border border-slate-300 px-3 py-2 text-sm dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </label>
         <button
           type="submit"
           disabled={submitting || text.trim() === ""}
-          className="self-start rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+          className="self-start rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
         >
           Envoyer
         </button>

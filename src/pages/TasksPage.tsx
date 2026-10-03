@@ -44,18 +44,20 @@ export function TasksPage() {
       <li key={task.id}>
         <Link
           to={`/tasks/${task.id}`}
-          className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50"
+          className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]"
         >
           <div>
-            <p className="font-medium text-slate-900">{task.title}</p>
-            <p className="text-sm text-slate-500">
+            <p className="font-medium text-slate-900 dark:text-slate-50">
+              {task.title}
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {TASK_TYPE_LABELS[task.type]} ·{" "}
               {TASK_PRIORITY_LABELS[task.priority]}
               {task.objectiveId &&
                 ` · ${objectiveTitleById.get(task.objectiveId) ?? ""}`}
             </p>
             {task.assigneeIds.length > 0 && (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 {task.assigneeIds
                   .map((assigneeId) => userNameById.get(assigneeId) ?? "?")
                   .join(", ")}
@@ -63,7 +65,7 @@ export function TasksPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-white/10 dark:text-slate-300">
               {TASK_STATUS_LABELS[task.status]}
             </span>
           </div>
@@ -73,22 +75,24 @@ export function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Tâches" }]}
       />
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Tâches</h1>
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
+          Tâches
+        </h1>
         <Link
           to="/tasks/new"
-          className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+          className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
         >
           Nouvelle tâche
         </Link>
       </header>
 
       <div className="mb-6 flex flex-wrap gap-3">
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
           <span>Type</span>
           <select
             value={filters.type ?? ""}
@@ -98,7 +102,7 @@ export function TasksPage() {
                 type: (e.target.value || undefined) as TaskType | undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1"
+            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
           >
             <option value="">Tous</option>
             {Object.entries(TASK_TYPE_LABELS).map(([value, label]) => (
@@ -109,7 +113,7 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
           <span>Statut</span>
           <select
             value={filters.status ?? ""}
@@ -121,7 +125,7 @@ export function TasksPage() {
                   | undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1"
+            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
           >
             <option value="">Tous</option>
             {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
@@ -132,7 +136,7 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
           <span>Objectif</span>
           <select
             value={filters.objectiveId ?? ""}
@@ -142,7 +146,7 @@ export function TasksPage() {
                 objectiveId: e.target.value || undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1"
+            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
           >
             <option value="">Tous</option>
             {objectives.map((o) => (
@@ -153,7 +157,7 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
           <span>Assigné</span>
           <select
             value={filters.assigneeId ?? ""}
@@ -163,7 +167,7 @@ export function TasksPage() {
                 assigneeId: e.target.value || undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1"
+            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
           >
             <option value="">Tous</option>
             {users.map((familyUser) => (
@@ -174,12 +178,12 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm">
+        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
           <span>Trier par</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as TaskSortKey)}
-            className="rounded border border-slate-300 px-2 py-1"
+            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
           >
             <option value="priority">Priorité</option>
             <option value="dueDate">Échéance</option>
@@ -198,8 +202,8 @@ export function TasksPage() {
             aria-pressed={onlyMyTasks}
             className={`self-end rounded border px-3 py-1 text-sm ${
               onlyMyTasks
-                ? "border-blue-600 bg-blue-600 text-white"
-                : "border-slate-300 hover:bg-slate-100"
+                ? "border-blue-600 bg-blue-600 text-white dark:border-amber-400 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950"
+                : "border-slate-300 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
             }`}
           >
             Mes tâches
@@ -207,19 +211,21 @@ export function TasksPage() {
         )}
       </div>
 
-      {loading && <p className="text-slate-500">Chargement...</p>}
+      {loading && (
+        <p className="text-slate-500 dark:text-slate-400">Chargement...</p>
+      )}
 
       {!loading && (
         <>
           <section>
-            <h2 className="mb-2 text-sm font-medium text-slate-700">
+            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
               Tâches partagées
             </h2>
             <ul className="flex flex-col gap-2">
               {sharedTasks.map(renderTaskItem)}
             </ul>
             {sharedTasks.length === 0 && (
-              <p className="text-slate-500">
+              <p className="text-slate-500 dark:text-slate-400">
                 Aucune tâche partagée ne correspond aux filtres.
               </p>
             )}
@@ -227,7 +233,7 @@ export function TasksPage() {
 
           {privateTasks.length > 0 && (
             <section className="mt-6">
-              <h2 className="mb-2 text-sm font-medium text-slate-700">
+              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
                 Tâches privées
               </h2>
               <ul className="flex flex-col gap-2">

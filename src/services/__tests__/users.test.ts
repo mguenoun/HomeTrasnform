@@ -12,8 +12,12 @@ vi.mock("firebase/firestore", () => ({
   onSnapshot: (...args: unknown[]) => onSnapshotMock(...args),
 }));
 
-const { subscribeToUsers, upsertUserProfile, subscribeToFamilyMembers } =
-  await import("../users");
+const {
+  subscribeToUsers,
+  upsertUserProfile,
+  subscribeToFamilyMembers,
+  setUserThemePreference,
+} = await import("../users");
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -30,6 +34,18 @@ describe("upsertUserProfile", () => {
     expect(setDocMock).toHaveBeenCalledWith(
       { __doc: "users", id: "user-1" },
       { uid: "user-1", displayName: "Marie", email: "marie@example.com" },
+      { merge: true },
+    );
+  });
+});
+
+describe("setUserThemePreference", () => {
+  it("écrit la préférence de thème en fusionnant (ne touche pas le reste du profil)", async () => {
+    await setUserThemePreference("user-1", "light");
+
+    expect(setDocMock).toHaveBeenCalledWith(
+      { __doc: "users", id: "user-1" },
+      { themePreference: "light" },
       { merge: true },
     );
   });

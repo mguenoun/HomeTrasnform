@@ -6,7 +6,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
-import type { FamilyMemberRecord, FamilyUser } from "../types";
+import type { FamilyMemberRecord, FamilyUser, ThemePreference } from "../types";
 
 const USERS_COLLECTION = "users";
 const FAMILY_MEMBERS_COLLECTION = "familymembers";
@@ -24,6 +24,25 @@ export function subscribeToUsers(
 
 export async function upsertUserProfile(user: FamilyUser): Promise<void> {
   await setDoc(doc(db, USERS_COLLECTION, user.uid), user, { merge: true });
+}
+
+/**
+ * Écrit la préférence de thème sur le profil de l'utilisateur, pour qu'elle
+ * suive d'un appareil à l'autre (pas juste un localStorage par appareil).
+ * `setDoc` + merge plutôt que `updateDoc` : au tout premier changement de
+ * thème d'un utilisateur, son document `users/{uid}` peut ne pas encore
+ * exister si `upsertUserProfile` (appelé après connexion) n'a pas fini
+ * d'écrire — `updateDoc` échouerait silencieusement dans cette fenêtre.
+ */
+export async function setUserThemePreference(
+  uid: string,
+  theme: ThemePreference,
+): Promise<void> {
+  await setDoc(
+    doc(db, USERS_COLLECTION, uid),
+    { themePreference: theme },
+    { merge: true },
+  );
 }
 
 export function subscribeToFamilyMembers(

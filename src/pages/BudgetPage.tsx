@@ -23,37 +23,49 @@ function BudgetTotalsSummary({
 }) {
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="rounded border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-700">Budget</p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900">
+      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+          Budget
+        </p>
+        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
           {formatMad(totals.budgeted)}
         </p>
       </div>
-      <div className="rounded border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-700">Engagé</p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900">
+      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+          Engagé
+        </p>
+        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
           {formatMad(totals.committed)}
         </p>
       </div>
-      <div className="rounded border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-700">Réalisé</p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900">
-          {formatMad(totals.realized)}
+      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+          Réalisé
+        </p>
+        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+          <span className="dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:bg-clip-text dark:text-transparent">
+            {formatMad(totals.realized)}
+          </span>
         </p>
       </div>
-      <div className="rounded border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-700">
+      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
           Prévision finale
         </p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900">
+        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
           {formatMad(totals.forecast)}
         </p>
       </div>
-      <div className="col-span-2 rounded border border-slate-200 bg-white p-4">
-        <p className="text-sm font-medium text-slate-700">Écart</p>
+      <div className="col-span-2 rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+          Écart
+        </p>
         <p
           className={`mt-1 text-2xl font-semibold ${
-            totals.variance < 0 ? "text-red-700" : "text-slate-900"
+            totals.variance < 0
+              ? "text-red-700 dark:text-red-400"
+              : "text-slate-900 dark:text-slate-50"
           }`}
         >
           {formatMad(totals.variance)}
@@ -83,20 +95,22 @@ export function BudgetPage() {
   const sortedPrivateItems = sortByStatus(privateItems);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Budget" }]}
       />
-      <h1 className="mt-4 mb-6 text-xl font-semibold text-slate-900">
+      <h1 className="mt-4 mb-6 text-xl font-semibold text-slate-900 dark:text-slate-50">
         Budget
       </h1>
 
-      {loading && <p className="text-slate-500">Chargement...</p>}
+      {loading && (
+        <p className="text-slate-500 dark:text-slate-400">Chargement...</p>
+      )}
 
       {!loading && (
         <>
           <section>
-            <h2 className="mb-2 text-sm font-medium text-slate-700">
+            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
               Budget partagé
             </h2>
             <BudgetTotalsSummary totals={sharedTotals} />
@@ -104,7 +118,7 @@ export function BudgetPage() {
 
           {hasPrivateItems && (
             <section className="mt-6">
-              <h2 className="mb-2 text-sm font-medium text-slate-700">
+              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
                 Budget privé
               </h2>
               <BudgetTotalsSummary totals={privateTotals} />

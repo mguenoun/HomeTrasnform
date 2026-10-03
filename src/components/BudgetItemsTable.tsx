@@ -28,22 +28,26 @@ export function BudgetItemsTable({
   return (
     <section>
       <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-slate-700">{title}</h2>
+        <h2 className="text-sm font-medium text-slate-700 dark:text-slate-400">
+          {title}
+        </h2>
         <Link
           to={addHref}
-          className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
         >
           Ajouter une rubrique
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-slate-500">{emptyMessage}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          {emptyMessage}
+        </p>
       ) : (
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+        <div className="overflow-x-auto rounded border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs text-slate-500">
+              <tr className="border-b border-slate-200 text-xs text-slate-500 dark:border-white/10 dark:text-slate-500">
                 <th className="p-3 font-medium">Désignation</th>
                 <th className="p-3 font-medium">Budget initial</th>
                 <th className="p-3 font-medium">Révisé</th>
@@ -66,35 +70,37 @@ export function BudgetItemsTable({
                 return (
                   <tr
                     key={item.id}
-                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50"
+                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/[0.04]"
                   >
                     <td className="p-3">
                       <Link
                         to={`/budget/${item.id}`}
-                        className="font-medium text-blue-700 hover:underline"
+                        className="font-medium text-blue-700 hover:underline dark:text-sky-400"
                       >
                         {item.title}
                       </Link>
                     </td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="p-3 whitespace-nowrap dark:text-slate-200">
                       {formatMad(item.budgeted)}
                     </td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="p-3 whitespace-nowrap dark:text-slate-200">
                       {item.revisedBudget != null
                         ? formatMad(item.revisedBudget)
                         : "—"}
                     </td>
-                    <td className="p-3 whitespace-nowrap">
+                    <td className="p-3 whitespace-nowrap dark:text-slate-200">
                       {formatMad(realized)}
                     </td>
                     <td
                       className={`p-3 whitespace-nowrap font-medium ${
-                        remaining < 0 ? "text-red-700" : "text-slate-900"
+                        remaining < 0
+                          ? "text-red-700 dark:text-red-400"
+                          : "text-slate-900 dark:text-slate-50"
                       }`}
                     >
                       {formatMad(remaining)}
                     </td>
-                    <td className="hidden p-3 whitespace-nowrap sm:table-cell">
+                    <td className="hidden p-3 whitespace-nowrap dark:text-slate-200 sm:table-cell">
                       {progress != null ? `${progress}%` : "—"}
                     </td>
                     <td className="p-3">

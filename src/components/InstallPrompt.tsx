@@ -63,13 +63,13 @@ export function InstallPrompt() {
 
   if (deferredPrompt) {
     return (
-      <div className="flex items-center justify-between gap-3 bg-blue-50 px-6 py-2 text-sm text-blue-900">
+      <div className="flex items-center justify-between gap-3 bg-blue-50 px-6 py-2 text-sm text-blue-900 dark:bg-sky-500/10 dark:text-sky-200">
         <span>Installez HomeTransform sur cet appareil pour y accéder plus vite.</span>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleInstallClick}
-            className="rounded bg-blue-600 px-3 py-1 font-medium text-white hover:bg-blue-700"
+            className="rounded bg-blue-600 px-3 py-1 font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
           >
             Installer
           </button>
@@ -77,7 +77,7 @@ export function InstallPrompt() {
             type="button"
             onClick={dismiss}
             aria-label="Masquer"
-            className="text-blue-700 hover:underline"
+            className="text-blue-700 hover:underline dark:text-sky-300"
           >
             ✕
           </button>
@@ -94,7 +94,7 @@ export function InstallPrompt() {
     })
   ) {
     return (
-      <div className="flex items-start justify-between gap-3 bg-blue-50 px-6 py-3 text-sm text-blue-900">
+      <div className="flex items-start justify-between gap-3 bg-blue-50 px-6 py-3 text-sm text-blue-900 dark:bg-sky-500/10 dark:text-sky-200">
         <div>
           <p className="font-medium">Installer HomeTransform sur cet iPhone/iPad :</p>
           <ol className="mt-1 list-decimal space-y-0.5 pl-4">
@@ -120,7 +120,7 @@ export function InstallPrompt() {
           type="button"
           onClick={dismiss}
           aria-label="Masquer"
-          className="shrink-0 text-blue-700 hover:underline"
+          className="shrink-0 text-blue-700 hover:underline dark:text-sky-300"
         >
           ✕
         </button>

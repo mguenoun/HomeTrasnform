@@ -11,16 +11,19 @@ export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
       {items.map((item, index) => (
         <span key={index} className="flex items-center gap-1.5">
           {index > 0 && (
-            <span aria-hidden="true" className="text-slate-400">
+            <span aria-hidden="true" className="text-slate-400 dark:text-slate-600">
               /
             </span>
           )}
           {item.to ? (
-            <Link to={item.to} className="text-blue-700 hover:underline">
+            <Link
+              to={item.to}
+              className="text-blue-700 hover:underline dark:text-sky-400"
+            >
               {item.label}
             </Link>
           ) : (
-            <span aria-current="page" className="text-slate-500">
+            <span aria-current="page" className="text-slate-500 dark:text-slate-400">
               {item.label}
             </span>
           )}

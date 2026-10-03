@@ -36,33 +36,37 @@ export function ObjectivesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
+    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Objectifs" }]}
       />
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Objectifs</h1>
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
+          Objectifs
+        </h1>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
-          className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700"
+          className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
         >
           {showForm ? "Annuler" : "Nouvel objectif"}
         </button>
       </header>
 
       {showForm && (
-        <div className="mb-6 max-w-md rounded border border-slate-200 bg-white p-4">
+        <div className="mb-6 max-w-md rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
           <ObjectiveForm onSubmit={handleCreate} />
         </div>
       )}
 
-      {loading && <p className="text-slate-500">Chargement...</p>}
+      {loading && (
+        <p className="text-slate-500 dark:text-slate-400">Chargement...</p>
+      )}
 
       {!loading && (
         <>
           <section>
-            <h2 className="mb-2 text-sm font-medium text-slate-700">
+            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
               Objectifs partagés
             </h2>
             <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -78,7 +82,7 @@ export function ObjectivesPage() {
               ))}
             </ul>
             {sharedObjectives.length === 0 && (
-              <p className="text-slate-500">
+              <p className="text-slate-500 dark:text-slate-400">
                 Aucun objectif partagé pour le moment.
               </p>
             )}
@@ -86,7 +90,7 @@ export function ObjectivesPage() {
 
           {privateObjectives.length > 0 && (
             <section className="mt-6">
-              <h2 className="mb-2 text-sm font-medium text-slate-700">
+              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
                 Objectifs privés
               </h2>
               <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

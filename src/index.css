@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Thème piloté par la classe .dark sur <html> (préférence par utilisateur,
+   voir src/context/ThemeContext.tsx), pas par prefers-color-scheme : le
+   défaut Tailwind v4 suivrait les réglages OS de l'appareil, qu'on veut
+   ignorer ici puisque chaque utilisateur choisit son thème explicitement. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 body {
   margin: 0;
 }
