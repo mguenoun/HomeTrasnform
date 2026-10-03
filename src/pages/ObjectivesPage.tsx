@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { ObjectiveForm, type ObjectiveFormValues } from "../components/ObjectiveForm";
+import { PaymentsHistogram } from "../components/PaymentsHistogram";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { useAuth } from "../context/AuthContext";
 import { useBudgetItems } from "../hooks/useBudgetItems";
@@ -56,6 +57,12 @@ export function ObjectivesPage() {
       {showForm && (
         <div className="mb-6 max-w-md ht-card p-4">
           <ObjectiveForm onSubmit={handleCreate} />
+        </div>
+      )}
+
+      {!loading && (
+        <div className="mb-6">
+          <PaymentsHistogram items={budgetItems} />
         </div>
       )}
 

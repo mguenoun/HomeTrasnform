@@ -49,10 +49,10 @@ export function BudgetItemsTable({
             <thead>
               <tr>
                 <th className="ht-table-th w-[34%]">Désignation</th>
-                <th className="ht-table-th">Budget (MAD)</th>
-                <th className="ht-table-th">Payé (MAD)</th>
-                <th className="ht-table-th">Reste (MAD)</th>
-                <th className="ht-table-th">Avanc.</th>
+                <th className="ht-table-th text-right">Budget (MAD)</th>
+                <th className="ht-table-th text-right">Payé (MAD)</th>
+                <th className="ht-table-th text-right">Reste (MAD)</th>
+                <th className="ht-table-th text-right">Avanc.</th>
                 <th className="ht-table-th">Statut</th>
               </tr>
             </thead>
@@ -71,20 +71,20 @@ export function BudgetItemsTable({
                         {item.title}
                       </Link>
                     </td>
-                    <td className="ht-table-td">
+                    <td className="ht-table-td text-right">
                       {formatAmount(budget)}
                     </td>
-                    <td className="ht-table-td">
+                    <td className="ht-table-td text-right">
                       {formatAmount(realized)}
                     </td>
                     <td
-                      className={`ht-table-td ${
+                      className={`ht-table-td text-right ${
                         remaining < 0 ? "font-semibold text-[var(--ht-danger)]" : ""
                       }`}
                     >
                       {formatAmount(remaining)}
                     </td>
-                    <td className="ht-table-td">
+                    <td className="ht-table-td text-right">
                       {progress != null ? `${progress}%` : "—"}
                     </td>
                     <td className="ht-table-td">
@@ -104,10 +104,10 @@ export function BudgetItemsTable({
               <tfoot>
                 <tr>
                   <td className="ht-table-td font-extrabold">Total</td>
-                  <td className="ht-table-td font-extrabold">{formatAmount(totalBudget)}</td>
-                  <td className="ht-table-td font-extrabold">{formatAmount(totalRealized)}</td>
+                  <td className="ht-table-td text-right font-extrabold">{formatAmount(totalBudget)}</td>
+                  <td className="ht-table-td text-right font-extrabold">{formatAmount(totalRealized)}</td>
                   <td
-                    className={`ht-table-td font-extrabold ${
+                    className={`ht-table-td text-right font-extrabold ${
                       totalRemaining < 0 ? "text-[var(--ht-danger)]" : ""
                     }`}
                   >

@@ -15,6 +15,9 @@ const MONTH_LABELS = [
   "déc.",
 ];
 
+/** Premier mois affiché : l'historique des paiements commence en septembre 2026. */
+export const PAYMENTS_HISTOGRAM_START = new Date(2026, 8, 1);
+
 export interface MonthlyPayments {
   key: string;
   label: string;
@@ -22,22 +25,30 @@ export interface MonthlyPayments {
 }
 
 /**
- * Montant des paiements effectués (statut "paye") par mois, sur les `months`
- * derniers mois calendaires, mois courant inclus. Les mois sans paiement
- * restent présents (montant 0) pour garder un axe régulier.
+ * Montant des paiements effectués (statut "paye") par mois.
+ * Affiche au plus `months` mois, en remontant depuis le mois courant, sans
+ * jamais remonter avant `start` (septembre 2026 par défaut). Les mois sans
+ * paiement restent présents (montant 0) pour garder un axe régulier.
  */
 export function paymentsByMonth(
   items: BudgetItem[],
   now: Date = new Date(),
   months = 6,
+  start: Date = PAYMENTS_HISTOGRAM_START,
 ): MonthlyPayments[] {
+  const endIndex = now.getFullYear() * 12 + now.getMonth();
+  const startIndex = Math.max(
+    endIndex - (months - 1),
+    start.getFullYear() * 12 + start.getMonth(),
+  );
+
   const buckets: MonthlyPayments[] = [];
-  for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const month = String(d.getMonth() + 1).padStart(2, "0");
+  for (let index = startIndex; index <= endIndex; index++) {
+    const year = Math.floor(index / 12);
+    const month = index % 12;
     buckets.push({
-      key: `${d.getFullYear()}-${month}`,
-      label: MONTH_LABELS[d.getMonth()],
+      key: `${year}-${String(month + 1).padStart(2, "0")}`,
+      label: MONTH_LABELS[month],
       amount: 0,
     });
   }

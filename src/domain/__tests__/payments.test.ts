@@ -18,18 +18,21 @@ function item(payments: BudgetItem["payments"]): BudgetItem {
   };
 }
 
-const NOW = new Date(2026, 9, 15); // octobre 2026
-
 describe("paymentsByMonth", () => {
-  it("retourne les 6 derniers mois, mois courant inclus, dans l'ordre chronologique", () => {
-    const months = paymentsByMonth([], NOW);
+  it("commence en septembre 2026 et s'arrête au mois courant", () => {
+    const months = paymentsByMonth([], new Date(2026, 9, 15));
+    expect(months.map((m) => m.key)).toEqual(["2026-09", "2026-10"]);
+  });
+
+  it("affiche au plus 6 mois glissants une fois la période dépassée", () => {
+    const months = paymentsByMonth([], new Date(2027, 2, 10)); // mars 2027
     expect(months.map((m) => m.key)).toEqual([
-      "2026-05",
-      "2026-06",
-      "2026-07",
-      "2026-08",
-      "2026-09",
       "2026-10",
+      "2026-11",
+      "2026-12",
+      "2027-01",
+      "2027-02",
+      "2027-03",
     ]);
   });
 
@@ -41,20 +44,19 @@ describe("paymentsByMonth", () => {
           { id: "p2", date: "2026-10-20", amount: 200, status: "paye", createdBy: "u1" },
           { id: "p3", date: "2026-09-05", amount: 500, status: "prevu", createdBy: "u1" },
         ]),
-        item([{ id: "p4", date: "2026-07-01", amount: 150, status: "paye", createdBy: "u1" }]),
+        item([{ id: "p4", date: "2026-09-01", amount: 150, status: "paye", createdBy: "u1" }]),
       ],
-      NOW,
+      new Date(2026, 9, 15),
     );
     const byKey = Object.fromEntries(months.map((m) => [m.key, m.amount]));
     expect(byKey["2026-10"]).toBe(500);
-    expect(byKey["2026-09"]).toBe(0);
-    expect(byKey["2026-07"]).toBe(150);
+    expect(byKey["2026-09"]).toBe(150);
   });
 
-  it("ignore les paiements plus anciens que 6 mois", () => {
+  it("ignore les paiements antérieurs à septembre 2026", () => {
     const months = paymentsByMonth(
       [item([{ id: "p1", date: "2026-03-01", amount: 999, status: "paye", createdBy: "u1" }])],
-      NOW,
+      new Date(2026, 9, 15),
     );
     expect(months.reduce((s, m) => s + m.amount, 0)).toBe(0);
   });
