@@ -21,7 +21,8 @@ détail épique par épique ; en résumé :
   tableau de bord (KPI globaux, par personne, rubriques à surveiller, figures
   budgétaires sur les cartes objectif/tâche), notifications push
   (affectation + rappel d'échéance quotidien), installation PWA
-  (iOS + Android), fil d'Ariane.
+  (iOS + Android), fil d'Ariane, **thème clair/sombre** (sombre par défaut,
+  choix synchronisé par utilisateur — voir `documents/02-architecture.md`).
 - **Non fait** : CI/CD (déploiement 100% manuel), justificatif de paiement
   (facture/devis attaché à un paiement — le modèle de données le permet,
   pas d'UI).
@@ -41,6 +42,14 @@ détail épique par épique ; en résumé :
   concernés. `npm run test:rules` passe (26 tests, dont 3 qui reproduisent
   explicitement la fuite sur une requête non contrainte pour documenter
   pourquoi ne jamais y revenir).
+- **Thème clair/sombre livré le 2026-10-03** : demande du fils de
+  l'utilisateur (trouvait le design "trop brut/épuré"), partie de pistes
+  visuelles comparées sur un artifact (3 options, déclinées sur 4 écrans avec
+  les vraies données de la famille) avant implémentation — l'utilisateur a
+  choisi le mode sombre façon "tableau de bord de stade" (inspiré d'un autre
+  projet GitHub, `wc2026`), avec le mode clair conservé comme option.
+  Implémenté sur l'intégralité des écrans (pages + composants partagés) en
+  une seule session — voir `documents/02-architecture.md` section Thème.
 
 ## Décisions prises (et pourquoi)
 
@@ -73,6 +82,11 @@ détail épique par épique ; en résumé :
 - **Champs Firestore optionnels lus avec `.get(cle, defaut)` dans les
   règles**, jamais par accès point direct, dès qu'un document plus ancien
   pourrait ne pas avoir le champ (ex. `visibility`). Voir `CLAUDE.md`.
+- **Mode sombre piloté par classe (`@custom-variant dark` sur `.dark`), pas
+  par `prefers-color-scheme`** (le défaut Tailwind v4) : le thème est un choix
+  explicite par utilisateur stocké sur son profil, pas un réglage système de
+  l'appareil — les deux mécanismes peuvent diverger (ex. appareil en clair,
+  utilisateur a choisi le sombre dans l'app).
 - **Vue budget en tableau (type Excel)**, pas en cartes, dans le module
   Budget, la page objectif et la page tâche — bouton d'ajout systématiquement
   en haut de la liste. Les codes couleur de risque de dépassement (rouge/

@@ -76,7 +76,8 @@ de config d'environnement.
 
 ## Modèle de données (Firestore)
 - `users/{uid}` : displayName, email, photoURL, colorTag (pour l'affichage dans le
-  planning)
+  planning), themePreference (`light | dark` — absent = sombre par défaut, voir
+  section Thème ci-dessous)
 - `objectives/{id}` : title, description, targetDate, status, createdBy, createdAt
 - `tasks/{id}` :
   - objectiveId (nullable — une tâche peut être libre, hors objectif)
@@ -171,6 +172,31 @@ l'envoi des notifications push, séparé du SPA :
   `manifest.webmanifest` sont servis en `no-cache` (toujours revalidés), alors que les
   bundles `/assets/**` (nom haché par build) sont `immutable`. Sans ça, une PWA déjà
   installée pouvait continuer à servir l'ancien code plus d'une heure après un déploi.
+
+## Thème clair/sombre — ✅ Fait
+Deux thèmes complets (pas une simple inversion de couleurs) : **clair** — fond
+crème, cartes blanches à ombre douce, accent dégradé ambre→orange→rouge réservé
+aux éléments clés (montants réalisés, CTA) — et **sombre** — fond dégradé bleu
+nuit, cartes vitrées translucides (`bg-white/[0.04]` + bordure `white/10`), même
+dégradé d'accent, esprit "tableau de bord de stade". Les deux ont été conçus
+ensemble à partir de maquettes comparées avec l'utilisateur (un style visuel
+emprunté à un autre projet, `wc2026`) avant implémentation.
+- **Sombre par défaut** pour tout nouvel utilisateur (changement de direction
+  produit assumé, pas juste un thème optionnel annexe).
+- **Préférence par utilisateur, synchronisée entre appareils** :
+  `users/{uid}.themePreference`, pas seulement un réglage local — un membre qui
+  choisit le clair sur un appareil le retrouve sur les autres. Un cache
+  `localStorage` (`ht-theme`) sert uniquement à peindre la bonne classe dès le
+  premier rendu, avant que le profil Firestore soit chargé (évite un flash) ;
+  dès que le profil arrive, il prévaut sur le cache.
+- **Mécanisme Tailwind v4** : variante `dark:` pilotée par une classe CSS sur
+  `<html>` (`@custom-variant dark (&:where(.dark, .dark *));` dans
+  `src/index.css`), pas par `prefers-color-scheme` (le défaut de Tailwind v4) —
+  nécessaire puisque le thème est un choix explicite par utilisateur, pas un
+  réglage du système d'exploitation de l'appareil.
+- `src/context/ThemeContext.tsx` (état + bascule), `src/components/ThemeToggle.tsx`
+  (bouton dans `AppNav` et sur `LoginPage`), `index.html` (classe par défaut +
+  script anti-flash minimal avant le premier rendu React).
 
 ## Hébergement & CI/CD
 - **SPA** : déploiement manuel, `npm run build` puis `firebase deploy --only hosting`
