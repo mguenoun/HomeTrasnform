@@ -137,6 +137,10 @@ export function ObjectiveDetailPage() {
         </header>
       )}
 
+      <div className="mb-6">
+        <PaymentsHistogram items={objectiveBudgetItems} />
+      </div>
+
       <div className="mb-2.5 flex items-center justify-between">
         <h2 className="ht-label">Tâches</h2>
         <Link to={`/tasks/new?objectiveId=${id}`} className="ht-btn-cta-sm">
@@ -165,10 +169,6 @@ export function ObjectiveDetailPage() {
           Aucune tâche rattachée pour le moment.
         </p>
       )}
-
-      <div className="mt-6">
-        <PaymentsHistogram items={objectiveBudgetItems} />
-      </div>
 
       <div className="mt-6">
         <BudgetItemsTable
