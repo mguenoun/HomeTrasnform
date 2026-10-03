@@ -43,7 +43,6 @@ export function BudgetItemsTable({
               <tr>
                 <th className="ht-table-th w-[34%]">Désignation</th>
                 <th className="ht-table-th">Budget (MAD)</th>
-                <th className="ht-table-th">Révisé (MAD)</th>
                 <th className="ht-table-th">Payé (MAD)</th>
                 <th className="ht-table-th">Reste (MAD)</th>
                 <th className="ht-table-th">Avanc.</th>
@@ -66,12 +65,7 @@ export function BudgetItemsTable({
                       </Link>
                     </td>
                     <td className="ht-table-td">
-                      {formatAmount(item.budgeted)}
-                    </td>
-                    <td className="ht-table-td">
-                      {item.revisedBudget != null
-                        ? formatAmount(item.revisedBudget)
-                        : "—"}
+                      {formatAmount(budget)}
                     </td>
                     <td className="ht-table-td">
                       {formatAmount(realized)}

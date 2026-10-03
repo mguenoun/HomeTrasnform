@@ -37,7 +37,7 @@ describe("BudgetItemsTable", () => {
     ).toHaveAttribute("href", "/budget/new");
   });
 
-  it("affiche désignation, budget initial, révisé, total paiements, reste à payer et statut", () => {
+  it("affiche désignation, budget (révisé si renseigné), payé, reste à payer et statut", () => {
     renderTable([
       item({
         id: "b1",
@@ -54,11 +54,10 @@ describe("BudgetItemsTable", () => {
       "href",
       "/budget/b1",
     );
-    expect(screen.getByText("1 000,00")).toBeInTheDocument();
-    expect(screen.getByText("1 200,00")).toBeInTheDocument();
-    expect(screen.getByText("300,00")).toBeInTheDocument();
+    expect(screen.getByText("1 200")).toBeInTheDocument();
+    expect(screen.getByText("300")).toBeInTheDocument();
     // Reste à payer = budget révisé (1200) - réalisé (300) = 900.
-    expect(screen.getByText("900,00")).toBeInTheDocument();
+    expect(screen.getByText("900")).toBeInTheDocument();
     expect(screen.getByText("Dans les clous")).toBeInTheDocument();
   });
 
@@ -72,7 +71,7 @@ describe("BudgetItemsTable", () => {
       }),
     ]);
 
-    const remaining = screen.getByText("-300,00");
+    const remaining = screen.getByText("-300");
     expect(remaining).toHaveClass("text-[var(--ht-danger)]");
     expect(screen.getByText("Dépassé")).toBeInTheDocument();
   });
