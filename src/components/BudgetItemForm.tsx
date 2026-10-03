@@ -72,24 +72,24 @@ export function BudgetItemForm({
       {error && (
         <p
           role="alert"
-          className="rounded bg-red-100 px-3 py-2 text-red-700 dark:bg-red-500/10 dark:text-red-300"
+          className="rounded bg-[var(--ht-over-bg)] px-3 py-2 text-[var(--ht-danger)]"
         >
           {error}
         </p>
       )}
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Titre</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Titre</span>
         <input
           value={values.title}
           onChange={(e) => setValues({ ...values, title: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Catégorie</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Catégorie</span>
           <select
             value={values.category}
             onChange={(e) =>
@@ -98,7 +98,7 @@ export function BudgetItemForm({
                 category: e.target.value as BudgetCategory,
               })
             }
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           >
             {CATEGORIES.map((category) => (
               <option key={category} value={category}>
@@ -109,7 +109,7 @@ export function BudgetItemForm({
         </label>
 
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Budget (MAD)</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Budget (MAD)</span>
           <input
             type="number"
             min="0"
@@ -118,22 +118,22 @@ export function BudgetItemForm({
             onChange={(e) =>
               setValues({ ...values, budgeted: e.target.value })
             }
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           />
         </label>
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Fournisseur / prestataire</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Fournisseur / prestataire</span>
         <input
           value={values.vendor}
           onChange={(e) => setValues({ ...values, vendor: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Objectif</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Objectif</span>
         <select
           value={values.objectiveId ?? ""}
           onChange={(e) =>
@@ -142,7 +142,7 @@ export function BudgetItemForm({
               objectiveId: e.target.value === "" ? null : e.target.value,
             })
           }
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         >
           <option value="">Rubrique libre (aucun objectif)</option>
           {objectives.map((objective) => (
@@ -154,18 +154,18 @@ export function BudgetItemForm({
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Notes</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Notes</span>
         <textarea
           value={values.notes}
           onChange={(e) => setValues({ ...values, notes: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
       <button
         type="submit"
         disabled={submitting}
-        className="self-start rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105 disabled:opacity-50"
+        className="self-start ht-btn-cta disabled:opacity-50"
       >
         {submitLabel}
       </button>

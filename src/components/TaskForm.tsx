@@ -67,41 +67,41 @@ export function TaskForm({
       {error && (
         <p
           role="alert"
-          className="rounded bg-red-100 px-3 py-2 text-red-700 dark:bg-red-500/10 dark:text-red-300"
+          className="rounded bg-[var(--ht-over-bg)] px-3 py-2 text-[var(--ht-danger)]"
         >
           {error}
         </p>
       )}
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Titre</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Titre</span>
         <input
           value={values.title}
           onChange={(e) => setValues({ ...values, title: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Description</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Description</span>
         <textarea
           value={values.description}
           onChange={(e) =>
             setValues({ ...values, description: e.target.value })
           }
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Type</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Type</span>
           <select
             value={values.type}
             onChange={(e) =>
               setValues({ ...values, type: e.target.value as TaskType })
             }
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           >
             <option value="menage">Ménage</option>
             <option value="travaux">Travaux</option>
@@ -111,7 +111,7 @@ export function TaskForm({
         </label>
 
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Priorité</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Priorité</span>
           <select
             value={values.priority}
             onChange={(e) =>
@@ -120,7 +120,7 @@ export function TaskForm({
                 priority: e.target.value as TaskPriority,
               })
             }
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           >
             <option value="low">Basse</option>
             <option value="medium">Moyenne</option>
@@ -131,27 +131,27 @@ export function TaskForm({
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Pièce</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Pièce</span>
           <input
             value={values.room}
             onChange={(e) => setValues({ ...values, room: e.target.value })}
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           />
         </label>
 
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Échéance</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Échéance</span>
           <input
             type="date"
             value={values.dueDate}
             onChange={(e) => setValues({ ...values, dueDate: e.target.value })}
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:[color-scheme:dark]"
+            className="ht-input"
           />
         </label>
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Objectif</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Objectif</span>
         <select
           value={values.objectiveId ?? ""}
           onChange={(e) =>
@@ -160,7 +160,7 @@ export function TaskForm({
               objectiveId: e.target.value === "" ? null : e.target.value,
             })
           }
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         >
           <option value="">Tâche libre (aucun objectif)</option>
           {objectives.map((objective) => (
@@ -174,7 +174,7 @@ export function TaskForm({
       <button
         type="submit"
         disabled={submitting}
-        className="self-start rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105 disabled:opacity-50"
+        className="self-start ht-btn-cta disabled:opacity-50"
       >
         {submitLabel}
       </button>

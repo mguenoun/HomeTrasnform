@@ -24,6 +24,9 @@ const mockedUseFamilyMembers = vi.mocked(useFamilyMembers);
 const mockedUseBudgetItems = vi.mocked(useBudgetItems);
 const mockedUseAuth = vi.mocked(useAuth);
 
+const textOf = (text: string) => (_: string, el: Element | null) =>
+  el?.textContent === text;
+
 function mockAuth(uid: string | null) {
   mockedUseAuth.mockReturnValue({
     user: uid ? ({ uid } as never) : null,
@@ -157,9 +160,9 @@ describe("DashboardPage", () => {
     renderPage();
 
     expect(screen.getByText("Objectifs clôturés")).toBeInTheDocument();
-    expect(screen.getByText("1 / 2 (50%)")).toBeInTheDocument();
+    expect(screen.getByText(textOf("1 / 2 (50 %)"))).toBeInTheDocument();
     expect(screen.getByText("Tâches clôturées")).toBeInTheDocument();
-    expect(screen.getByText("1 / 3 (33%)")).toBeInTheDocument();
+    expect(screen.getByText(textOf("1 / 3 (33 %)"))).toBeInTheDocument();
     expect(screen.getByText("Alice")).toBeInTheDocument();
     expect(screen.getByText("Utilisateur inconnu")).toBeInTheDocument();
     expect(screen.getByText("hajar@example.com")).toBeInTheDocument();
@@ -212,13 +215,13 @@ describe("DashboardPage", () => {
     const sharedSection = screen
       .getByText("Objectifs partagés")
       .closest("section") as HTMLElement;
-    expect(within(sharedSection).getByText("1 / 1 (100%)")).toBeInTheDocument();
-    expect(within(sharedSection).getByText("1 / 2 (50%)")).toBeInTheDocument();
+    expect(within(sharedSection).getByText(textOf("1 / 1 (100 %)"))).toBeInTheDocument();
+    expect(within(sharedSection).getByText(textOf("1 / 2 (50 %)"))).toBeInTheDocument();
 
     const privateSection = screen
       .getByText("Objectifs privés")
       .closest("section") as HTMLElement;
-    expect(within(privateSection).getAllByText("1 / 1 (100%)")).toHaveLength(2);
+    expect(within(privateSection).getAllByText(textOf("1 / 1 (100 %)"))).toHaveLength(2);
   });
 
   it("met en avant la carte de la personne connectée et lui montre ses tâches à échéance proche", () => {
@@ -267,10 +270,10 @@ describe("DashboardPage", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getByText("Bob").closest("div")).toHaveClass(
-      "shadow-[inset_0_0_0_2px_#38bdf8]",
+      "shadow-[inset_0_0_0_2px_var(--ht-ring-me)]",
     );
     expect(screen.getByText("Alice").closest("div")).not.toHaveClass(
-      "shadow-[inset_0_0_0_2px_#38bdf8]",
+      "shadow-[inset_0_0_0_2px_var(--ht-ring-me)]",
     );
 
     const mySection = screen

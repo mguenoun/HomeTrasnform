@@ -73,7 +73,7 @@ describe("BudgetItemsTable", () => {
     ]);
 
     const remaining = screen.getByText("-300,00 MAD");
-    expect(remaining).toHaveClass("text-red-700");
+    expect(remaining).toHaveClass("text-[var(--ht-danger)]");
     expect(screen.getByText("Dépassé")).toBeInTheDocument();
   });
 

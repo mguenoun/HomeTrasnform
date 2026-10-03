@@ -40,14 +40,9 @@ export function TaskDetailPage() {
 
   if (!task) {
     return (
-      <div className="p-6 dark:bg-[#0c1628] dark:text-slate-100">
-        <p className="text-slate-500 dark:text-slate-400">
-          Tâche introuvable.
-        </p>
-        <Link
-          to="/tasks"
-          className="text-sky-700 hover:underline dark:text-sky-400"
-        >
+      <div className="p-6">
+        <p className="text-[var(--ht-text-2)]">Tâche introuvable.</p>
+        <Link to="/tasks" className="ht-link">
           Retour aux tâches
         </Link>
       </div>
@@ -119,7 +114,7 @@ export function TaskDetailPage() {
       : users;
 
   return (
-    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen p-6">
       <Breadcrumb
         items={
           objective
@@ -138,7 +133,7 @@ export function TaskDetailPage() {
       />
 
       {editing ? (
-        <div className="mt-4 max-w-md rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+        <div className="ht-card mt-4 max-w-md p-4">
           <TaskForm
             objectives={objectives}
             initialValues={{
@@ -156,32 +151,29 @@ export function TaskDetailPage() {
         </div>
       ) : (
         <header className="mt-4 mb-6">
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-50">
+          <h1 className="text-[22px] font-extrabold leading-tight tracking-[-0.3px] text-[var(--ht-text)]">
             {task.title}
           </h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            {TASK_TYPE_LABELS[task.type]} ·{" "}
-            {TASK_PRIORITY_LABELS[task.priority]}
+          <p className="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs text-[var(--ht-text-3)]">
+            {TASK_TYPE_LABELS[task.type]} · {TASK_PRIORITY_LABELS[task.priority]}
             {task.room && ` · ${task.room}`}
             {objectiveTitle && ` · ${objectiveTitle}`}
             {objective?.visibility === "private" && (
-              <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
-                Privé
-              </span>
+              <span className="ht-pill ht-pill-neutral">Privé</span>
             )}
           </p>
           {task.description && (
-            <p className="mt-2 text-slate-700 dark:text-slate-300">
+            <p className="mt-1.5 text-[13px] leading-normal text-[var(--ht-text-body)]">
               {task.description}
             </p>
           )}
           {task.dueDate && (
-            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+            <p className="mt-1.5 text-xs text-[var(--ht-text-3)]">
               Échéance : {task.dueDate}
             </p>
           )}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <span className="rounded bg-slate-100 px-2 py-1 text-sm font-medium text-slate-700 dark:bg-white/10 dark:text-slate-300">
+          <div className="mt-4 flex flex-wrap items-center gap-1.5">
+            <span className="ht-btn ht-btn-active">
               {TASK_STATUS_LABELS[task.status]}
             </span>
             {ALL_STATUSES.filter((status) =>
@@ -191,7 +183,7 @@ export function TaskDetailPage() {
                 key={status}
                 type="button"
                 onClick={() => handleStatusChange(status)}
-                className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                className="ht-btn"
               >
                 → {TASK_STATUS_LABELS[status]}
               </button>
@@ -199,7 +191,7 @@ export function TaskDetailPage() {
           </div>
 
           {task.status === "done" && task.closedAt && (
-            <p className="mt-2 text-xs text-slate-400 dark:text-slate-500">
+            <p className="mt-2 text-xs text-[var(--ht-text-3)]">
               Clôturée le {new Date(task.closedAt).toLocaleDateString("fr-FR")}
               {task.closedBy &&
                 ` par ${userNameById.get(task.closedBy) ?? "?"}`}
@@ -207,10 +199,8 @@ export function TaskDetailPage() {
           )}
 
           <div className="mt-4">
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
-              Assignés
-            </p>
-            <div className="mt-1 flex flex-wrap gap-2">
+            <p className="mb-2 ht-label">Assignés</p>
+            <div className="flex flex-wrap gap-1.5">
               {assignableUsers.map((familyUser) => {
                 const assigned = task.assigneeIds.includes(familyUser.uid);
                 return (
@@ -219,20 +209,14 @@ export function TaskDetailPage() {
                     type="button"
                     onClick={() => toggleAssignee(familyUser.uid)}
                     aria-pressed={assigned}
-                    className={`rounded-full border px-3 py-1 text-sm ${
-                      assigned
-                        ? "border-amber-400 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-slate-950"
-                        : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
-                    }`}
+                    className={assigned ? "ht-chip ht-chip-active" : "ht-chip"}
                   >
                     {familyUser.displayName}
                   </button>
                 );
               })}
               {assignableUsers.length === 0 && (
-                <p className="text-sm text-slate-400 dark:text-slate-500">
-                  Aucun membre trouvé.
-                </p>
+                <p className="text-sm text-[var(--ht-text-3)]">Aucun membre trouvé.</p>
               )}
             </div>
           </div>
@@ -255,7 +239,7 @@ export function TaskDetailPage() {
             />
           )}
 
-          <div className="mt-4">
+          <div className="mt-6">
             <BudgetItemsTable
               title="Rubriques budgétaires"
               items={taskBudgetItems}
@@ -264,18 +248,10 @@ export function TaskDetailPage() {
           </div>
 
           <div className="mt-4 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="rounded border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-            >
+            <button type="button" onClick={() => setEditing(true)} className="ht-btn">
               Éditer
             </button>
-            <button
-              type="button"
-              onClick={handleDelete}
-              className="rounded border border-red-300 px-3 py-1 text-sm text-red-700 hover:bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/15"
-            >
+            <button type="button" onClick={handleDelete} className="ht-btn ht-btn-danger">
               Supprimer
             </button>
           </div>

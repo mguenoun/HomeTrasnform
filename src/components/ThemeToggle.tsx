@@ -11,7 +11,7 @@ export function ThemeToggle() {
       aria-pressed={isDark}
       aria-label={isDark ? "Passer en mode clair" : "Passer en mode sombre"}
       title={isDark ? "Mode clair" : "Mode sombre"}
-      className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/10"
+      className="ht-btn flex h-8 w-8 items-center justify-center p-0"
     >
       {isDark ? (
         <svg

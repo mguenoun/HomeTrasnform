@@ -27,36 +27,27 @@ export function BudgetItemsTable({
 }: BudgetItemsTableProps) {
   return (
     <section>
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-medium text-slate-700 dark:text-slate-400">
-          {title}
-        </h2>
-        <Link
-          to={addHref}
-          className="rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-3 py-1 text-sm font-medium text-slate-950 hover:brightness-105"
-        >
-          Ajouter une rubrique
+      <div className="mb-2.5 flex items-center justify-between">
+        <h2 className="ht-label">{title}</h2>
+        <Link to={addHref} className="ht-btn-cta-sm" aria-label="Ajouter une rubrique">
+          + Ajouter
         </Link>
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          {emptyMessage}
-        </p>
+        <p className="text-sm text-[var(--ht-text-2)]">{emptyMessage}</p>
       ) : (
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]">
-          <table className="w-full text-left text-sm">
+        <div className="ht-card overflow-x-auto rounded-[14px]">
+          <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b border-slate-200 text-xs text-slate-500 dark:border-white/10 dark:text-slate-500">
-                <th className="p-3 font-medium">Désignation</th>
-                <th className="p-3 font-medium">Budget initial</th>
-                <th className="p-3 font-medium">Révisé</th>
-                <th className="p-3 font-medium">Total paiements</th>
-                <th className="p-3 font-medium">Reste à payer</th>
-                <th className="hidden p-3 font-medium sm:table-cell">
-                  Avancement
-                </th>
-                <th className="p-3 font-medium">Statut</th>
+              <tr>
+                <th className="ht-table-th">Désignation</th>
+                <th className="ht-table-th">Budget initial</th>
+                <th className="ht-table-th">Révisé</th>
+                <th className="ht-table-th">Total paiements</th>
+                <th className="ht-table-th">Reste à payer</th>
+                <th className="ht-table-th hidden sm:table-cell">Avancement</th>
+                <th className="ht-table-th">Statut</th>
               </tr>
             </thead>
             <tbody>
@@ -68,45 +59,35 @@ export function BudgetItemsTable({
                 const status = statusOf(item);
 
                 return (
-                  <tr
-                    key={item.id}
-                    className="border-b border-slate-100 last:border-0 hover:bg-slate-50 dark:border-white/5 dark:hover:bg-white/[0.04]"
-                  >
-                    <td className="p-3">
-                      <Link
-                        to={`/budget/${item.id}`}
-                        className="font-medium text-slate-900 hover:underline dark:text-slate-50"
-                      >
+                  <tr key={item.id}>
+                    <td className="ht-table-td">
+                      <Link to={`/budget/${item.id}`} className="ht-link">
                         {item.title}
                       </Link>
                     </td>
-                    <td className="p-3 whitespace-nowrap dark:text-slate-200">
+                    <td className="ht-table-td whitespace-nowrap">
                       {formatMad(item.budgeted)}
                     </td>
-                    <td className="p-3 whitespace-nowrap dark:text-slate-200">
+                    <td className="ht-table-td whitespace-nowrap">
                       {item.revisedBudget != null
                         ? formatMad(item.revisedBudget)
                         : "—"}
                     </td>
-                    <td className="p-3 whitespace-nowrap dark:text-slate-200">
+                    <td className="ht-table-td whitespace-nowrap">
                       {formatMad(realized)}
                     </td>
                     <td
-                      className={`p-3 whitespace-nowrap font-medium ${
-                        remaining < 0
-                          ? "text-red-700 dark:text-red-400"
-                          : "text-slate-900 dark:text-slate-50"
+                      className={`ht-table-td whitespace-nowrap ${
+                        remaining < 0 ? "font-semibold text-[var(--ht-danger)]" : ""
                       }`}
                     >
                       {formatMad(remaining)}
                     </td>
-                    <td className="hidden p-3 whitespace-nowrap dark:text-slate-200 sm:table-cell">
+                    <td className="ht-table-td hidden whitespace-nowrap sm:table-cell">
                       {progress != null ? `${progress}%` : "—"}
                     </td>
-                    <td className="p-3">
-                      <span
-                        className={`whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium ${BUDGET_ITEM_STATUS_BADGE_CLASSES[status]}`}
-                      >
+                    <td className="ht-table-td">
+                      <span className={BUDGET_ITEM_STATUS_BADGE_CLASSES[status]}>
                         {BUDGET_ITEM_STATUS_LABELS[status]}
                       </span>
                     </td>

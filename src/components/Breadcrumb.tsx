@@ -7,23 +7,23 @@ export interface BreadcrumbItem {
 
 export function Breadcrumb({ items }: { items: BreadcrumbItem[] }) {
   return (
-    <nav aria-label="Fil d'Ariane" className="mb-4 flex flex-wrap items-center gap-1.5 text-sm">
+    <nav
+      aria-label="Fil d'Ariane"
+      className="mb-3.5 flex flex-wrap items-center gap-1 text-xs text-[var(--ht-text-2)]"
+    >
       {items.map((item, index) => (
-        <span key={index} className="flex items-center gap-1.5">
+        <span key={index} className="flex items-center gap-1">
           {index > 0 && (
-            <span aria-hidden="true" className="text-slate-400 dark:text-slate-600">
+            <span aria-hidden="true" className="text-[var(--ht-text-3)]">
               /
             </span>
           )}
           {item.to ? (
-            <Link
-              to={item.to}
-              className="text-sky-700 hover:underline dark:text-sky-400"
-            >
+            <Link to={item.to} className="ht-link">
               {item.label}
             </Link>
           ) : (
-            <span aria-current="page" className="text-slate-500 dark:text-slate-400">
+            <span aria-current="page" className="font-semibold text-[var(--ht-text)]">
               {item.label}
             </span>
           )}

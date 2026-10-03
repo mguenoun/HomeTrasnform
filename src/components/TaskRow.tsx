@@ -24,29 +24,23 @@ export function TaskRow({
   return (
     <Link
       to={`/tasks/${task.id}`}
-      className="flex flex-col gap-1 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]"
+      className="ht-row flex flex-col gap-1 p-[12px_14px] hover:brightness-[1.03]"
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 font-medium text-slate-900 dark:text-slate-50">
+        <span className="flex items-center gap-1.5 ht-title text-[13px]">
           {task.title}
-          {isPrivate && (
-            <span className="rounded bg-slate-100 px-1.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-300">
-              Privé
-            </span>
-          )}
+          {isPrivate && <span className="ht-pill ht-pill-neutral">Privé</span>}
         </span>
-        <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
-          {meta}
-        </span>
+        <span className="shrink-0 text-[11px] text-[var(--ht-text-3)]">{meta}</span>
       </div>
       {budgetItems.length > 0 && (
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-[var(--ht-text-3)]">
           <span>Budget {formatMad(budget.budgeted)}</span>
           {progress != null && <span>Avancement {progress}%</span>}
           <span>Payé {formatMad(budget.realized)}</span>
           <span
             className={
-              remaining < 0 ? "font-medium text-red-700 dark:text-red-400" : ""
+              remaining < 0 ? "font-semibold text-[var(--ht-danger)]" : ""
             }
           >
             Reste {formatMad(remaining)}

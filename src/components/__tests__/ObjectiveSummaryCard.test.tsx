@@ -71,7 +71,7 @@ describe("ObjectiveSummaryCard", () => {
     expect(
       screen.getByText("Peinture + nouvelle porte-fenêtre"),
     ).toBeInTheDocument();
-    expect(screen.getByText("1/2 tâches terminées (50%)")).toBeInTheDocument();
+    expect(screen.getByText("1/2 tâches terminées (50 %)")).toBeInTheDocument();
   });
 
   it("n'affiche pas le bloc budget si aucune rubrique n'est liée", () => {
@@ -100,7 +100,7 @@ describe("ObjectiveSummaryCard", () => {
     );
 
     expect(screen.getByText("100,00 MAD")).toBeInTheDocument();
-    expect(screen.getByText("80%")).toBeInTheDocument();
+    expect(screen.getByText("80 %")).toBeInTheDocument();
     expect(screen.getByText("150,00 MAD")).toBeInTheDocument();
     expect(screen.getByText("-50,00 MAD")).toBeInTheDocument();
     expect(screen.getByText("Dépassement")).toBeInTheDocument();

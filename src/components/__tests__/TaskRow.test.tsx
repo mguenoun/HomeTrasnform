@@ -96,7 +96,7 @@ describe("TaskRow", () => {
     });
 
     const remaining = screen.getByText("Reste -50,00 MAD");
-    expect(remaining).toHaveClass("text-red-700");
+    expect(remaining).toHaveClass("text-[var(--ht-danger)]");
   });
 
   it("affiche un badge Privé quand isPrivate est vrai", () => {

@@ -72,7 +72,7 @@ export function BudgetPaymentForm({
       {error && (
         <p
           role="alert"
-          className="rounded bg-red-100 px-3 py-2 text-red-700 dark:bg-red-500/10 dark:text-red-300"
+          className="rounded bg-[var(--ht-over-bg)] px-3 py-2 text-[var(--ht-danger)]"
         >
           {error}
         </p>
@@ -80,31 +80,31 @@ export function BudgetPaymentForm({
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Date</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Date</span>
           <input
             type="date"
             value={values.date}
             onChange={(e) => setValues({ ...values, date: e.target.value })}
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:[color-scheme:dark]"
+            className="ht-input"
           />
         </label>
 
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Montant (MAD)</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Montant (MAD)</span>
           <input
             type="number"
             min="0"
             step="0.01"
             value={values.amount}
             onChange={(e) => setValues({ ...values, amount: e.target.value })}
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           />
         </label>
       </div>
 
       <div className="flex gap-3">
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Statut</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Statut</span>
           <select
             value={values.status}
             onChange={(e) =>
@@ -113,7 +113,7 @@ export function BudgetPaymentForm({
                 status: e.target.value as BudgetPaymentStatus,
               })
             }
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           >
             {STATUSES.map((status) => (
               <option key={status} value={status}>
@@ -124,7 +124,7 @@ export function BudgetPaymentForm({
         </label>
 
         <label className="flex flex-1 flex-col gap-1">
-          <span className="text-sm font-medium dark:text-slate-300">Avancement (%)</span>
+          <span className="text-sm font-medium text-[var(--ht-text-body)]">Avancement (%)</span>
           <input
             type="number"
             min="0"
@@ -134,17 +134,17 @@ export function BudgetPaymentForm({
             onChange={(e) =>
               setValues({ ...values, progress: e.target.value })
             }
-            className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-input"
           />
         </label>
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Commentaire</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Commentaire</span>
         <input
           value={values.comment}
           onChange={(e) => setValues({ ...values, comment: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
@@ -152,7 +152,7 @@ export function BudgetPaymentForm({
         <button
           type="submit"
           disabled={submitting}
-          className="self-start rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105 disabled:opacity-50"
+          className="self-start ht-btn-cta disabled:opacity-50"
         >
           {submitLabel}
         </button>
@@ -160,7 +160,7 @@ export function BudgetPaymentForm({
           <button
             type="button"
             onClick={onCancel}
-            className="self-start rounded border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+            className="ht-btn self-start"
           >
             Annuler
           </button>

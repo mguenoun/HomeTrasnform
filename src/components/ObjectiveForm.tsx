@@ -59,23 +59,23 @@ export function ObjectiveForm({
       {error && (
         <p
           role="alert"
-          className="rounded bg-red-100 px-3 py-2 text-red-700 dark:bg-red-500/10 dark:text-red-300"
+          className="rounded bg-[var(--ht-over-bg)] px-3 py-2 text-[var(--ht-danger)]"
         >
           {error}
         </p>
       )}
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">Titre</span>
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">Titre</span>
         <input
           value={values.title}
           onChange={(e) => setValues({ ...values, title: e.target.value })}
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">
           Description
         </span>
         <textarea
@@ -83,12 +83,12 @@ export function ObjectiveForm({
           onChange={(e) =>
             setValues({ ...values, description: e.target.value })
           }
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+          className="ht-input"
         />
       </label>
 
       <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium dark:text-slate-300">
+        <span className="text-sm font-medium text-[var(--ht-text-body)]">
           Date cible
         </span>
         <input
@@ -97,15 +97,15 @@ export function ObjectiveForm({
           onChange={(e) =>
             setValues({ ...values, targetDate: e.target.value })
           }
-          className="rounded border border-slate-300 px-3 py-2 dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:[color-scheme:dark]"
+          className="ht-input"
         />
       </label>
 
       <fieldset className="flex flex-col gap-1">
-        <legend className="text-sm font-medium dark:text-slate-300">
+        <legend className="text-sm font-medium text-[var(--ht-text-body)]">
           Visibilité
         </legend>
-        <label className="flex items-center gap-2 text-sm dark:text-slate-300">
+        <label className="flex items-center gap-2 text-sm">
           <input
             type="radio"
             name="visibility"
@@ -114,7 +114,7 @@ export function ObjectiveForm({
           />
           Partagé avec la famille
         </label>
-        <label className="flex items-center gap-2 text-sm dark:text-slate-300">
+        <label className="flex items-center gap-2 text-sm">
           <input
             type="radio"
             name="visibility"
@@ -128,7 +128,7 @@ export function ObjectiveForm({
       <button
         type="submit"
         disabled={submitting}
-        className="self-start rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105 disabled:opacity-50"
+        className="self-start ht-btn-cta disabled:opacity-50"
       >
         {submitLabel}
       </button>

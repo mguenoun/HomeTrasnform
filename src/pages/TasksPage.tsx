@@ -44,20 +44,20 @@ export function TasksPage() {
       <li key={task.id}>
         <Link
           to={`/tasks/${task.id}`}
-          className="flex flex-wrap items-center justify-between gap-2 rounded border border-slate-200 bg-white p-3 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:hover:bg-white/[0.07]"
+          className="ht-row flex flex-wrap items-center justify-between gap-2 p-3"
         >
           <div>
-            <p className="font-medium text-slate-900 dark:text-slate-50">
+            <p className="font-medium text-[var(--ht-text)]">
               {task.title}
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-sm text-[var(--ht-text-2)]">
               {TASK_TYPE_LABELS[task.type]} ·{" "}
               {TASK_PRIORITY_LABELS[task.priority]}
               {task.objectiveId &&
                 ` · ${objectiveTitleById.get(task.objectiveId) ?? ""}`}
             </p>
             {task.assigneeIds.length > 0 && (
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-xs text-[var(--ht-text-3)]">
                 {task.assigneeIds
                   .map((assigneeId) => userNameById.get(assigneeId) ?? "?")
                   .join(", ")}
@@ -65,7 +65,7 @@ export function TasksPage() {
             )}
           </div>
           <div className="flex items-center gap-2">
-            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 dark:bg-white/10 dark:text-slate-300">
+            <span className="ht-pill ht-pill-neutral">
               {TASK_STATUS_LABELS[task.status]}
             </span>
           </div>
@@ -75,24 +75,24 @@ export function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen p-6">
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Tâches" }]}
       />
       <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
+        <h1 className="ht-h1">
           Tâches
         </h1>
         <Link
           to="/tasks/new"
-          className="rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105"
+          className="ht-btn-cta"
         >
           Nouvelle tâche
         </Link>
       </header>
 
       <div className="mb-6 flex flex-wrap gap-3">
-        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
+        <label className="flex flex-col gap-1 text-sm text-[var(--ht-text-body)]">
           <span>Type</span>
           <select
             value={filters.type ?? ""}
@@ -102,7 +102,7 @@ export function TasksPage() {
                 type: (e.target.value || undefined) as TaskType | undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-select"
           >
             <option value="">Tous</option>
             {Object.entries(TASK_TYPE_LABELS).map(([value, label]) => (
@@ -113,7 +113,7 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
+        <label className="flex flex-col gap-1 text-sm text-[var(--ht-text-body)]">
           <span>Statut</span>
           <select
             value={filters.status ?? ""}
@@ -125,7 +125,7 @@ export function TasksPage() {
                   | undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-select"
           >
             <option value="">Tous</option>
             {Object.entries(TASK_STATUS_LABELS).map(([value, label]) => (
@@ -136,7 +136,7 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
+        <label className="flex flex-col gap-1 text-sm text-[var(--ht-text-body)]">
           <span>Objectif</span>
           <select
             value={filters.objectiveId ?? ""}
@@ -146,7 +146,7 @@ export function TasksPage() {
                 objectiveId: e.target.value || undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-select"
           >
             <option value="">Tous</option>
             {objectives.map((o) => (
@@ -157,7 +157,7 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
+        <label className="flex flex-col gap-1 text-sm text-[var(--ht-text-body)]">
           <span>Assigné</span>
           <select
             value={filters.assigneeId ?? ""}
@@ -167,7 +167,7 @@ export function TasksPage() {
                 assigneeId: e.target.value || undefined,
               })
             }
-            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-select"
           >
             <option value="">Tous</option>
             {users.map((familyUser) => (
@@ -178,12 +178,12 @@ export function TasksPage() {
           </select>
         </label>
 
-        <label className="flex flex-col gap-1 text-sm text-slate-700 dark:text-slate-300">
+        <label className="flex flex-col gap-1 text-sm text-[var(--ht-text-body)]">
           <span>Trier par</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as TaskSortKey)}
-            className="rounded border border-slate-300 px-2 py-1 dark:border-white/15 dark:bg-white/5 dark:text-slate-100"
+            className="ht-select"
           >
             <option value="priority">Priorité</option>
             <option value="dueDate">Échéance</option>
@@ -200,11 +200,7 @@ export function TasksPage() {
               }))
             }
             aria-pressed={onlyMyTasks}
-            className={`self-end rounded border px-3 py-1 text-sm ${
-              onlyMyTasks
-                ? "border-amber-400 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-slate-950"
-                : "border-slate-300 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
-            }`}
+            className={`self-end ${onlyMyTasks ? "ht-chip ht-chip-active" : "ht-chip"}`}
           >
             Mes tâches
           </button>
@@ -212,20 +208,20 @@ export function TasksPage() {
       </div>
 
       {loading && (
-        <p className="text-slate-500 dark:text-slate-400">Chargement...</p>
+        <p className="text-[var(--ht-text-2)]">Chargement...</p>
       )}
 
       {!loading && (
         <>
           <section>
-            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
+            <h2 className="mb-2.5 ht-label">
               Tâches partagées
             </h2>
             <ul className="flex flex-col gap-2">
               {sharedTasks.map(renderTaskItem)}
             </ul>
             {sharedTasks.length === 0 && (
-              <p className="text-slate-500 dark:text-slate-400">
+              <p className="text-[var(--ht-text-2)]">
                 Aucune tâche partagée ne correspond aux filtres.
               </p>
             )}
@@ -233,7 +229,7 @@ export function TasksPage() {
 
           {privateTasks.length > 0 && (
             <section className="mt-6">
-              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
+              <h2 className="mb-2.5 ht-label">
                 Tâches privées
               </h2>
               <ul className="flex flex-col gap-2">

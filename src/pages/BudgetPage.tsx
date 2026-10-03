@@ -23,49 +23,49 @@ function BudgetTotalsSummary({
 }) {
   return (
     <div className="grid grid-cols-2 gap-4">
-      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+      <div className="ht-card p-4">
+        <p className="ht-label">
           Budget
         </p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+        <p className="mt-1 ht-kpi-value">
           {formatMad(totals.budgeted)}
         </p>
       </div>
-      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+      <div className="ht-card p-4">
+        <p className="ht-label">
           Engagé
         </p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+        <p className="mt-1 ht-kpi-value">
           {formatMad(totals.committed)}
         </p>
       </div>
-      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+      <div className="ht-card p-4">
+        <p className="ht-label">
           Réalisé
         </p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-          <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent dark:from-amber-400">
+        <p className="mt-1 ht-kpi-value">
+          <span className="ht-grad-text">
             {formatMad(totals.realized)}
           </span>
         </p>
       </div>
-      <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+      <div className="ht-card p-4">
+        <p className="ht-label">
           Prévision finale
         </p>
-        <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
+        <p className="mt-1 ht-kpi-value">
           {formatMad(totals.forecast)}
         </p>
       </div>
-      <div className="col-span-2 rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
+      <div className="col-span-2 ht-card p-4">
+        <p className="ht-label">
           Écart
         </p>
         <p
-          className={`mt-1 text-2xl font-semibold ${
+          className={`mt-1 ht-kpi-value ${
             totals.variance < 0
-              ? "text-red-700 dark:text-red-400"
-              : "text-slate-900 dark:text-slate-50"
+              ? "text-[var(--ht-danger)]"
+              : "text-[var(--ht-text)]"
           }`}
         >
           {formatMad(totals.variance)}
@@ -95,22 +95,22 @@ export function BudgetPage() {
   const sortedPrivateItems = sortByStatus(privateItems);
 
   return (
-    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen p-6">
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Budget" }]}
       />
-      <h1 className="mt-4 mb-6 text-xl font-semibold text-slate-900 dark:text-slate-50">
+      <h1 className="mt-4 mb-5 ht-h1">
         Budget
       </h1>
 
       {loading && (
-        <p className="text-slate-500 dark:text-slate-400">Chargement...</p>
+        <p className="text-[var(--ht-text-2)]">Chargement...</p>
       )}
 
       {!loading && (
         <>
           <section>
-            <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
+            <h2 className="mb-2.5 ht-label">
               Budget partagé
             </h2>
             <BudgetTotalsSummary totals={sharedTotals} />
@@ -118,7 +118,7 @@ export function BudgetPage() {
 
           {hasPrivateItems && (
             <section className="mt-6">
-              <h2 className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-400">
+              <h2 className="mb-2.5 ht-label">
                 Budget privé
               </h2>
               <BudgetTotalsSummary totals={privateTotals} />

@@ -26,16 +26,13 @@ export function BudgetItemCard({ item, objectiveTitle }: BudgetItemCardProps) {
   const percent = budget > 0 ? Math.min(100, Math.round((realized / budget) * 100)) : 0;
 
   return (
-    <div className="rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+    <div className="ht-card p-[16px_18px]">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <Link
-            to={`/budget/${item.id}`}
-            className="font-medium text-slate-900 hover:underline dark:text-slate-50"
-          >
+          <Link to={`/budget/${item.id}`} className="ht-title hover:underline">
             {item.title}
           </Link>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-[11px] text-[var(--ht-text-3)]">
             {BUDGET_CATEGORY_LABELS[item.category]}
             {item.vendor && ` · ${item.vendor}`}
             {objectiveTitle && ` · ${objectiveTitle}`}
@@ -48,22 +45,25 @@ export function BudgetItemCard({ item, objectiveTitle }: BudgetItemCardProps) {
         </span>
       </div>
 
-      <div className="mt-3">
-        <div className="h-2 w-full rounded bg-slate-200 dark:bg-white/10">
+      <div className="mt-2.5">
+        <div className="ht-track">
           <div
-            className={`h-2 rounded ${status === "over" ? "bg-red-500" : "bg-gradient-to-r from-amber-400 via-orange-500 to-red-500"}`}
-            style={{ width: `${percent}%` }}
+            className={status === "over" ? "ht-fill-ok" : "ht-fill-grad"}
+            style={{
+              width: `${percent}%`,
+              ...(status === "over" ? { background: "var(--ht-danger)" } : {}),
+            }}
           />
         </div>
-        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        <p className="mt-1.5 text-[11px] text-[var(--ht-text-3)]">
           {formatMad(realized)} réalisé / {formatMad(budget)} budgété
         </p>
       </div>
 
-      <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+      <p className="mt-1.5 text-[11px] text-[var(--ht-text-3)]">
         Prévision {formatMad(forecastFinal(item))}
         {variance(item) < 0 && (
-          <span className="ml-1 font-medium text-red-700 dark:text-red-400">
+          <span className="ml-1 font-semibold text-[var(--ht-danger)]">
             ({formatMad(variance(item))})
           </span>
         )}

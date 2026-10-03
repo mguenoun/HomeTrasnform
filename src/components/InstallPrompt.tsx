@@ -63,13 +63,13 @@ export function InstallPrompt() {
 
   if (deferredPrompt) {
     return (
-      <div className="flex items-center justify-between gap-3 bg-blue-50 px-6 py-2 text-sm text-blue-900 dark:bg-sky-500/10 dark:text-sky-200">
+      <div className="flex items-center justify-between gap-3 bg-[var(--ht-info-bg)] px-6 py-2 text-sm text-[var(--ht-info-text)]">
         <span>Installez HomeTransform sur cet appareil pour y accéder plus vite.</span>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleInstallClick}
-            className="rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-3 py-1 font-medium text-slate-950 hover:brightness-105"
+            className="ht-btn-cta-sm"
           >
             Installer
           </button>
@@ -77,7 +77,7 @@ export function InstallPrompt() {
             type="button"
             onClick={dismiss}
             aria-label="Masquer"
-            className="text-sky-700 hover:underline dark:text-sky-300"
+            className="text-sky-700 hover:underline"
           >
             ✕
           </button>
@@ -94,7 +94,7 @@ export function InstallPrompt() {
     })
   ) {
     return (
-      <div className="flex items-start justify-between gap-3 bg-blue-50 px-6 py-3 text-sm text-blue-900 dark:bg-sky-500/10 dark:text-sky-200">
+      <div className="flex items-start justify-between gap-3 bg-[var(--ht-info-bg)] px-6 py-3 text-sm text-[var(--ht-info-text)]">
         <div>
           <p className="font-medium">Installer HomeTransform sur cet iPhone/iPad :</p>
           <ol className="mt-1 list-decimal space-y-0.5 pl-4">
@@ -120,7 +120,7 @@ export function InstallPrompt() {
           type="button"
           onClick={dismiss}
           aria-label="Masquer"
-          className="shrink-0 text-sky-700 hover:underline dark:text-sky-300"
+          className="shrink-0 text-sky-700 hover:underline"
         >
           ✕
         </button>

@@ -38,38 +38,28 @@ export function CommentsSection({
 
   return (
     <div className="mt-4">
-      <p className="text-sm font-medium text-slate-700 dark:text-slate-400">
-        Commentaires
-      </p>
+      <p className="mb-2 ht-label">Commentaires</p>
 
-      <ul className="mt-2 flex flex-col gap-2">
+      <ul className="flex flex-col gap-2">
         {comments.map((comment) => (
-          <li
-            key={comment.id}
-            className="rounded border border-slate-200 bg-white p-2 text-sm dark:border-white/10 dark:bg-white/[0.04]"
-          >
-            <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+          <li key={comment.id} className="ht-card p-3.5">
+            <p className="text-[11.5px] text-[var(--ht-text-3)]">
               {userNameById.get(comment.authorId) ?? "?"} ·{" "}
               {new Date(comment.createdAt).toLocaleString("fr-FR")}
             </p>
-            <p className="mt-1 whitespace-pre-wrap text-slate-800 dark:text-slate-200">
+            <p className="mt-1.5 text-[13px] leading-normal whitespace-pre-wrap text-[var(--ht-text-body)]">
               {comment.text}
             </p>
           </li>
         ))}
         {comments.length === 0 && (
-          <p className="text-sm text-slate-400 dark:text-slate-500">
-            Aucun commentaire.
-          </p>
+          <p className="text-sm text-[var(--ht-text-3)]">Aucun commentaire.</p>
         )}
       </ul>
 
-      <form onSubmit={handleSubmit} className="mt-3 flex flex-col gap-2">
+      <form onSubmit={handleSubmit} className="mt-2.5 flex flex-col gap-2">
         {error && (
-          <p
-            role="alert"
-            className="rounded bg-red-100 px-3 py-2 text-sm text-red-700 dark:bg-red-500/10 dark:text-red-300"
-          >
+          <p role="alert" className="ht-pill ht-pill-over self-start">
             {error}
           </p>
         )}
@@ -80,13 +70,13 @@ export function CommentsSection({
             onChange={(e) => setText(e.target.value)}
             placeholder="Ajouter un commentaire..."
             rows={2}
-            className="rounded border border-slate-300 px-3 py-2 text-sm dark:border-white/15 dark:bg-white/5 dark:text-slate-100 dark:placeholder:text-slate-500"
+            className="ht-input"
           />
         </label>
         <button
           type="submit"
           disabled={submitting || text.trim() === ""}
-          className="self-start rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-3 py-1.5 text-sm font-medium text-slate-950 hover:brightness-105 disabled:opacity-50"
+          className="ht-btn-cta-sm self-start disabled:opacity-50"
         >
           Envoyer
         </button>

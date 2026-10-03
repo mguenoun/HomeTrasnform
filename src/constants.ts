@@ -51,8 +51,7 @@ export const BUDGET_ITEM_STATUS_LABELS: Record<BudgetItemStatus, string> = {
 };
 
 export const BUDGET_ITEM_STATUS_BADGE_CLASSES: Record<BudgetItemStatus, string> = {
-  over: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400 dark:ring-1 dark:ring-red-500/30",
-  watch:
-    "bg-orange-100 text-orange-700 dark:bg-amber-500/15 dark:text-amber-400 dark:ring-1 dark:ring-amber-500/30",
-  ok: "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400 dark:ring-1 dark:ring-green-500/30",
+  over: "ht-pill ht-pill-over",
+  watch: "ht-pill ht-pill-warn",
+  ok: "ht-pill ht-pill-ok",
 };

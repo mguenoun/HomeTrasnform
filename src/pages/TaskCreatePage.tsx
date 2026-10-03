@@ -33,7 +33,7 @@ export function TaskCreatePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen p-6">
       <Breadcrumb
         items={
           preselectedObjective
@@ -53,10 +53,10 @@ export function TaskCreatePage() {
               ]
         }
       />
-      <h1 className="mt-4 mb-6 text-xl font-semibold text-slate-900 dark:text-slate-50">
+      <h1 className="mt-4 mb-5 ht-h1">
         Nouvelle tâche
       </h1>
-      <div className="max-w-md rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04]">
+      <div className="max-w-md ht-card p-4">
         <TaskForm
           objectives={objectives}
           initialValues={
