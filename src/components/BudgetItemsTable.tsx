@@ -28,6 +28,10 @@ export function BudgetItemsTable({
   addHref,
   emptyMessage = "Aucune rubrique budgétaire pour le moment.",
 }: BudgetItemsTableProps) {
+  const totalBudget = items.reduce((sum, item) => sum + effectiveBudget(item), 0);
+  const totalRealized = items.reduce((sum, item) => sum + computeRealized(item), 0);
+  const totalRemaining = totalBudget - totalRealized;
+
   return (
     <section>
       <div className="mb-2.5 flex items-center justify-between">
@@ -96,6 +100,24 @@ export function BudgetItemsTable({
                 );
               })}
             </tbody>
+            {items.length > 1 && (
+              <tfoot>
+                <tr>
+                  <td className="ht-table-td font-extrabold">Total</td>
+                  <td className="ht-table-td font-extrabold">{formatAmount(totalBudget)}</td>
+                  <td className="ht-table-td font-extrabold">{formatAmount(totalRealized)}</td>
+                  <td
+                    className={`ht-table-td font-extrabold ${
+                      totalRemaining < 0 ? "text-[var(--ht-danger)]" : ""
+                    }`}
+                  >
+                    {formatAmount(totalRemaining)}
+                  </td>
+                  <td className="ht-table-td" />
+                  <td className="ht-table-td" />
+                </tr>
+              </tfoot>
+            )}
           </table>
         </div>
       )}

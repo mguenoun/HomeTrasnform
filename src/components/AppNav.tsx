@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { initialsOf } from "../domain/initials";
 import { useAuth } from "../context/AuthContext";
 import { NotificationsToggle } from "./NotificationsToggle";
 import { ThemeToggle } from "./ThemeToggle";
@@ -18,7 +19,7 @@ export function AppNav() {
     <header className="flex flex-wrap items-center justify-between gap-3 px-6 pt-6 pb-2">
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-2.5">
-          <div className="h-[26px] w-[26px] shrink-0 rounded-lg bg-gradient-to-br from-amber-400 via-orange-500 to-red-500" />
+          <div className="h-[26px] w-[26px] shrink-0 rounded-lg bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 dark:shadow-[0_0_14px_-2px_rgba(249,115,22,0.6)]" />
           <span className="text-[15px] font-extrabold tracking-[-0.3px] text-[var(--ht-text)]">
             HomeTransform
           </span>
@@ -40,16 +41,40 @@ export function AppNav() {
           })}
         </nav>
       </div>
-      <div className="flex flex-wrap items-center gap-2.5">
+      <div className="flex items-center gap-2">
         <NotificationsToggle />
         <ThemeToggle />
-        {user?.displayName && (
-          <span className="text-xs text-[var(--ht-text-2)]">
-            {user.displayName}
+        {user && (
+          <span
+            title={user.displayName ?? undefined}
+            aria-label={user.displayName ?? undefined}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 via-orange-500 to-red-500 text-[11px] font-extrabold text-slate-950"
+          >
+            {initialsOf(user.displayName)}
           </span>
         )}
-        <button type="button" onClick={signOutUser} className="ht-btn">
-          Se déconnecter
+        <button
+          type="button"
+          onClick={signOutUser}
+          aria-label="Se déconnecter"
+          title="Se déconnecter"
+          className="ht-btn flex h-8 w-8 items-center justify-center p-0"
+        >
+          <svg
+            width="17"
+            height="17"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="M16 17l5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
         </button>
       </div>
     </header>

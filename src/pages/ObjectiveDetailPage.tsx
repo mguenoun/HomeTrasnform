@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Breadcrumb } from "../components/Breadcrumb";
+import { PaymentsHistogram } from "../components/PaymentsHistogram";
 import { BudgetItemsTable } from "../components/BudgetItemsTable";
 import { ObjectiveForm, type ObjectiveFormValues } from "../components/ObjectiveForm";
 import { TASK_STATUS_LABELS, TASK_TYPE_LABELS } from "../constants";
@@ -164,6 +165,10 @@ export function ObjectiveDetailPage() {
           Aucune tâche rattachée pour le moment.
         </p>
       )}
+
+      <div className="mt-6">
+        <PaymentsHistogram items={objectiveBudgetItems} />
+      </div>
 
       <div className="mt-6">
         <BudgetItemsTable

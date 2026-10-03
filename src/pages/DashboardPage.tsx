@@ -1,3 +1,4 @@
+import { PaymentsHistogram } from "../components/PaymentsHistogram";
 import { BudgetItemCard } from "../components/BudgetItemCard";
 import { ObjectiveSummaryCard } from "../components/ObjectiveSummaryCard";
 import { TaskRow } from "../components/TaskRow";
@@ -170,6 +171,10 @@ export function DashboardPage() {
               </div>
             </section>
           )}
+
+          <section className="mt-6">
+            <PaymentsHistogram items={budgetItems} />
+          </section>
 
           <section className="mt-6">
             <h2 className="mb-2.5 ht-label">Rubriques à surveiller</h2>

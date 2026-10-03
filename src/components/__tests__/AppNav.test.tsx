@@ -71,7 +71,7 @@ describe("AppNav", () => {
   it("affiche le nom de l'utilisateur et déclenche la déconnexion", async () => {
     renderNav("/");
 
-    expect(screen.getByText("Marie Guenoun")).toBeInTheDocument();
+    expect(screen.getByLabelText("Marie Guenoun")).toHaveTextContent("MG");
     await userEvent.click(
       screen.getByRole("button", { name: /se déconnecter/i }),
     );

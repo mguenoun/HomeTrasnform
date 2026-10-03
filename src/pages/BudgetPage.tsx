@@ -1,4 +1,5 @@
 import { Breadcrumb } from "../components/Breadcrumb";
+import { PaymentsHistogram } from "../components/PaymentsHistogram";
 import { BudgetItemsTable } from "../components/BudgetItemsTable";
 import { statusOf, summarizeBudgetItems } from "../domain/budgetItems";
 import { formatMad } from "../domain/money";
@@ -124,6 +125,10 @@ export function BudgetPage() {
               <BudgetTotalsSummary totals={privateTotals} />
             </section>
           )}
+
+          <div className="mt-6">
+            <PaymentsHistogram items={items} />
+          </div>
 
           <div className="mt-6">
             <BudgetItemsTable

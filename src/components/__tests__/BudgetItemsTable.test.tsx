@@ -94,4 +94,15 @@ describe("BudgetItemsTable", () => {
       screen.getByText("Aucune rubrique budgétaire pour le moment."),
     ).toBeInTheDocument();
   });
+
+  it("ajoute une ligne de totaux (budget, payé, reste) quand il y a plusieurs rubriques", () => {
+    renderTable([
+      item({ id: "a", title: "Peinture", budgeted: 1000, payments: [{ id: "p1", date: "2026-03-01", amount: 200, status: "paye", createdBy: "u1" }] }),
+      item({ id: "b", title: "Carrelage", budgeted: 500 }),
+    ]);
+    const totalRow = screen.getByText("Total").closest("tr") as HTMLElement;
+    expect(totalRow).toHaveTextContent("1 500");
+    expect(totalRow).toHaveTextContent("200");
+    expect(totalRow).toHaveTextContent("1 300");
+  });
 });
