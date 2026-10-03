@@ -77,7 +77,7 @@ export function InstallPrompt() {
             type="button"
             onClick={dismiss}
             aria-label="Masquer"
-            className="text-blue-700 hover:underline dark:text-sky-300"
+            className="text-sky-700 hover:underline dark:text-sky-300"
           >
             ✕
           </button>
@@ -120,7 +120,7 @@ export function InstallPrompt() {
           type="button"
           onClick={dismiss}
           aria-label="Masquer"
-          className="shrink-0 text-blue-700 hover:underline dark:text-sky-300"
+          className="shrink-0 text-sky-700 hover:underline dark:text-sky-300"
         >
           ✕
         </button>

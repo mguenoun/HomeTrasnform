@@ -25,7 +25,7 @@ export function ObjectiveSummaryCard({
       <div className="flex items-center gap-2">
         <Link
           to={`/objectives/${objective.id}`}
-          className="text-lg font-medium text-blue-700 hover:underline dark:text-sky-400"
+          className="text-lg font-medium text-slate-900 hover:underline dark:text-slate-50"
         >
           {objective.title}
         </Link>

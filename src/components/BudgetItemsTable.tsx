@@ -75,7 +75,7 @@ export function BudgetItemsTable({
                     <td className="p-3">
                       <Link
                         to={`/budget/${item.id}`}
-                        className="font-medium text-blue-700 hover:underline dark:text-sky-400"
+                        className="font-medium text-slate-900 hover:underline dark:text-slate-50"
                       >
                         {item.title}
                       </Link>

@@ -200,16 +200,16 @@ export function DashboardPage() {
                 return (
                   <div
                     key={kpi.uid}
-                    className={`rounded border p-4 ${
+                    className={`rounded border border-slate-200 bg-white p-4 dark:border-white/10 dark:bg-white/[0.04] ${
                       isMe
-                        ? "border-blue-300 bg-blue-50 dark:border-sky-400/50 dark:bg-white/[0.04] dark:shadow-[inset_0_0_0_1px_rgba(56,189,248,0.5)]"
-                        : "border-slate-200 bg-white dark:border-white/10 dark:bg-white/[0.04]"
+                        ? "shadow-[inset_0_0_0_2px_#38bdf8]"
+                        : ""
                     }`}
                   >
                     <p
                       className={`truncate text-sm ${
                         isMe
-                          ? "font-semibold text-blue-900 dark:text-slate-50"
+                          ? "font-semibold text-slate-900 dark:text-slate-50"
                           : "font-medium text-slate-700 dark:text-slate-300"
                       }`}
                     >

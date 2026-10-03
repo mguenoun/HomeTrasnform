@@ -267,10 +267,10 @@ describe("DashboardPage", () => {
         Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getByText("Bob").closest("div")).toHaveClass(
-      "border-blue-300",
+      "shadow-[inset_0_0_0_2px_#38bdf8]",
     );
     expect(screen.getByText("Alice").closest("div")).not.toHaveClass(
-      "border-blue-300",
+      "shadow-[inset_0_0_0_2px_#38bdf8]",
     );
 
     const mySection = screen

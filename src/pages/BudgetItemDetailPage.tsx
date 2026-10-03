@@ -78,7 +78,7 @@ export function BudgetItemDetailPage() {
         </p>
         <Link
           to="/budget"
-          className="text-blue-700 hover:underline dark:text-sky-400"
+          className="text-sky-700 hover:underline dark:text-sky-400"
         >
           Retour au budget
         </Link>

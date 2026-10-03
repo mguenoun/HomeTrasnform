@@ -35,7 +35,7 @@ export function ObjectiveDetailPage() {
         </p>
         <Link
           to="/objectives"
-          className="text-blue-700 hover:underline dark:text-sky-400"
+          className="text-sky-700 hover:underline dark:text-sky-400"
         >
           Retour aux objectifs
         </Link>

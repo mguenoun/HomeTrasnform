@@ -46,7 +46,7 @@ export function TaskDetailPage() {
         </p>
         <Link
           to="/tasks"
-          className="text-blue-700 hover:underline dark:text-sky-400"
+          className="text-sky-700 hover:underline dark:text-sky-400"
         >
           Retour aux tâches
         </Link>
