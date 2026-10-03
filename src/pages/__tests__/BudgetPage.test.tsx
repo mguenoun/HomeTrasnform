@@ -85,7 +85,7 @@ describe("BudgetPage", () => {
 
     expect(screen.getByText("Peinture")).toBeInTheDocument();
     expect(screen.getByText("Carrelage")).toBeInTheDocument();
-    expect(screen.getByText("Dépassé")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Dépassé" })).toBeInTheDocument();
     // "Reste à payer" négatif pour la rubrique en dépassement (aussi affiché
     // comme écart global dans les KPI, d'où au moins deux occurrences).
     expect(screen.getAllByText("-300,00 MAD").length).toBeGreaterThan(0);

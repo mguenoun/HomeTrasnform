@@ -1,8 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  BUDGET_ITEM_STATUS_BADGE_CLASSES,
-  BUDGET_ITEM_STATUS_LABELS,
-} from "../constants";
+import { BUDGET_ITEM_STATUS_LABELS } from "../constants";
 import {
   computeRealized,
   effectiveBudget,
@@ -11,6 +8,12 @@ import {
 } from "../domain/budgetItems";
 import { formatAmount } from "../domain/money";
 import type { BudgetItem } from "../types";
+
+const STATUS_DOT_COLOR = {
+  ok: "var(--ht-ok-text)",
+  watch: "var(--ht-warn-text)",
+  over: "var(--ht-over-text)",
+} as const;
 
 export interface BudgetItemsTableProps {
   title: string;
@@ -81,9 +84,13 @@ export function BudgetItemsTable({
                       {progress != null ? `${progress}%` : "—"}
                     </td>
                     <td className="ht-table-td">
-                      <span className={BUDGET_ITEM_STATUS_BADGE_CLASSES[status]}>
-                        {BUDGET_ITEM_STATUS_LABELS[status]}
-                      </span>
+                      <span
+                        role="img"
+                        aria-label={BUDGET_ITEM_STATUS_LABELS[status]}
+                        title={BUDGET_ITEM_STATUS_LABELS[status]}
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ background: STATUS_DOT_COLOR[status] }}
+                      />
                     </td>
                   </tr>
                 );

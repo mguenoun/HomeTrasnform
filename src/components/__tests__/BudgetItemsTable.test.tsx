@@ -58,7 +58,7 @@ describe("BudgetItemsTable", () => {
     expect(screen.getByText("300")).toBeInTheDocument();
     // Reste à payer = budget révisé (1200) - réalisé (300) = 900.
     expect(screen.getByText("900")).toBeInTheDocument();
-    expect(screen.getByText("Dans les clous")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Dans les clous" })).toBeInTheDocument();
   });
 
   it("affiche le reste à payer négatif en rouge quand le réalisé dépasse le budget", () => {
@@ -73,7 +73,7 @@ describe("BudgetItemsTable", () => {
 
     const remaining = screen.getByText("-300");
     expect(remaining).toHaveClass("text-[var(--ht-danger)]");
-    expect(screen.getByText("Dépassé")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Dépassé" })).toBeInTheDocument();
   });
 
   it("affiche l'avancement du dernier paiement renseigné", () => {
