@@ -76,7 +76,7 @@ export function ObjectiveDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={[
           { label: "Tableau de bord", to: "/" },
@@ -151,7 +151,7 @@ export function ObjectiveDetailPage() {
         </h2>
         <Link
           to={`/tasks/new?objectiveId=${id}`}
-          className="rounded bg-blue-600 px-3 py-1 text-sm font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
+          className="rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-3 py-1 text-sm font-medium text-slate-950 hover:brightness-105"
         >
           Ajouter une tâche
         </Link>

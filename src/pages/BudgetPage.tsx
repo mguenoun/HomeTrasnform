@@ -44,7 +44,7 @@ function BudgetTotalsSummary({
           Réalisé
         </p>
         <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-          <span className="dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:bg-clip-text dark:text-transparent">
+          <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent dark:from-amber-400">
             {formatMad(totals.realized)}
           </span>
         </p>
@@ -95,7 +95,7 @@ export function BudgetPage() {
   const sortedPrivateItems = sortByStatus(privateItems);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Budget" }]}
       />

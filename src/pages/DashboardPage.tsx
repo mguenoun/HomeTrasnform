@@ -78,7 +78,7 @@ export function DashboardPage() {
   const hasPrivateObjectives = privateObjectives.length > 0;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <h1 className="mb-6 text-xl font-semibold text-slate-900 dark:text-slate-50">
         Tableau de bord
       </h1>
@@ -118,7 +118,7 @@ export function DashboardPage() {
                   Budget réalisé / budgété
                 </p>
                 <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                  <span className="dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:bg-clip-text dark:text-transparent">
+                  <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent dark:from-amber-400">
                     {formatMad(sharedBudgetTotals.realized)}
                   </span>{" "}
                   <span className="text-base font-normal text-slate-500 dark:text-slate-400">
@@ -162,7 +162,7 @@ export function DashboardPage() {
                     Budget réalisé / budgété
                   </p>
                   <p className="mt-1 text-2xl font-semibold text-slate-900 dark:text-slate-50">
-                    <span className="dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:bg-clip-text dark:text-transparent">
+                    <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent dark:from-amber-400">
                       {formatMad(privateBudgetTotals.realized)}
                     </span>{" "}
                     <span className="text-base font-normal text-slate-500 dark:text-slate-400">

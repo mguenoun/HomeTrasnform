@@ -75,7 +75,7 @@ export function TasksPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={[{ label: "Tableau de bord", to: "/" }, { label: "Tâches" }]}
       />
@@ -85,7 +85,7 @@ export function TasksPage() {
         </h1>
         <Link
           to="/tasks/new"
-          className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
+          className="rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105"
         >
           Nouvelle tâche
         </Link>
@@ -202,7 +202,7 @@ export function TasksPage() {
             aria-pressed={onlyMyTasks}
             className={`self-end rounded border px-3 py-1 text-sm ${
               onlyMyTasks
-                ? "border-blue-600 bg-blue-600 text-white dark:border-amber-400 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950"
+                ? "border-amber-400 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-slate-950"
                 : "border-slate-300 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
             }`}
           >

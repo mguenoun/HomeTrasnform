@@ -218,7 +218,7 @@ export function BudgetItemDetailPage() {
         ];
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb items={breadcrumbItems} />
 
       {editing ? (
@@ -297,7 +297,7 @@ export function BudgetItemDetailPage() {
         <div className="rounded border border-slate-200 bg-white p-3 dark:border-white/10 dark:bg-white/[0.04]">
           <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Réalisé</p>
           <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-50">
-            <span className="dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:bg-clip-text dark:text-transparent">
+            <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent dark:from-amber-400">
               {formatMad(realized)}
             </span>
           </p>
@@ -372,7 +372,7 @@ export function BudgetItemDetailPage() {
             </label>
             <button
               type="submit"
-              className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
+              className="rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105"
             >
               Enregistrer
             </button>
@@ -444,7 +444,7 @@ export function BudgetItemDetailPage() {
             </label>
             <button
               type="submit"
-              className="rounded bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950 dark:hover:brightness-105"
+              className="rounded bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 px-4 py-2 font-medium text-slate-950 hover:brightness-105"
             >
               Enregistrer
             </button>

@@ -119,7 +119,7 @@ export function TaskDetailPage() {
       : users;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
+    <div className="min-h-screen bg-[#f7f5f1] p-6 dark:bg-[radial-gradient(circle_at_18%_-10%,#16243f_0%,#0c1628_45%,#020408_100%)]">
       <Breadcrumb
         items={
           objective
@@ -221,7 +221,7 @@ export function TaskDetailPage() {
                     aria-pressed={assigned}
                     className={`rounded-full border px-3 py-1 text-sm ${
                       assigned
-                        ? "border-blue-600 bg-blue-600 text-white dark:border-amber-400 dark:bg-gradient-to-r dark:from-amber-400 dark:via-orange-500 dark:to-red-500 dark:text-slate-950"
+                        ? "border-amber-400 bg-gradient-to-r from-amber-400 via-orange-500 to-red-500 text-slate-950"
                         : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/5"
                     }`}
                   >
