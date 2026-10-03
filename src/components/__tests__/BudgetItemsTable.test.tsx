@@ -54,11 +54,11 @@ describe("BudgetItemsTable", () => {
       "href",
       "/budget/b1",
     );
-    expect(screen.getByText("1 000,00 MAD")).toBeInTheDocument();
-    expect(screen.getByText("1 200,00 MAD")).toBeInTheDocument();
-    expect(screen.getByText("300,00 MAD")).toBeInTheDocument();
+    expect(screen.getByText("1 000,00")).toBeInTheDocument();
+    expect(screen.getByText("1 200,00")).toBeInTheDocument();
+    expect(screen.getByText("300,00")).toBeInTheDocument();
     // Reste à payer = budget révisé (1200) - réalisé (300) = 900.
-    expect(screen.getByText("900,00 MAD")).toBeInTheDocument();
+    expect(screen.getByText("900,00")).toBeInTheDocument();
     expect(screen.getByText("Dans les clous")).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe("BudgetItemsTable", () => {
       }),
     ]);
 
-    const remaining = screen.getByText("-300,00 MAD");
+    const remaining = screen.getByText("-300,00");
     expect(remaining).toHaveClass("text-[var(--ht-danger)]");
     expect(screen.getByText("Dépassé")).toBeInTheDocument();
   });

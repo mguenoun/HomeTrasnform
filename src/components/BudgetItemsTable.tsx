@@ -9,7 +9,7 @@ import {
   latestProgress,
   statusOf,
 } from "../domain/budgetItems";
-import { formatMad } from "../domain/money";
+import { formatAmount } from "../domain/money";
 import type { BudgetItem } from "../types";
 
 export interface BudgetItemsTableProps {
@@ -38,15 +38,15 @@ export function BudgetItemsTable({
         <p className="text-sm text-[var(--ht-text-2)]">{emptyMessage}</p>
       ) : (
         <div className="ht-card overflow-x-auto rounded-[14px]">
-          <table className="w-full border-collapse">
+          <table className="w-full table-fixed border-collapse">
             <thead>
               <tr>
-                <th className="ht-table-th">Désignation</th>
-                <th className="ht-table-th">Budget initial</th>
-                <th className="ht-table-th">Révisé</th>
-                <th className="ht-table-th">Total paiements</th>
-                <th className="ht-table-th">Reste à payer</th>
-                <th className="ht-table-th hidden sm:table-cell">Avancement</th>
+                <th className="ht-table-th w-[34%]">Désignation</th>
+                <th className="ht-table-th">Budget (MAD)</th>
+                <th className="ht-table-th">Révisé (MAD)</th>
+                <th className="ht-table-th">Payé (MAD)</th>
+                <th className="ht-table-th">Reste (MAD)</th>
+                <th className="ht-table-th">Avanc.</th>
                 <th className="ht-table-th">Statut</th>
               </tr>
             </thead>
@@ -65,25 +65,25 @@ export function BudgetItemsTable({
                         {item.title}
                       </Link>
                     </td>
-                    <td className="ht-table-td whitespace-nowrap">
-                      {formatMad(item.budgeted)}
+                    <td className="ht-table-td">
+                      {formatAmount(item.budgeted)}
                     </td>
-                    <td className="ht-table-td whitespace-nowrap">
+                    <td className="ht-table-td">
                       {item.revisedBudget != null
-                        ? formatMad(item.revisedBudget)
+                        ? formatAmount(item.revisedBudget)
                         : "—"}
                     </td>
-                    <td className="ht-table-td whitespace-nowrap">
-                      {formatMad(realized)}
+                    <td className="ht-table-td">
+                      {formatAmount(realized)}
                     </td>
                     <td
-                      className={`ht-table-td whitespace-nowrap ${
+                      className={`ht-table-td ${
                         remaining < 0 ? "font-semibold text-[var(--ht-danger)]" : ""
                       }`}
                     >
-                      {formatMad(remaining)}
+                      {formatAmount(remaining)}
                     </td>
-                    <td className="ht-table-td hidden whitespace-nowrap sm:table-cell">
+                    <td className="ht-table-td">
                       {progress != null ? `${progress}%` : "—"}
                     </td>
                     <td className="ht-table-td">
