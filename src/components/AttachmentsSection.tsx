@@ -1,11 +1,6 @@
 import type { User } from "firebase/auth";
 import { useRef, useState } from "react";
-import {
-  deleteAttachment,
-  downloadAttachment,
-  uploadAttachment,
-} from "../services/attachments";
-import type { FamilyUser, TaskAttachment } from "../types";
+import type { FamilyUser } from "../types";
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} o`;
@@ -13,19 +8,31 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
 }
 
-export interface AttachmentsSectionProps {
-  taskId: string;
-  attachments: TaskAttachment[];
-  currentUser: User;
-  users: FamilyUser[];
+interface AttachmentLike {
+  id: string;
+  fileName: string;
+  size: number;
+  uploadedBy: string;
+  uploadedAt: number;
 }
 
-export function AttachmentsSection({
-  taskId,
+export interface AttachmentsSectionProps<T extends AttachmentLike> {
+  attachments: T[];
+  currentUser: User;
+  users: FamilyUser[];
+  onUpload: (file: File, user: User) => Promise<void>;
+  onDownload: (attachment: T) => Promise<void>;
+  onDelete: (attachment: T) => Promise<void>;
+}
+
+export function AttachmentsSection<T extends AttachmentLike>({
   attachments,
   currentUser,
   users,
-}: AttachmentsSectionProps) {
+  onUpload,
+  onDownload,
+  onDelete,
+}: AttachmentsSectionProps<T>) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,7 +48,7 @@ export function AttachmentsSection({
     setUploading(true);
     try {
       for (const file of files) {
-        await uploadAttachment(taskId, file, currentUser);
+        await onUpload(file, currentUser);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Échec de l'envoi.");
@@ -53,9 +60,9 @@ export function AttachmentsSection({
     }
   }
 
-  async function handleDownload(attachment: TaskAttachment) {
+  async function handleDownload(attachment: T) {
     try {
-      await downloadAttachment(taskId, attachment);
+      await onDownload(attachment);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Échec du téléchargement.",
@@ -63,10 +70,10 @@ export function AttachmentsSection({
     }
   }
 
-  async function handleDelete(attachment: TaskAttachment) {
+  async function handleDelete(attachment: T) {
     if (!window.confirm(`Supprimer "${attachment.fileName}" ?`)) return;
     try {
-      await deleteAttachment(taskId, attachment);
+      await onDelete(attachment);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Échec de la suppression.");
     }

@@ -18,6 +18,11 @@ import { useComments } from "../hooks/useComments";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
+import {
+  deleteAttachment,
+  downloadAttachment,
+  uploadAttachment,
+} from "../services/attachments";
 import { sendPushNotification } from "../services/push";
 import { changeTaskStatus, deleteTask, updateTask } from "../services/tasks";
 import type { TaskStatus } from "../types";
@@ -223,10 +228,12 @@ export function TaskDetailPage() {
 
           {user && (
             <AttachmentsSection
-              taskId={task.id}
               attachments={attachments}
               currentUser={user}
               users={users}
+              onUpload={(file, u) => uploadAttachment(task.id, file, u)}
+              onDownload={(attachment) => downloadAttachment(task.id, attachment)}
+              onDelete={(attachment) => deleteAttachment(task.id, attachment)}
             />
           )}
 

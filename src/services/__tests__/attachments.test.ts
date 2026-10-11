@@ -44,6 +44,8 @@ const {
   downloadAttachment,
   deleteAttachment,
   subscribeToAttachments,
+  uploadObjectiveAttachment,
+  uploadBudgetItemAttachment,
 } = await import("../attachments");
 
 const fakeUser = { uid: "user-1" } as unknown as User;
@@ -109,6 +111,36 @@ describe("uploadAttachment", () => {
     expect(resizeImageIfNeededMock).toHaveBeenCalledWith(originalFile);
     const [, metaPayload] = batchSetMock.mock.calls[0];
     expect(metaPayload.size).toBe(200);
+  });
+});
+
+describe("uploadObjectiveAttachment", () => {
+  it("écrit les métadonnées sous objectives/{id}/attachments avec le champ objectiveId", async () => {
+    const file = new File(["devis"], "devis.pdf", { type: "application/pdf" });
+
+    await uploadObjectiveAttachment("objective1", file, fakeUser);
+
+    const [metaRef, metaPayload] = batchSetMock.mock.calls[0];
+    expect(metaRef.__doc).toBe("objectives/objective1/attachments");
+    expect(metaPayload).toMatchObject({
+      objectiveId: "objective1",
+      fileName: "devis.pdf",
+    });
+  });
+});
+
+describe("uploadBudgetItemAttachment", () => {
+  it("écrit les métadonnées sous budgetItems/{id}/attachments avec le champ budgetItemId", async () => {
+    const file = new File(["devis"], "devis.pdf", { type: "application/pdf" });
+
+    await uploadBudgetItemAttachment("item1", file, fakeUser);
+
+    const [metaRef, metaPayload] = batchSetMock.mock.calls[0];
+    expect(metaRef.__doc).toBe("budgetItems/item1/attachments");
+    expect(metaPayload).toMatchObject({
+      budgetItemId: "item1",
+      fileName: "devis.pdf",
+    });
   });
 });
 

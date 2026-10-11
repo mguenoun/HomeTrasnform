@@ -158,3 +158,25 @@ export interface TaskAttachment {
   uploadedBy: string;
   uploadedAt: number;
 }
+
+export interface ObjectiveAttachment {
+  id: string;
+  objectiveId: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+  chunkCount: number;
+  uploadedBy: string;
+  uploadedAt: number;
+}
+
+export interface BudgetItemAttachment {
+  id: string;
+  budgetItemId: string;
+  fileName: string;
+  contentType: string;
+  size: number;
+  chunkCount: number;
+  uploadedBy: string;
+  uploadedAt: number;
+}

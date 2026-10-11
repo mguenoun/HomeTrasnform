@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { useAuth } from "../../context/AuthContext";
+import { useBudgetItemAttachments } from "../../hooks/useAttachments";
 import { useBudgetItems } from "../../hooks/useBudgetItems";
 import { useFamilyUsers } from "../../hooks/useFamilyUsers";
 import { useObjectives } from "../../hooks/useObjectives";
@@ -10,10 +11,18 @@ import type { BudgetItem, Objective, Task } from "../../types";
 import { BudgetItemDetailPage } from "../BudgetItemDetailPage";
 
 vi.mock("../../context/AuthContext", () => ({ useAuth: vi.fn() }));
+vi.mock("../../hooks/useAttachments", () => ({
+  useBudgetItemAttachments: vi.fn(),
+}));
 vi.mock("../../hooks/useBudgetItems", () => ({ useBudgetItems: vi.fn() }));
 vi.mock("../../hooks/useFamilyUsers", () => ({ useFamilyUsers: vi.fn() }));
 vi.mock("../../hooks/useObjectives", () => ({ useObjectives: vi.fn() }));
 vi.mock("../../hooks/useTasks", () => ({ useTasks: vi.fn() }));
+vi.mock("../../services/attachments", () => ({
+  uploadBudgetItemAttachment: vi.fn().mockResolvedValue(undefined),
+  downloadBudgetItemAttachment: vi.fn().mockResolvedValue(undefined),
+  deleteBudgetItemAttachment: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock("../../services/budgetItems", () => ({
   updateBudgetItem: vi.fn().mockResolvedValue(undefined),
   deleteBudgetItem: vi.fn().mockResolvedValue(undefined),
@@ -21,6 +30,7 @@ vi.mock("../../services/budgetItems", () => ({
 }));
 
 const mockedUseAuth = vi.mocked(useAuth);
+const mockedUseBudgetItemAttachments = vi.mocked(useBudgetItemAttachments);
 const mockedUseBudgetItems = vi.mocked(useBudgetItems);
 const mockedUseFamilyUsers = vi.mocked(useFamilyUsers);
 const mockedUseObjectives = vi.mocked(useObjectives);
@@ -82,6 +92,10 @@ describe("BudgetItemDetailPage — fil d'ariane", () => {
       signOutUser: vi.fn(),
     });
     mockedUseFamilyUsers.mockReturnValue({ users: [], loading: false });
+    mockedUseBudgetItemAttachments.mockReturnValue({
+      attachments: [],
+      loading: false,
+    });
   });
 
   it("remonte jusqu'à l'objectif quand la rubrique y est rattachée directement", () => {

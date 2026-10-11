@@ -292,6 +292,54 @@ describe("Firestore security rules", () => {
       );
     });
 
+    it("refuse la lecture d'une pièce jointe (devis) d'un objectif privé à un autre membre", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(
+          doc(context.firestore(), "objectives/private-obj/attachments/a1"),
+          { fileName: "devis.pdf" },
+        );
+      });
+
+      await assertSucceeds(
+        getDoc(doc(asOwner().firestore(), "objectives/private-obj/attachments/a1")),
+      );
+      await assertFails(
+        getDoc(
+          doc(asOtherMember().firestore(), "objectives/private-obj/attachments/a1"),
+        ),
+      );
+    });
+
+    it("refuse la lecture d'une pièce jointe d'une rubrique budgétaire liée à l'objectif privé d'un autre membre", async () => {
+      await testEnv.withSecurityRulesDisabled(async (context) => {
+        await setDoc(doc(context.firestore(), "budgetItems/private-budget"), {
+          title: "Bijou",
+          objectiveId: "private-obj",
+          visibility: "private",
+          createdBy: "member-uid",
+          budgeted: 500,
+        });
+        await setDoc(
+          doc(context.firestore(), "budgetItems/private-budget/attachments/a1"),
+          { fileName: "devis.pdf" },
+        );
+      });
+
+      await assertSucceeds(
+        getDoc(
+          doc(asOwner().firestore(), "budgetItems/private-budget/attachments/a1"),
+        ),
+      );
+      await assertFails(
+        getDoc(
+          doc(
+            asOtherMember().firestore(),
+            "budgetItems/private-budget/attachments/a1",
+          ),
+        ),
+      );
+    });
+
     it("refuse la création d'une tâche sur l'objectif privé d'un autre membre", async () => {
       await assertFails(
         setDoc(doc(asOtherMember().firestore(), "tasks/sneaky-task"), {

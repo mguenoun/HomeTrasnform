@@ -1,14 +1,23 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AttachmentsSection } from "../components/AttachmentsSection";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { PaymentsHistogram } from "../components/PaymentsHistogram";
 import { BudgetItemsTable } from "../components/BudgetItemsTable";
 import { ObjectiveForm, type ObjectiveFormValues } from "../components/ObjectiveForm";
 import { TASK_STATUS_LABELS, TASK_TYPE_LABELS } from "../constants";
+import { useAuth } from "../context/AuthContext";
 import { computeProgress } from "../domain/progress";
+import { useObjectiveAttachments } from "../hooks/useAttachments";
 import { useBudgetItems } from "../hooks/useBudgetItems";
+import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
+import {
+  deleteObjectiveAttachment,
+  downloadObjectiveAttachment,
+  uploadObjectiveAttachment,
+} from "../services/attachments";
 import {
   deleteObjective,
   setObjectiveStatus,
@@ -26,9 +35,12 @@ const TASK_STATUS_PILL: Record<TaskStatus, string> = {
 export function ObjectiveDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { objectives } = useObjectives();
   const { tasks } = useTasks();
   const { items: budgetItems } = useBudgetItems();
+  const { users } = useFamilyUsers();
+  const { attachments } = useObjectiveAttachments(id);
   const [editing, setEditing] = useState(false);
 
   const objective = objectives.find((o) => o.id === id);
@@ -140,6 +152,19 @@ export function ObjectiveDetailPage() {
       <div className="mb-6">
         <PaymentsHistogram items={objectiveBudgetItems} />
       </div>
+
+      {user && (
+        <div className="mb-6">
+          <AttachmentsSection
+            attachments={attachments}
+            currentUser={user}
+            users={users}
+            onUpload={(file, u) => uploadObjectiveAttachment(objective.id, file, u)}
+            onDownload={(attachment) => downloadObjectiveAttachment(objective.id, attachment)}
+            onDelete={(attachment) => deleteObjectiveAttachment(objective.id, attachment)}
+          />
+        </div>
+      )}
 
       <div className="mb-2.5 flex items-center justify-between">
         <h2 className="ht-label">Tâches</h2>

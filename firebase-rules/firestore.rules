@@ -69,6 +69,20 @@ service cloud.firestore {
       allow update, delete: if isFamilyMember() &&
         (resource.data.get('visibility', 'shared') != 'private' ||
           resource.data.get('createdBy', null) == request.auth.uid);
+
+      // Pièces jointes de l'objectif (ex. devis fournisseurs) : même règle que
+      // l'objectif lui-même, dérivée directement via canAccessObjectiveId
+      // puisque objectiveId est déjà le document parent (pas besoin de get()
+      // intermédiaire comme pour canAccessParentTask()).
+      match /attachments/{attachmentId} {
+        allow read: if isFamilyMember() && canAccessObjectiveId(objectiveId);
+        allow create, update, delete: if isFamilyMember() && canAccessObjectiveId(objectiveId);
+
+        match /chunks/{chunkId} {
+          allow read: if isFamilyMember() && canAccessObjectiveId(objectiveId);
+          allow create, update, delete: if isFamilyMember() && canAccessObjectiveId(objectiveId);
+        }
+      }
     }
 
     // IMPORTANT — pourquoi `visibility` est recopié sur chaque tâche/rubrique :
@@ -107,6 +121,27 @@ service cloud.firestore {
           visibilityOfObjectiveId(request.resource.data.get('objectiveId', null));
       allow delete: if isFamilyMember() &&
         canAccessObjectiveId(resource.data.get('objectiveId', null));
+
+      // Le parent (la rubrique) est déjà chargé par le match ci-dessus, mais
+      // les règles des sous-collections ont leur propre contexte `resource` :
+      // on relit la rubrique pour retrouver son objectif, comme pour
+      // canAccessParentTask() ci-dessous (pièces jointes d'une rubrique liée
+      // à un objectif privé = privées).
+      function canAccessParentBudgetItem() {
+        return canAccessObjectiveId(
+          get(/databases/$(database)/documents/budgetItems/$(budgetItemId)).data.get('objectiveId', null)
+        );
+      }
+
+      match /attachments/{attachmentId} {
+        allow read: if isFamilyMember() && canAccessParentBudgetItem();
+        allow create, update, delete: if isFamilyMember() && canAccessParentBudgetItem();
+
+        match /chunks/{chunkId} {
+          allow read: if isFamilyMember() && canAccessParentBudgetItem();
+          allow create, update, delete: if isFamilyMember() && canAccessParentBudgetItem();
+        }
+      }
     }
 
     match /tasks/{taskId} {

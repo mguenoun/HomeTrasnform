@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { AttachmentsSection } from "../components/AttachmentsSection";
 import { Breadcrumb } from "../components/Breadcrumb";
 import {
   BudgetItemForm,
@@ -25,10 +26,16 @@ import {
   variance,
 } from "../domain/budgetItems";
 import { formatMad } from "../domain/money";
+import { useBudgetItemAttachments } from "../hooks/useAttachments";
 import { useBudgetItems } from "../hooks/useBudgetItems";
 import { useFamilyUsers } from "../hooks/useFamilyUsers";
 import { useObjectives } from "../hooks/useObjectives";
 import { useTasks } from "../hooks/useTasks";
+import {
+  deleteBudgetItemAttachment,
+  downloadBudgetItemAttachment,
+  uploadBudgetItemAttachment,
+} from "../services/attachments";
 import {
   createPaymentId,
   deleteBudgetItem,
@@ -56,6 +63,7 @@ export function BudgetItemDetailPage() {
   const { objectives } = useObjectives();
   const { tasks } = useTasks();
   const { users } = useFamilyUsers();
+  const { attachments } = useBudgetItemAttachments(id);
 
   const [editing, setEditing] = useState(false);
   const [editingAdjustments, setEditingAdjustments] = useState(false);
@@ -278,6 +286,19 @@ export function BudgetItemDetailPage() {
             </button>
           </div>
         </header>
+      )}
+
+      {user && (
+        <div className="mb-6">
+          <AttachmentsSection
+            attachments={attachments}
+            currentUser={user}
+            users={users}
+            onUpload={(file, u) => uploadBudgetItemAttachment(item.id, file, u)}
+            onDownload={(attachment) => downloadBudgetItemAttachment(item.id, attachment)}
+            onDelete={(attachment) => deleteBudgetItemAttachment(item.id, attachment)}
+          />
+        </div>
       )}
 
       <section className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
