@@ -55,6 +55,9 @@ correspond à l'état déployé sur `hometransform-c2ac9.web.app`.
 ### 2.4 Détail d'un objectif — ✅ Fait
 - Infos de l'objectif + liste des tâches rattachées (filtrable par statut/type/assigné).
 - Bouton "Ajouter une tâche à cet objectif".
+- Bloc pièces jointes (ex. devis fournisseurs comparés pour l'objectif) : même
+  comportement que sur une tâche (liste, upload multi-fichiers, suppression,
+  téléchargement), rattaché à l'objectif plutôt que dupliqué sur chaque rubrique.
 - Section "Rubriques budgétaires" liées à l'objectif + bouton d'ajout (préremplit
   l'objectif dans le formulaire de création).
 
@@ -88,8 +91,8 @@ correspond à l'état déployé sur `hometransform-c2ac9.web.app`.
 - Vue Budget dédiée : 5 KPI globaux (budget, engagé, réalisé, prévision, écart) et les
   rubriques triées, dépassements en tête. Création de rubrique dédiée (`/budget/new`),
   utilisable depuis la vue Budget, un objectif ou une tâche.
-- Justificatif de paiement (devis/facture) — ⬜ Prévu, non implémenté (le modèle de
-  données le permet).
+- Détail d'une rubrique : bloc pièces jointes (devis fournisseur, facture) — même
+  comportement que sur une tâche. — ✅ Fait
 
 ### 2.8 Installation (PWA) — ✅ Fait
 - Bannière d'installation sur Android/Chrome (invite native `beforeinstallprompt`).
@@ -127,7 +130,9 @@ marocain).
 
 **Pièces jointes** :
 - Types acceptés : PDF, images (jpg/png). Taille max 10 Mo/fichier.
-- Rattachées à une tâche uniquement (pas au niveau objectif en v1).
+- Rattachables à une tâche, à un objectif, ou à une rubrique budgétaire — un même
+  fichier (ex. un devis fournisseur) est attaché une seule fois au niveau le plus
+  pertinent plutôt que dupliqué sur chaque rubrique qu'il couvre.
 - Suppression possible par tout membre (pas seulement l'uploadeur).
 
 **Objectifs** :

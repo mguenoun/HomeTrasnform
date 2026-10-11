@@ -6,7 +6,7 @@ exhaustif reste dans [`documents/`](documents/) (avec statut par item) ; ce
 fichier donne la vue synthétique et le contexte des décisions qui n'ont pas
 forcément leur place dans un document de spec.
 
-Dernière mise à jour : 2026-10-03.
+Dernière mise à jour : 2026-10-11.
 
 ## État d'avancement
 
@@ -50,6 +50,13 @@ détail épique par épique ; en résumé :
   projet GitHub, `wc2026`), avec le mode clair conservé comme option.
   Implémenté sur l'intégralité des écrans (pages + composants partagés) en
   une seule session — voir `documents/02-architecture.md` section Thème.
+- **Pièces jointes étendues aux objectifs et aux rubriques budgétaires le
+  2026-10-11** (jusqu'ici réservées aux tâches). Déclenché en préparant la
+  mise à jour de l'objectif « Retaper la villa 24 » avec 2 devis fournisseurs
+  comparés (comparatif Excel livré en dehors du dépôt — scratchpad de
+  session, pas un fichier projet). La mise à jour Firestore proprement dite
+  (rubriques retenues + devis en PJ) reste **à faire**, en attente du choix
+  définitif de l'utilisateur dans l'onglet "Synthese decision" du comparatif.
 
 ## Décisions prises (et pourquoi)
 
@@ -87,6 +94,13 @@ détail épique par épique ; en résumé :
   explicite par utilisateur stocké sur son profil, pas un réglage système de
   l'appareil — les deux mécanismes peuvent diverger (ex. appareil en clair,
   utilisateur a choisi le sombre dans l'app).
+- **Pièces jointes au niveau objectif ET rubrique budgétaire, pas seulement
+  tâche** (2026-10-11) : question posée explicitement à l'utilisateur (une
+  seule pièce jointe par devis au niveau objectif aurait suffi et évitait de
+  dupliquer le même fichier sur chaque rubrique qu'il couvre) ; l'utilisateur
+  a choisi de garder les deux granularités. Implémenté en généralisant
+  `src/services/attachments.ts`/`AttachmentsSection.tsx` (déjà testés pour
+  les tâches) plutôt qu'en dupliquant le code pour chaque type de parent.
 - **Vue budget en tableau (type Excel)**, pas en cartes, dans le module
   Budget, la page objectif et la page tâche — bouton d'ajout systématiquement
   en haut de la liste. Les codes couleur de risque de dépassement (rouge/

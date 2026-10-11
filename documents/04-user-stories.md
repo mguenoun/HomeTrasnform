@@ -133,6 +133,13 @@ de consulter les justificatifs associés. — ✅ Fait
 d'une tâche (même uploadée par un autre membre), afin de retirer un fichier obsolète ou
 erroné. — ✅ Fait
 
+**US-6.4** (P1) — En tant que membre, je veux pouvoir joindre un fichier (devis,
+facture) directement sur un objectif ou sur une rubrique budgétaire (pas seulement sur
+une tâche), afin de rattacher un justificatif qui concerne tout un objectif ou une
+rubrique sans le dupliquer sur chaque tâche liée. — ✅ Fait
+- Même comportement/limites que sur une tâche (upload, liste, téléchargement,
+  suppression, PDF/JPG/PNG, 10 Mo max).
+
 ## Epic 7 — Commentaires & historique
 **US-7.1** (P1) — En tant que membre, je veux ajouter un commentaire texte sur une
 tâche, afin d'échanger des informations avec les autres membres sans sortir de l'app. — ✅ Fait

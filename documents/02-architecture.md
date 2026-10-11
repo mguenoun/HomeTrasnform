@@ -79,6 +79,9 @@ de config d'environnement.
   planning), themePreference (`light | dark` — absent = sombre par défaut, voir
   section Thème ci-dessous)
 - `objectives/{id}` : title, description, targetDate, status, createdBy, createdAt
+  - sous-collection `attachments/{id}` : même forme que sur une tâche (voir
+    `tasks/{id}` ci-dessous), champ `objectiveId` au lieu de `taskId`
+    - sous-sous-collection `chunks/{index}`
 - `tasks/{id}` :
   - objectiveId (nullable — une tâche peut être libre, hors objectif)
   - title, description, room, type: `menage | travaux | achat | soustraitance`
@@ -101,6 +104,14 @@ de config d'environnement.
     createdBy } — le réalisé se déduit toujours de la somme des paiements `paye`,
     jamais stocké directement
   - createdBy, createdAt, updatedAt
+  - sous-collection `attachments/{id}` : même forme que sur une tâche, champ
+    `budgetItemId` au lieu de `taskId`
+    - sous-sous-collection `chunks/{index}`
+
+Les pièces jointes partagent le même code (`src/services/attachments.ts`,
+`src/domain/attachments.ts`, `src/components/AttachmentsSection.tsx`) pour les 3
+parents (tâche, objectif, rubrique) — seul le nom de la collection parente et le nom du
+champ d'identifiant changent.
 
 Pas de notion multi-foyer : l'app est dédiée à une seule famille (les données ne sont pas
 cloisonnées par "household"), ce qui simplifie le modèle.
