@@ -180,3 +180,46 @@ export interface BudgetItemAttachment {
   uploadedBy: string;
   uploadedAt: number;
 }
+
+// ---------------------------------------------------------------------------
+// Module Repas & Courses (voir documents/05-module-repas-courses.md)
+// ---------------------------------------------------------------------------
+
+/** Clé d'un créneau dans `MealPlan.slots`, ex. "mon_lunch" (jour_repas). */
+export type MealSlotKey = string;
+
+export interface MealItem {
+  /** Texte libre (ou nom copié depuis le référentiel, étape 2). */
+  label: string;
+  /** Nom en darija, facultatif. */
+  labelAr?: string;
+}
+
+export interface MealSlot {
+  /** Nombre de convives de ce repas ; absent = `MealPlan.defaultDiners`. */
+  diners?: number;
+  items: MealItem[];
+}
+
+export interface MealPlan {
+  /** ISO-8601, ex. "2026-W47" (identifiant du document). */
+  weekId: string;
+  defaultDiners: number;
+  slots: Record<MealSlotKey, MealSlot>;
+}
+
+export interface ShoppingItem {
+  id: string;
+  name: string;
+  nameAr?: string;
+  /** Quantité en texte libre en v1 (ex. "2 kg"). */
+  quantity?: string;
+  checked: boolean;
+  createdAt: number;
+}
+
+export interface ShoppingList {
+  weekId: string;
+  /** Map par id : permet de cocher un article sans réécrire toute la liste. */
+  items: Record<string, ShoppingItem>;
+}

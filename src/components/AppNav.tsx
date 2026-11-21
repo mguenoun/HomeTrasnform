@@ -9,6 +9,7 @@ const LINKS: Array<{ to: string; label: string }> = [
   { to: "/objectives", label: "Objectifs" },
   { to: "/tasks", label: "Tâches" },
   { to: "/budget", label: "Budget" },
+  { to: "/meals", label: "Repas" },
 ];
 
 export function AppNav() {

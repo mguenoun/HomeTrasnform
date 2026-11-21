@@ -144,6 +144,18 @@ service cloud.firestore {
       }
     }
 
+    // Module Repas & Courses : partagé par toute la famille, sans notion de
+    // privé et sans get() sur un autre document — les requêtes de liste n'ont
+    // donc pas le piège documenté dans CLAUDE.md (règle fondée uniquement sur
+    // isFamilyMember()).
+    match /mealPlans/{weekId} {
+      allow read, write: if isFamilyMember();
+    }
+
+    match /shoppingLists/{weekId} {
+      allow read, write: if isFamilyMember();
+    }
+
     match /tasks/{taskId} {
       allow read: if isFamilyMember() &&
         (resource.data.get('visibility', 'shared') != 'private' ||

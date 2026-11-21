@@ -8,6 +8,7 @@ import { BudgetItemCreatePage } from "./pages/BudgetItemCreatePage";
 import { BudgetItemDetailPage } from "./pages/BudgetItemDetailPage";
 import { BudgetPage } from "./pages/BudgetPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { MealsPage } from "./pages/MealsPage";
 import { ObjectiveDetailPage } from "./pages/ObjectiveDetailPage";
 import { ObjectivesPage } from "./pages/ObjectivesPage";
 import { TaskCreatePage } from "./pages/TaskCreatePage";
@@ -31,6 +32,7 @@ function App() {
             <Route path="/budget" element={<BudgetPage />} />
             <Route path="/budget/new" element={<BudgetItemCreatePage />} />
             <Route path="/budget/:id" element={<BudgetItemDetailPage />} />
+            <Route path="/meals" element={<MealsPage />} />
           </Routes>
         </ProtectedRoute>
       </ThemeProvider>
