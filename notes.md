@@ -6,7 +6,7 @@ exhaustif reste dans [`documents/`](documents/) (avec statut par item) ; ce
 fichier donne la vue synthétique et le contexte des décisions qui n'ont pas
 forcément leur place dans un document de spec.
 
-Dernière mise à jour : 2026-10-11.
+Dernière mise à jour : 2026-11-21.
 
 ## État d'avancement
 
@@ -60,6 +60,24 @@ détail épique par épique ; en résumé :
 
 ## Décisions prises (et pourquoi)
 
+- **Module Repas & Courses lancé le 2026-11-21** (brief :
+  `documents/05-module-repas-courses.md`, stories : Epic 12). Module
+  indépendant des objectifs/tâches/budgets (rythme hebdomadaire récurrent).
+  Décisions de cadrage de l'utilisateur : la personne de ménage n'a **aucun
+  accès** à l'app (envoi du programme/liste par WhatsApp, bilingue
+  français/darija) ; quantités d'ingrédients **par variante** (2/3/4/5
+  personnes ; par quantité pour un snack) et non par multiplication ;
+  convives **par repas** ; dépenses séparées des budgets ; honoraires = un
+  paiement daté ; retours repas en 👍/👎. **Étape 1 livrée en code** (pas
+  encore déployée) : programme 7 j x 4 créneaux, liste de courses manuelle,
+  envoi WhatsApp ; collections `mealPlans`/`shoppingLists` (un document par
+  semaine, créneaux/articles en maps). Piège évité : les chemins de champ Firestore utilisent le point comme séparateur, donc pas
+  de point dans une clé de champ (d’où les clés de créneau `mon_lunch`). Les
+  libellés darija fixes (jours, repas) sont à faire relire par l'utilisateur.
+  Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
+  ("Cannot read properties of undefined (reading 'config')") alors qu'il
+  passe depuis **PowerShell** — utiliser PowerShell pour les tests.
+
 - **Budget = rubriques indépendantes des tâches**, pas des champs sur la
   tâche. Permet une chaîne budget → engagé → réalisé → prévision → écart,
   une rubrique pouvant être liée à un objectif et/ou une tâche (ou aucun des
@@ -109,6 +127,9 @@ détail épique par épique ; en résumé :
   dashboard.
 
 ## Prochaines étapes (proposées, non priorisées par l'utilisateur)
+
+- Module Repas & Courses : déployer l'étape 1 (hosting + règles), puis étape 2
+  (référentiel de plats + glisser-déposer, à prototyper sur iPhone en PWA).
 
 - CI/CD : automatiser au moins `npm run build && npm run test && npm run lint`
   sur push (GitHub Actions), le déploiement peut rester manuel dans un

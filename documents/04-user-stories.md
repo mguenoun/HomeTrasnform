@@ -190,6 +190,26 @@ l'installation du premier coup. — ✅ Fait
 **US-11.1** (P2) — En tant que membre, je veux un fil d'Ariane sur chaque page, afin de
 me repérer et de revenir en arrière facilement. — ✅ Fait
 
+## Epic 12 — Repas & Courses
+Module indépendant des objectifs/tâches/budgets ; brief et décisions dans
+[`05-module-repas-courses.md`](05-module-repas-courses.md). Livré par étapes.
+
+**US-12.1** (P1) — En tant que membre, je veux planifier la semaine en posant des repas
+(texte libre) dans des créneaux jour × (petit-déj, déjeuner, goûter, dîner), avec un
+nombre de convives par repas. — ✅ Fait (étape 1)
+**US-12.2** (P1) — En tant que membre, je veux une liste de courses hebdomadaire
+saisie à la main, que la famille coche en temps réel. — ✅ Fait (étape 1)
+**US-12.3** (P1) — En tant que membre, je veux envoyer le programme et la liste de
+courses sur WhatsApp, en français + darija. — 🚧 Partiel (envoi fait ; noms darija
+des plats/articles pas encore saisissables, seuls les libellés fixes sont bilingues)
+**US-12.4** (P2) — Référentiel de plats avec ingrédients par variante (2-5 personnes,
+ou par quantité pour un snack), noms darija, glisser-déposer dans le programme. — ⬜ Prévu (étape 2)
+**US-12.5** (P2) — Liste de courses générée depuis le programme, fusion non destructive
+avec les lignes manuelles. — ⬜ Prévu (étape 3)
+**US-12.6** (P2) — Suivi des dépenses de courses et des honoraires (paiements datés). — ⬜ Prévu (étape 4)
+**US-12.7** (P3) — Retour 👍/👎 sur chaque repas, note par plat, message de fin de
+semaine à la personne de ménage. — ⬜ Prévu (étape 5)
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

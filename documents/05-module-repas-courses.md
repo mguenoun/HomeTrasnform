@@ -1,6 +1,8 @@
 # Brief — Module « Repas & Courses »
 
-> Statut : **⬜ Proposition, non validée** (2026-11-21). Aucun code écrit.
+> Statut (2026-11-21) : brief validé. **Étape 1 livrée en code** (programme, liste de
+> courses manuelle, envoi WhatsApp) — voir `04-user-stories.md` Epic 12. Étapes 2 à 5
+> à venir.
 > Ce module est **indépendant** du triptyque objectifs / tâches / budgets
 > (`01-product-brief.md`) : ceux-ci pilotent des projets à moyen/long terme, celui-ci
 > pilote un **rythme hebdomadaire récurrent**.
