@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Breadcrumb } from "../components/Breadcrumb";
+import { CoveragePanel } from "../components/CoveragePanel";
 import { DishLibrary } from "../components/DishLibrary";
 import { ExpensesView } from "../components/ExpensesView";
 import { MealCalendar } from "../components/MealCalendar";
@@ -28,6 +29,7 @@ import {
   useExpenses,
   useIngredients,
   useMealPlan,
+  usePantry,
   useShoppingList,
 } from "../hooks/useMeals";
 
@@ -54,6 +56,7 @@ export function MealsPage() {
   const { expenses, loading: expensesLoading } = useExpenses(weekId);
   const dishes = useDishes();
   const ingredients = useIngredients();
+  const pantry = usePantry();
 
   // Une traduction appartient au nom : référentiel d'abord (corrigé à la main),
   // puis ce qui est déjà saisi dans le programme et les courses. Un plat traduit
@@ -235,6 +238,18 @@ export function MealsPage() {
               filter={statusFilter}
             />
           )}
+        </div>
+      )}
+      {!loading && tab === "shopping" && (
+        <div className="mb-3">
+          <CoveragePanel
+            plan={plan}
+            dishes={dishes}
+            list={list}
+            translations={translations}
+            pantry={pantry}
+            ingredients={ingredients}
+          />
         </div>
       )}
       {!loading && tab === "shopping" && (

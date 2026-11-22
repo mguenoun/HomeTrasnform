@@ -210,7 +210,7 @@ reconnus) et le programme de la semaine ; je recopie la liste précédente. — 
 (collage de la liste et du programme fait ; recopie de la liste précédente à faire)
 **US-12.8** (P1) — Je suis averti quand un plat prévu a des ingrédients absents de la
 liste de courses (contrôle de couverture), et je peux obtenir une proposition de liste
-depuis le programme. — ⬜ Prévu (étape 3)
+depuis le programme. — ✅ Fait
 **US-12.6** (P2) — Suivi des dépenses : paiements de courses par point de vente (plusieurs
 paiements possibles chez le même), prix par article facultatif, honoraires à 200 MAD par
 jour travaillé. — 🚧 Partiel (saisie et totaux par semaine faits ; histogramme, vue mensuelle
@@ -260,6 +260,9 @@ suppression à droite, en rouge, avec confirmation avant de supprimer, pour évi
 suppressions par erreur. — ✅ Fait
 **US-12.21** (P2) — Je précise la quantité préparée d'un snack (ex. 10 petites pizzas),
 qui choisira la variante d'ingrédients. — ✅ Fait
+
+**US-12.22** (P2) — Je marque des ingrédients « en stock » (sel, huile…) pour qu'ils ne
+soient jamais signalés comme oubliés, et je peux les remettre à contrôler. — ✅ Fait
 
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait

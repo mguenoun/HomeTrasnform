@@ -7,6 +7,7 @@ import type {
   Dish,
   HouseholdExpense,
   MealPlan,
+  PantryItem,
   ShoppingList,
 } from "../../types";
 
@@ -21,6 +22,7 @@ vi.mock("../../hooks/useMeals", () => ({
   useDishes: vi.fn(),
   useIngredients: vi.fn(),
   useAllMealPlans: vi.fn(),
+  usePantry: vi.fn(),
 }));
 
 vi.mock("../../services/meals", () => ({
@@ -39,6 +41,7 @@ vi.mock("../../services/meals", () => ({
   removeExpense: vi.fn().mockResolvedValue(undefined),
   saveDish: vi.fn().mockResolvedValue("id"),
   deleteDish: vi.fn().mockResolvedValue(undefined),
+  setInPantry: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../services/translate", () => ({
@@ -48,6 +51,7 @@ vi.mock("../../services/translate", () => ({
 import {
   useDishes,
   useAllMealPlans,
+  usePantry,
   useExpenses,
   useIngredients,
   useMealPlan,
@@ -61,6 +65,7 @@ import {
   updateShoppingItem,
   saveMealSlot,
   saveMealSlots,
+  setInPantry,
   setDishTranslation,
   saveDish,
   deleteDish,
@@ -73,6 +78,9 @@ const mockedUseShoppingList = vi.mocked(useShoppingList);
 const mockedUseExpenses = vi.mocked(useExpenses);
 const mockedUseDishes = vi.mocked(useDishes);
 const mockedUseAllMealPlans = vi.mocked(useAllMealPlans);
+const mockedUsePantry = vi.mocked(usePantry);
+// Ingrédients en stock : à renseigner avant setup().
+let pantryForTest: PantryItem[] = [];
 // Toutes les semaines (statistiques de la bibliothèque) : à renseigner avant setup().
 let allPlansForTest: MealPlan[] = [];
 const mockedUseIngredients = vi.mocked(useIngredients);
@@ -86,6 +94,7 @@ function setup(
 ) {
   mockedUseDishes.mockReturnValue(dishes);
   mockedUseAllMealPlans.mockReturnValue(allPlansForTest);
+  mockedUsePantry.mockReturnValue(pantryForTest);
   mockedUseIngredients.mockReturnValue(ingredients);
   mockedUseMealPlan.mockReturnValue({
     plan: { weekId: "2026-11-21", defaultDiners: 4, slots: {}, ...plan },
@@ -117,6 +126,7 @@ const expense = (
 beforeEach(() => {
   vi.clearAllMocks();
   allPlansForTest = [];
+  pantryForTest = [];
 });
 
 describe("MealsPage — programme", () => {
@@ -1436,5 +1446,193 @@ describe("MealsPage — quantité d'un snack", () => {
   it("affiche la quantité sur la pastille", () => {
     setup({ slots: { sat_snack: { items: [{ label: "Pizza", n: 10 }] } } });
     expect(screen.getByText("Pizza ×10")).toBeInTheDocument();
+  });
+});
+
+describe("MealsPage — contrôle des oublis", () => {
+  const shaaria: Dish = {
+    id: "شعرية الحليب",
+    name: "شعرية الحليب",
+    asMeal: true,
+    basis: "persons",
+    variants: [
+      {
+        n: 4,
+        ingredients: [
+          { name: "شعرية", quantity: "1 باكية" },
+          { name: "حليب", quantity: "1 لتر" },
+          { name: "سكر" },
+        ],
+      },
+    ],
+  };
+  const planned = { sat_dinner: { items: [{ label: "شعرية الحليب" }] } };
+  const lait = {
+    items: { a: { id: "a", name: "حليب", vendor: "Épicier", checked: false, createdAt: 1 } },
+  };
+
+  async function openShopping() {
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+  }
+
+  it("signale les ingrédients d'un plat planifié absents de la liste (le cha3ria oublié)", async () => {
+    setup({ slots: planned }, lait, [], [], [shaaria]);
+    await openShopping();
+
+    const panel = screen.getByRole("region", { name: "Contrôle des oublis" });
+    expect(within(panel).getByText(/1 plat avec des ingrédients absents de la liste/)).toBeInTheDocument();
+    expect(within(panel).getByText(/Samedi · Dîner — شعرية الحليب \(4 p\.\)/)).toBeInTheDocument();
+    expect(within(panel).getByText("شعرية")).toBeInTheDocument();
+    expect(within(panel).getByText("سكر")).toBeInTheDocument();
+    // le lait est déjà dans la liste : pas signalé
+    expect(within(panel).queryByText("حليب")).not.toBeInTheDocument();
+  });
+
+  it("confirme que rien n'est oublié quand la liste est complète", async () => {
+    setup(
+      { slots: planned },
+      {
+        items: {
+          a: { id: "a", name: "شعرية", checked: false, createdAt: 1 },
+          b: { id: "b", name: "حليب", checked: false, createdAt: 2 },
+          c: { id: "c", name: "سكر", checked: false, createdAt: 3 },
+        },
+      },
+      [],
+      [],
+      [shaaria],
+    );
+    await openShopping();
+    expect(screen.getByText(/Rien d'oublié/)).toBeInTheDocument();
+  });
+
+  it("ajoute un ingrédient manquant à la liste, avec sa quantité et son point de vente habituel", async () => {
+    setup({ slots: planned }, lait, [], [{ id: "شعرية", name: "شعرية", vendor: "Épicier" }], [shaaria]);
+    await openShopping();
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter شعرية à la liste" }));
+
+    expect(addShoppingItem).toHaveBeenCalledWith("2026-11-21", {
+      name: "شعرية",
+      quantity: "1 باكية",
+      vendor: "Épicier",
+    });
+  });
+
+  it("ajoute d'un coup tout ce qui manque", async () => {
+    setup({ slots: planned }, lait, [], [], [shaaria]);
+    await openShopping();
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter tout ce qui manque (2)" }));
+
+    expect(addShoppingItems).toHaveBeenCalledWith("2026-11-21", [
+      { name: "شعرية", quantity: "1 باكية", vendor: undefined },
+      { name: "سكر", quantity: undefined, vendor: undefined },
+    ]);
+    expect(screen.getByRole("status")).toHaveTextContent("2 ingrédients ajoutés à la liste.");
+  });
+
+  it("met un ingrédient en stock pour ne plus le signaler", async () => {
+    setup({ slots: planned }, lait, [], [], [shaaria]);
+    await openShopping();
+    await userEvent.click(screen.getByRole("button", { name: "سكر est en stock" }));
+    expect(setInPantry).toHaveBeenCalledWith("سكر", true);
+  });
+
+  it("ne signale pas un ingrédient déjà en stock, et permet de le remettre à contrôler", async () => {
+    pantryForTest = [{ id: "سكر", name: "سكر" }];
+    setup({ slots: planned }, lait, [], [], [shaaria]);
+    await openShopping();
+
+    const panel = screen.getByRole("region", { name: "Contrôle des oublis" });
+    // سكر n'apparaît plus que dans la liste « en stock », pas comme manquant
+    expect(within(panel).queryByRole("button", { name: "سكر est en stock" })).not.toBeInTheDocument();
+    await userEvent.click(within(panel).getByRole("button", { name: "Retirer سكر du stock" }));
+    expect(setInPantry).toHaveBeenCalledWith("سكر", false);
+  });
+
+  it("ne contrôle pas un plat déjà préparé ou non préparé", async () => {
+    setup(
+      { slots: { sat_dinner: { items: [{ label: "شعرية الحليب", status: "prepared" }] } } },
+      lait,
+      [],
+      [],
+      [shaaria],
+    );
+    await openShopping();
+    expect(screen.queryByRole("region", { name: "Contrôle des oublis" })).not.toBeInTheDocument();
+  });
+
+  it("n'affiche rien quand le programme est vide", async () => {
+    setup({}, lait, [], [], [shaaria]);
+    await openShopping();
+    expect(screen.queryByRole("region", { name: "Contrôle des oublis" })).not.toBeInTheDocument();
+  });
+
+  it("signale les plats sans recette comme non contrôlés, au lieu de les ignorer", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }, { label: "Tajine" }] } } }, lait, [], [], [
+      { id: "couscous", name: "Couscous", asMeal: true },
+    ]);
+    await openShopping();
+    expect(screen.getByText(/Ingrédients non définis, donc non contrôlés/)).toBeInTheDocument();
+    expect(screen.getByText("Couscous, Tajine")).toBeInTheDocument();
+  });
+
+  it("choisit la recette selon les convives du repas et marque une taille estimée", async () => {
+    const riz: Dish = {
+      id: "riz",
+      name: "Riz",
+      asMeal: true,
+      basis: "persons",
+      variants: [
+        { n: 2, ingredients: [{ name: "riz", quantity: "200 g" }] },
+        { n: 4, ingredients: [{ name: "riz", quantity: "400 g" }] },
+      ],
+    };
+    // 6 convives = 4 + 2 : quantités additionnées, pas estimées
+    setup({ slots: { sat_lunch: { diners: 6, items: [{ label: "Riz" }] } } }, {}, [], [], [riz]);
+    await openShopping();
+    expect(screen.getByText(/400 g \+ 200 g/)).toBeInTheDocument();
+    expect(screen.queryByText("taille estimée, à vérifier")).not.toBeInTheDocument();
+  });
+
+  it("marque « taille estimée » quand aucune combinaison n'est exacte", async () => {
+    const riz: Dish = {
+      id: "riz",
+      name: "Riz",
+      asMeal: true,
+      basis: "persons",
+      variants: [{ n: 2, ingredients: [{ name: "riz", quantity: "200 g" }] }, { n: 4, ingredients: [{ name: "riz", quantity: "400 g" }] }],
+    };
+    setup({ slots: { sat_lunch: { diners: 3, items: [{ label: "Riz" }] } } }, {}, [], [], [riz]);
+    await openShopping();
+    expect(screen.getByText("taille estimée, à vérifier")).toBeInTheDocument();
+    expect(screen.getByText(/300 g/)).toBeInTheDocument();
+  });
+
+  it("affiche une erreur sans rien casser quand l'ajout échoue", async () => {
+    vi.mocked(addShoppingItems).mockRejectedValueOnce(new Error("Hors ligne"));
+    setup({ slots: planned }, lait, [], [], [shaaria]);
+    await openShopping();
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter tout ce qui manque (2)" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("Hors ligne");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("compare aussi par traduction : un ingrédient français déjà présent en arabe n'est pas signalé", async () => {
+    const dish: Dish = {
+      id: "soupe",
+      name: "Soupe",
+      asMeal: true,
+      basis: "persons",
+      variants: [{ n: 4, ingredients: [{ name: "Lait" }] }],
+    };
+    setup(
+      { slots: { sat_dinner: { items: [{ label: "Soupe" }] } } },
+      lait,
+      [],
+      [{ id: "lait", name: "Lait", translation: "حليب" }],
+      [dish],
+    );
+    await openShopping();
+    expect(screen.getByText(/Rien d'oublié/)).toBeInTheDocument();
   });
 });

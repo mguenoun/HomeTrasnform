@@ -132,6 +132,11 @@ détail épique par épique ; en résumé :
   dérive si on corrige un retour). Piège rencontré : dans un script de remplacement, un
   `$1` n'est pas développé quand le remplacement est une fonction — il a fini littéral dans
   le code.
+  **Contrôle des oublis (2026-11-22)** : `domain/coverage.ts` (choix de la variante :
+  exacte → combinaison par programmation dynamique (min. de parts) → proportionnel
+  `approx` ; comparaison de noms dans les deux langues), collection `pantry`
+  (garde-manger), `CoveragePanel` en tête de l'onglet Courses. Ne contrôle que les plats
+  `planned`. **Règles Firestore modifiées** (`pantry`) : à déployer avec le hosting.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.
@@ -192,6 +197,9 @@ détail épique par épique ; en résumé :
   précédente, glisser-déposer (à prototyper sur iPhone en PWA), choix de la variante et
   proposition de liste, contrôle de couverture (étape 3), plat réparti sur plusieurs
   jours. À valider par l'utilisateur sur téléphone : import de la semaine réelle.
+  (Mis à jour : contrôle des oublis, retour 👍/👎 et suivi préparé/non préparé livrés le
+  2026-11-22 ; reste : recopie de la semaine, glisser-déposer, plat sur plusieurs jours,
+  dépenses (histogramme/mois), numéros WhatsApp des commerçants.)
 
 - CI/CD : automatiser au moins `npm run build && npm run test && npm run lint`
   sur push (GitHub Actions), le déploiement peut rester manuel dans un

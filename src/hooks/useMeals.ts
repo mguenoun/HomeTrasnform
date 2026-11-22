@@ -5,6 +5,7 @@ import {
   subscribeToDishes,
   subscribeToExpenses,
   subscribeToIngredients,
+  subscribeToPantry,
   subscribeToMealPlan,
   subscribeToShoppingList,
 } from "../services/meals";
@@ -13,6 +14,7 @@ import type {
   Dish,
   HouseholdExpense,
   MealPlan,
+  PantryItem,
   ShoppingList,
 } from "../types";
 
@@ -88,6 +90,13 @@ export function useDishes(): Dish[] {
   const [dishes, setDishes] = useState<Dish[]>([]);
   useEffect(() => subscribeToDishes(setDishes), []);
   return dishes;
+}
+
+/** Ingrédients « en stock », exclus du contrôle des oublis. */
+export function usePantry(): PantryItem[] {
+  const [items, setItems] = useState<PantryItem[]>([]);
+  useEffect(() => subscribeToPantry(setItems), []);
+  return items;
 }
 
 /** Articles de courses déjà saisis, avec leur dernier point de vente/quantité. */

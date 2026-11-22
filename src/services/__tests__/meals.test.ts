@@ -30,6 +30,8 @@ vi.mock("firebase/firestore", () => ({
 }));
 
 const {
+  setInPantry,
+  subscribeToPantry,
   setDishTranslation,
   setIngredientTranslation,
   payVendorRound,
@@ -776,5 +778,40 @@ describe("saveMealSlot conserve le retour et la quantité", () => {
       { label: "Tarte" },
       { label: "Crêpes" },
     ]);
+  });
+});
+
+describe("garde-manger (ingrédients en stock)", () => {
+  it("met un ingrédient en stock sous sa clé normalisée", async () => {
+    await setInPantry("  Sel ", true);
+    expect(setDocMock.mock.calls[0][0].__doc).toBe("pantry/sel");
+    expect(setDocMock.mock.calls[0][1]).toEqual({ name: "Sel" });
+  });
+
+  it("le retire du stock", async () => {
+    await setInPantry("Sel", false);
+    expect(deleteDocMock.mock.calls[0][0].__doc).toBe("pantry/sel");
+    expect(setDocMock).not.toHaveBeenCalled();
+  });
+
+  it("ignore un nom vide", async () => {
+    await setInPantry("   ", true);
+    expect(setDocMock).not.toHaveBeenCalled();
+    expect(deleteDocMock).not.toHaveBeenCalled();
+  });
+
+  it("s'abonne au stock, trié par nom", () => {
+    const onChange = vi.fn();
+    onSnapshotMock.mockImplementation((_ref, callback) => {
+      callback({
+        docs: [
+          { id: "sel", data: () => ({ name: "Sel" }) },
+          { id: "huile", data: () => ({ name: "Huile" }) },
+        ],
+      });
+      return () => {};
+    });
+    subscribeToPantry(onChange);
+    expect(onChange.mock.calls[0][0].map((p: { id: string }) => p.id)).toEqual(["huile", "sel"]);
   });
 });

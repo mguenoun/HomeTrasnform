@@ -47,7 +47,7 @@ beforeEach(async () => {
       weekId: "2026-W47",
       items: {},
     });
-    for (const name of ["dishes", "ingredients"]) {
+    for (const name of ["dishes", "ingredients", "pantry"]) {
       await setDoc(doc(context.firestore(), `${name}/2026-W47`), { name: "x" });
     }
     await setDoc(doc(context.firestore(), "householdExpenses/2026-W47"), {
@@ -76,6 +76,7 @@ describe.each([
   "householdExpenses",
   "dishes",
   "ingredients",
+  "pantry",
 ])("règles %s", (name) => {
   it("autorise un membre à lire, lister et écrire", async () => {
     const db = asMember().firestore();

@@ -250,6 +250,30 @@ facultative) :
   dans le message généré.
 - L'interface de l'app reste en français (les utilisateurs sont la famille).
 
+### 3.3 bis Contrôle des oublis (✅ livré 2026-11-22)
+En tête de l'onglet Courses : pour chaque plat **encore planifié** (ni préparé ni non
+préparé), l'app compare les ingrédients de sa recette à la liste et signale ce qui manque
+(« Samedi · Dîner — شعرية الحليب (4 p.) : شعرية »). Boutons **Ajouter** (avec la quantité de
+la recette et le dernier point de vente connu), **Ajouter tout ce qui manque** (c'est la
+« proposition de liste depuis le programme », non destructive : elle n'ajoute que les
+absents) et **En stock**.
+- **Taille de la recette** (`resolveVariant`) : variante exacte ; sinon **combinaison** de
+  variantes (6 = 4 + 2, 8 = 4 + 4, 30 pizzas = 3 × 10, en privilégiant le moins de parts) ;
+  sinon la variante la plus proche **mise à l'échelle**, marquée « taille estimée, à
+  vérifier ». Convives du repas pour un plat, quantité saisie pour un snack « par unités »
+  (à défaut, plus petite recette, estimée).
+- **Comparaison des noms** : insensible à la casse/accents/hamza ; un nom contenu dans un
+  autre (≥ 3 lettres) correspond (« طحين » ~ « طحين فينو ») ; comparaison **dans les deux
+  langues** grâce aux traductions connues.
+- **Un plat sans recette n'est jamais ignoré en silence** : il est listé comme « non
+  contrôlé ».
+- **Garde-manger** : un ingrédient « en stock » n'est plus signalé (collection `pantry`,
+  réversible).
+- Limites connues : additionner deux variantes peut sur-estimer un ingrédient non
+  proportionnel (épice, fond de cuisson) ; la correspondance par inclusion peut, rarement,
+  confondre deux noms voisins (le cas se corrige en mettant l'ingrédient en stock ou en
+  l'ajoutant explicitement).
+
 ### 3.5 bis Suivi de réalisation (✅ livré 2026-11-22)
 La personne de ménage peut ne pas avoir le temps (tarte aux pommes) ou les ingrédients
 (cha3ria) : chaque plat/snack du programme a un **statut** — *planifié* (par défaut),

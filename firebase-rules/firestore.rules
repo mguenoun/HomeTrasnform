@@ -160,6 +160,10 @@ service cloud.firestore {
       allow read, write: if isFamilyMember();
     }
 
+    match /pantry/{pantryId} {
+      allow read, write: if isFamilyMember();
+    }
+
     match /dishes/{dishId} {
       allow read, write: if isFamilyMember();
     }

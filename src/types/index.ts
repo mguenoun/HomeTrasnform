@@ -309,6 +309,13 @@ export interface DishVariant {
   ingredients: DishIngredient[];
 }
 
+/** Ingrédient « en stock » (sel, huile…) : jamais signalé par le contrôle des oublis. */
+export interface PantryItem {
+  /** Clé normalisée (voir `catalogKey`). */
+  id: string;
+  name: string;
+}
+
 export interface CatalogIngredient {
   id: string;
   name: string;

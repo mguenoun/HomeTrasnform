@@ -19,6 +19,7 @@ import { sanitizeVariants } from "../domain/dishes";
 import { DEFAULT_DINERS } from "../domain/mealPlan";
 import type {
   CatalogIngredient,
+  PantryItem,
   Dish,
   DishVariant,
   ExpenseType,
@@ -542,6 +543,37 @@ export async function saveDish(
 
 export async function deleteDish(id: string): Promise<void> {
   await deleteDoc(doc(db, DISHES, id));
+}
+
+const PANTRY = "pantry";
+
+export function subscribeToPantry(
+  onChange: (items: PantryItem[]) => void,
+): Unsubscribe {
+  return onSnapshot(collection(db, PANTRY), (snapshot) => {
+    onChange(
+      snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }) as PantryItem)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  });
+}
+
+/**
+ * Met un ingrédient « en stock » (il n'est plus signalé par le contrôle des
+ * oublis) ou l'en retire. L'id est le nom normalisé : idempotent.
+ */
+export async function setInPantry(
+  name: string,
+  inStock: boolean,
+): Promise<void> {
+  const key = catalogKey(name);
+  if (!key) return;
+  if (inStock) {
+    await setDoc(doc(db, PANTRY, key), { name: name.trim() });
+  } else {
+    await deleteDoc(doc(db, PANTRY, key));
+  }
 }
 
 export function subscribeToIngredients(
