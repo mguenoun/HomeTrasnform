@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Breadcrumb } from "../components/Breadcrumb";
+import { DishLibrary } from "../components/DishLibrary";
 import { ExpensesView } from "../components/ExpensesView";
 import { MealWeekPlan } from "../components/MealWeekPlan";
 import { ProgramImport } from "../components/ProgramImport";
@@ -21,12 +22,13 @@ import {
   useShoppingList,
 } from "../hooks/useMeals";
 
-type Tab = "plan" | "shopping" | "expenses";
+type Tab = "plan" | "shopping" | "expenses" | "library";
 
 const TABS: Array<[Tab, string]> = [
   ["plan", "Programme"],
   ["shopping", "Courses"],
   ["expenses", "Dépenses"],
+  ["library", "Bibliothèque"],
 ];
 
 export function MealsPage() {
@@ -40,7 +42,7 @@ export function MealsPage() {
   const dishes = useDishes();
   const ingredients = useIngredients();
 
-  const shareable = tab !== "expenses";
+  const shareable = tab === "plan" || tab === "shopping";
   const shareMessage =
     tab === "plan"
       ? buildPlanMessage(plan)
@@ -54,7 +56,9 @@ export function MealsPage() {
       ? planLoading
       : tab === "shopping"
         ? listLoading || expensesLoading
-        : expensesLoading;
+        : tab === "expenses"
+          ? expensesLoading
+          : false;
 
   return (
     <div className="min-h-screen p-6">
@@ -137,6 +141,9 @@ export function MealsPage() {
           userId={userId}
           ingredients={ingredients}
         />
+      )}
+      {tab === "library" && (
+        <DishLibrary dishes={dishes} ingredients={ingredients} />
       )}
       {!loading && tab === "expenses" && (
         <ExpensesView weekId={weekId} userId={userId} expenses={expenses} />

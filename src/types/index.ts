@@ -260,9 +260,33 @@ export interface Dish {
   /** Clé normalisée (voir `catalogKey`). */
   id: string;
   name: string;
+  /** Traduction dans l'autre langue (arabe/français), facultative. */
+  translation?: string;
   /** A déjà été planifié comme snack / comme repas : filtre les suggestions. */
   asSnack?: boolean;
   asMeal?: boolean;
+  /**
+   * Ce que mesure la taille d'une variante : des personnes (plat, salade…) ou
+   * des unités produites (snack : « 10 petites pizzas »). Absent = plat
+   * appris par l'usage, pas encore détaillé.
+   */
+  basis?: "persons" | "units";
+  /** Nom de l'unité d'un snack (« petite pizza »). */
+  unitLabel?: string;
+  /** Ingrédients par taille : les quantités ne sont pas proportionnelles. */
+  variants?: DishVariant[];
+}
+
+export interface DishIngredient {
+  name: string;
+  /** Texte libre, comme dans la liste de courses : « 2 kg », « 5 DH », « 1 boîte ». */
+  quantity?: string;
+}
+
+export interface DishVariant {
+  /** Nombre de personnes (basis = persons) ou d'unités (basis = units). */
+  n: number;
+  ingredients: DishIngredient[];
 }
 
 export interface CatalogIngredient {

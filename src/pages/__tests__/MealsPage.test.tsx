@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   CatalogIngredient,
+  Dish,
   HouseholdExpense,
   MealPlan,
   ShoppingList,
@@ -32,6 +33,8 @@ vi.mock("../../services/meals", () => ({
   removeShoppingItem: vi.fn().mockResolvedValue(undefined),
   addExpense: vi.fn().mockResolvedValue(undefined),
   removeExpense: vi.fn().mockResolvedValue(undefined),
+  saveDish: vi.fn().mockResolvedValue("id"),
+  deleteDish: vi.fn().mockResolvedValue(undefined),
 }));
 
 import {
@@ -47,6 +50,8 @@ import {
   addShoppingItems,
   saveMealSlot,
   saveMealSlots,
+  saveDish,
+  deleteDish,
 } from "../../services/meals";
 import { MealsPage } from "../MealsPage";
 
@@ -61,8 +66,9 @@ function setup(
   list: Partial<ShoppingList> = {},
   expenses: HouseholdExpense[] = [],
   ingredients: CatalogIngredient[] = [],
+  dishes: Dish[] = [],
 ) {
-  mockedUseDishes.mockReturnValue([]);
+  mockedUseDishes.mockReturnValue(dishes);
   mockedUseIngredients.mockReturnValue(ingredients);
   mockedUseMealPlan.mockReturnValue({
     plan: { weekId: "2026-11-21", defaultDiners: 4, slots: {}, ...plan },
@@ -410,5 +416,161 @@ describe("MealsPage — mode courses par point de vente", () => {
     await userEvent.type(screen.getByLabelText("Article"), "Lait");
 
     expect(screen.getByLabelText("Point de vente")).toHaveValue("Supermarché");
+  });
+});
+
+describe("MealsPage — bibliothèque de plats", () => {
+  const tajine: Dish = {
+    id: "tajine",
+    name: "Tajine",
+    asMeal: true,
+    basis: "persons",
+    variants: [
+      { n: 4, ingredients: [{ name: "Poulet", quantity: "1 kg" }] },
+      { n: 2, ingredients: [{ name: "Poulet", quantity: "500 g" }] },
+    ],
+  };
+  const soupe: Dish = { id: "soupe", name: "سوبا", asMeal: true };
+
+  async function openLibrary() {
+    await userEvent.click(screen.getByRole("tab", { name: "Bibliothèque" }));
+  }
+
+  it("liste les plats et signale ceux qui n'ont pas encore d'ingrédients", async () => {
+    setup({}, {}, [], [], [tajine, soupe]);
+    await openLibrary();
+
+    expect(screen.getByText("2 plats · 1 avec ingrédients")).toBeInTheDocument();
+    expect(screen.getByText("2, 4 pers.")).toBeInTheDocument();
+    expect(screen.getByText("sans ingrédients")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Envoyer sur WhatsApp" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("filtre par nom, en arabe comme en français", async () => {
+    setup({}, {}, [], [], [tajine, soupe]);
+    await openLibrary();
+    await userEvent.type(screen.getByLabelText("Rechercher un plat"), "سوب");
+
+    expect(screen.getByText("سوبا")).toBeInTheDocument();
+    expect(screen.queryByText("Tajine")).not.toBeInTheDocument();
+  });
+
+  it("crée un plat avec ses ingrédients pour 4 personnes, puis les copie vers 2 personnes", async () => {
+    setup();
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
+    await userEvent.type(screen.getByLabelText("Nom du plat"), "شعرية الحليب");
+    await userEvent.click(screen.getByRole("button", { name: "+ 4 pers." }));
+    await userEvent.type(screen.getByLabelText("Ingrédient 1, 4 pers."), "شعرية");
+    await userEvent.type(screen.getByLabelText("Quantité 1, 4 pers."), "2 باكية");
+    await userEvent.click(screen.getByRole("button", { name: "+ 2 pers." }));
+    await userEvent.selectOptions(
+      screen.getByLabelText("Copier les ingrédients vers 2 pers."),
+      "0",
+    );
+    expect(screen.getByLabelText("Ingrédient 1, 2 pers.")).toHaveValue("شعرية");
+
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(saveDish).toHaveBeenCalledWith(null, {
+      name: "شعرية الحليب",
+      translation: "",
+      basis: "persons",
+      unitLabel: "",
+      variants: [
+        { n: 4, ingredients: [{ name: "شعرية", quantity: "2 باكية" }] },
+        { n: 2, ingredients: [{ name: "شعرية", quantity: "2 باكية" }] },
+      ],
+      asSnack: undefined,
+      asMeal: undefined,
+    });
+  });
+
+  it("crée un snack par quantité avec son unité", async () => {
+    setup();
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
+    await userEvent.type(screen.getByLabelText("Nom du plat"), "Pizza");
+    await userEvent.click(screen.getByLabelText(/Snack \(quantités/));
+    await userEvent.type(screen.getByLabelText("Unité du snack"), "petite pizza");
+    await userEvent.type(screen.getByLabelText("Nouvelle taille"), "10");
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter cette taille" }));
+    await userEvent.type(screen.getByLabelText("Ingrédient 1, 10 petite pizza"), "Farine");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(saveDish).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({
+        basis: "units",
+        unitLabel: "petite pizza",
+        variants: [{ n: 10, ingredients: [{ name: "Farine", quantity: "" }] }],
+      }),
+    );
+  });
+
+  it("refuse un nom déjà pris et n'écrit rien", async () => {
+    setup({}, {}, [], [], [tajine]);
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
+    await userEvent.type(screen.getByLabelText("Nom du plat"), "  TAJINE ");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("existe déjà");
+    expect(saveDish).not.toHaveBeenCalled();
+  });
+
+  it("refuse une taille en double", async () => {
+    setup();
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
+    await userEvent.type(screen.getByLabelText("Nom du plat"), "X");
+    await userEvent.click(screen.getByRole("button", { name: "+ 4 pers." }));
+    await userEvent.type(screen.getByLabelText("Nouvelle taille"), "4");
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter cette taille" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("existe déjà");
+  });
+
+  it("modifie un plat existant en passant son id (renommage possible)", async () => {
+    setup({}, {}, [], [], [tajine]);
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: /Tajine/ }));
+    const name = screen.getByLabelText("Nom du plat");
+    expect(name).toHaveValue("Tajine");
+    await userEvent.clear(name);
+    await userEvent.type(name, "Tajine poulet");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(saveDish).toHaveBeenCalledWith(
+      "tajine",
+      expect.objectContaining({
+        name: "Tajine poulet",
+        asMeal: true,
+        variants: [
+          { n: 4, ingredients: [{ name: "Poulet", quantity: "1 kg" }] },
+          { n: 2, ingredients: [{ name: "Poulet", quantity: "500 g" }] },
+        ],
+      }),
+    );
+  });
+
+  it("demande confirmation avant de supprimer un plat", async () => {
+    setup({}, {}, [], [], [tajine]);
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: /Tajine/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Supprimer le plat" }));
+    expect(deleteDish).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer la suppression" }));
+    expect(deleteDish).toHaveBeenCalledWith("tajine");
+  });
+
+  it("la liste de courses reste utilisable sans aucun plat détaillé", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.type(screen.getByLabelText("Article"), "Piles");
+    await userEvent.click(screen.getByRole("button", { name: "Ajouter" }));
+    expect(addShoppingItem).toHaveBeenCalled();
   });
 });

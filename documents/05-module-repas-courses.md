@@ -62,8 +62,17 @@ Dépenses (ticket de courses, honoraires)  →  suivi hebdo / mensuel
   dans la liste l'est aussi (`ingredients`, avec son dernier point de vente et sa
   dernière quantité). Ils alimentent l'**autocomplétion** et, pour un article connu,
   pré-remplissent point de vente et quantité. Clé = libellé normalisé (casse, accents,
-  hamza, voyelles brèves), donc « الأحد » et « الاحد » ne font qu'un. *Reste à faire* :
-  écran de gestion, ingrédients par plat (variantes), traduction.
+  hamza, voyelles brèves), donc « الأحد » et « الاحد » ne font qu'un. **Bibliothèque** (✅ livré
+  2026-11-22) : onglet dédié, liste des plats (recherche arabe/français, mention
+  « sans ingrédients » pour ceux qu'on n'a pas encore détaillés) et éditeur : nom +
+  traduction, type *plat* (tailles en personnes, 2/3/4/5 proposées + taille libre) ou
+  *snack* (tailles en unités, avec le nom de l'unité), **ingrédients propres à chaque
+  taille** (nom + quantité libre, avec autocomplétion), « Copier depuis… » une autre
+  taille, renommage (le document change de clé pour éviter les doublons), suppression
+  avec confirmation. Les tailles sans ingrédient ne sont pas enregistrées. **Rien n'est
+  obligatoire** : la liste de courses globale reste saisie ou collée indépendamment des
+  plats. *Reste à faire* : choix de la variante selon convives/quantité et proposition
+  de liste, contrôle de couverture (étape 3), plat réparti sur plusieurs jours.
 
 ### 3.2 Programme hebdomadaire
 - Grille **7 jours × 3 créneaux**, comme le cahier de la famille (révisé 2026-11-22) :

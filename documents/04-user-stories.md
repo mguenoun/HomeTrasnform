@@ -223,8 +223,11 @@ ce qui est servi, je saisis le montant payé à la fin, et je vois à tout insta
 **US-12.10** (P2) — Quand un jour n'a pas de snack, il reprend ceux du dernier jour non
 vide, sans duplication des données. — ✅ Fait
 **US-12.11** (P2) — Les plats et articles déjà saisis alimentent un référentiel
-(autocomplétion, point de vente et quantité habituels). — 🚧 Partiel (appris
-automatiquement ; pas d'écran de gestion ni d'ingrédients par plat)
+(autocomplétion, point de vente et quantité habituels). — ✅ Fait
+**US-12.12** (P1) — Je renseigne pour un plat les ingrédients pour 2, 3, 4 ou 5
+personnes, et pour un snack ceux d'une quantité donnée (« 10 petites pizzas »), sans que
+cela soit obligatoire pour utiliser la liste de courses. — ✅ Fait (saisie ; l'usage des
+variantes pour proposer la liste est à l'étape 3)
 
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait

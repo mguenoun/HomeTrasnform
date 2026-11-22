@@ -14,10 +14,12 @@ import {
 import { db } from "../firebase/config";
 import { stripUndefined } from "../firebase/sanitize";
 import { catalogKey } from "../domain/catalog";
+import { sanitizeVariants } from "../domain/dishes";
 import { DEFAULT_DINERS } from "../domain/mealPlan";
 import type {
   CatalogIngredient,
   Dish,
+  DishVariant,
   ExpenseType,
   HouseholdExpense,
   MealItem,
@@ -404,6 +406,58 @@ export function subscribeToDishes(
         .sort((a, b) => a.name.localeCompare(b.name)),
     );
   });
+}
+
+export interface DishInput {
+  name: string;
+  translation?: string;
+  basis: "persons" | "units";
+  unitLabel?: string;
+  variants: DishVariant[];
+  /** Drapeaux d'usage déjà connus (planifié comme snack/repas), conservés. */
+  asSnack?: boolean;
+  asMeal?: boolean;
+}
+
+/**
+ * Crée ou met à jour un plat du référentiel, avec ses ingrédients par taille.
+ * L'id est la clé normalisée du nom : renommer un plat déplace donc le
+ * document (écriture sous la nouvelle clé, puis suppression de l'ancienne) pour
+ * que la prochaine saisie du nouveau nom retrouve ce plat au lieu d'en créer un
+ * doublon. Renvoie l'id du plat.
+ */
+export async function saveDish(
+  previousId: string | null,
+  input: DishInput,
+): Promise<string> {
+  const name = input.name.trim();
+  const id = catalogKey(name);
+  if (!id) {
+    throw new Error("Le nom du plat ne peut pas être vide.");
+  }
+  const variants = sanitizeVariants(input.variants);
+  await setDoc(
+    doc(db, DISHES, id),
+    stripUndefined({
+      name,
+      translation: input.translation?.trim() || undefined,
+      basis: input.basis,
+      unitLabel:
+        input.basis === "units" ? input.unitLabel?.trim() || undefined : undefined,
+      variants,
+      // Un plat défini comme snack/plat est forcément proposé comme tel.
+      asSnack: input.asSnack || input.basis === "units" || undefined,
+      asMeal: input.asMeal || input.basis === "persons" || undefined,
+    }),
+  );
+  if (previousId && previousId !== id) {
+    await deleteDoc(doc(db, DISHES, previousId));
+  }
+  return id;
+}
+
+export async function deleteDish(id: string): Promise<void> {
+  await deleteDoc(doc(db, DISHES, id));
 }
 
 export function subscribeToIngredients(

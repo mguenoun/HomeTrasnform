@@ -98,6 +98,13 @@ détail épique par épique ; en résumé :
   l'utilisateur sur l'import : « و » = « et » (ôté en tête de ligne sauf devant
   ورق/ورد/وزن/وجبة/وسط/وقت), « حك » = boîte (ex. « حك ماييص » = 1 boîte de maïs),
   « ليشو » = un chou, « طون » = thon (PAS une unité : « جوج طون زيت » = 2 boîtes de thon à l’huile), « حك مطيشة … » = bouteille en verre de concentré de tomates de 2 kg.
+  **Bibliothèque de plats (2026-11-22)** : onglet « Bibliothèque » (liste + éditeur)
+  avec ingrédients **par taille** (2/3/4/5 personnes, ou par quantité pour un snack),
+  quantités en texte libre comme dans la liste de courses (cohérent avec « 5 دراهم »,
+  « ربعة »…), renommage = déplacement du document pour éviter les doublons. La
+  saisie est **facultative** : la liste de courses globale reste indépendante des plats.
+  Prochaine brique : choisir la variante selon convives/quantité, proposer la liste et
+  contrôler la couverture (étape 3 du brief).
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

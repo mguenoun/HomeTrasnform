@@ -24,6 +24,8 @@ vi.mock("firebase/firestore", () => ({
 }));
 
 const {
+  saveDish,
+  deleteDish,
   rememberDishes,
   rememberIngredients,
   subscribeToDishes,
@@ -396,5 +398,91 @@ describe("référentiel appris", () => {
     subscribeToIngredients(ingredients);
     expect(dishes.mock.calls[0][0].map((d: { id: string }) => d.id)).toEqual(["a", "b"]);
     expect(ingredients.mock.calls[0][0].map((d: { id: string }) => d.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("saveDish (ingrédients par plat)", () => {
+  it("enregistre un plat avec ses variantes nettoyées et triées", async () => {
+    const id = await saveDish(null, {
+      name: "  شعرية الحليب ",
+      translation: "Vermicelles au lait",
+      basis: "persons",
+      variants: [
+        { n: 5, ingredients: [{ name: "شعرية", quantity: "2 باكية" }] },
+        { n: 2, ingredients: [{ name: "  شعرية ", quantity: "1 باكية" }, { name: " " }] },
+        { n: 3, ingredients: [{ name: "  " }] },
+      ],
+    });
+
+    expect(id).toBe("شعرية الحليب");
+    const [ref, payload, options] = writesTo("dishes")[0];
+    expect(ref.__doc).toBe("dishes/شعرية الحليب");
+    expect(options).toBeUndefined(); // remplacement complet, pas un merge
+    expect(payload).toMatchObject({
+      name: "شعرية الحليب",
+      translation: "Vermicelles au lait",
+      basis: "persons",
+      asMeal: true,
+      variants: [
+        { n: 2, ingredients: [{ name: "شعرية", quantity: "1 باكية" }] },
+        { n: 5, ingredients: [{ name: "شعرية", quantity: "2 باكية" }] },
+      ],
+    });
+    expect("asSnack" in payload).toBe(false);
+  });
+
+  it("un snack garde son unité et est marqué snack", async () => {
+    await saveDish(null, {
+      name: "Pizza",
+      basis: "units",
+      unitLabel: " petite pizza ",
+      variants: [{ n: 10, ingredients: [{ name: "Farine", quantity: "500 g" }] }],
+    });
+    const payload = writesTo("dishes")[0][1];
+    expect(payload).toMatchObject({ basis: "units", unitLabel: "petite pizza", asSnack: true });
+    expect("asMeal" in payload).toBe(false);
+  });
+
+  it("n'écrit pas d'unité pour un plat par personnes", async () => {
+    await saveDish(null, {
+      name: "Tajine",
+      basis: "persons",
+      unitLabel: "part",
+      variants: [],
+    });
+    expect("unitLabel" in writesTo("dishes")[0][1]).toBe(false);
+  });
+
+  it("conserve les drapeaux d'usage déjà connus", async () => {
+    await saveDish("soupe", {
+      name: "Soupe",
+      basis: "persons",
+      asSnack: true,
+      variants: [],
+    });
+    expect(writesTo("dishes")[0][1]).toMatchObject({ asSnack: true, asMeal: true });
+  });
+
+  it("renommer déplace le document : écrit sous la nouvelle clé, supprime l'ancienne", async () => {
+    await saveDish("ancien nom", { name: "Nouveau nom", basis: "persons", variants: [] });
+    expect(writesTo("dishes")[0][0].__doc).toBe("dishes/nouveau nom");
+    expect(deleteDocMock.mock.calls[0][0].__doc).toBe("dishes/ancien nom");
+  });
+
+  it("ne supprime rien quand la clé ne change pas (simple correction de casse)", async () => {
+    await saveDish("soupe", { name: "SOUPE", basis: "persons", variants: [] });
+    expect(deleteDocMock).not.toHaveBeenCalled();
+  });
+
+  it("refuse un nom vide sans rien écrire", async () => {
+    await expect(
+      saveDish(null, { name: "  ", basis: "persons", variants: [] }),
+    ).rejects.toThrow(/vide/);
+    expect(setDocMock).not.toHaveBeenCalled();
+  });
+
+  it("supprime un plat", async () => {
+    await deleteDish("soupe");
+    expect(deleteDocMock.mock.calls[0][0].__doc).toBe("dishes/soupe");
   });
 });
