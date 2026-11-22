@@ -130,7 +130,7 @@ function SlotEditor({
     });
   }
 
-  function handleEditSave(event: FormEvent) {
+  async function handleEditSave(event: FormEvent) {
     event.preventDefault();
     if (!editing) return;
     const label = editing.label.trim();
@@ -143,17 +143,28 @@ function SlotEditor({
     // Le libellé corrigé va sur l'élément (statut, motif et retour conservés) ; la
     // traduction, elle, est enregistrée dans le référentiel : elle vaut alors pour
     // toutes les occurrences de ce nom sans être retapée.
-    updateItem(editing.index, (item) => {
-      const next: MealItem = { ...item, label };
-      delete next.translation;
-      if (isSnack && Number.isInteger(quantity) && quantity > 0) next.n = quantity;
-      else delete next.n;
-      return next;
-    });
-    setDishTranslation(label, translation).catch(() =>
-      setError("Échec de l'enregistrement de la traduction. Réessayez."),
-    );
-    setEditing(null);
+    setError(null);
+    // On attend les deux écritures : le formulaire ne se ferme que si tout est
+    // enregistré, sinon la saisie reste à l'écran avec l'erreur (plus d'échec silencieux).
+    try {
+      await saveMealSlot(plan.weekId, key, {
+        ...slot,
+        items: slot.items.map((item, i) => {
+          if (i !== editing.index) return item;
+          const next: MealItem = { ...item, label };
+          delete next.translation;
+          if (isSnack && Number.isInteger(quantity) && quantity > 0) next.n = quantity;
+          else delete next.n;
+          return next;
+        }),
+      });
+      await setDishTranslation(label, translation);
+      setEditing(null);
+    } catch (err) {
+      setError(
+        `Échec de l'enregistrement${err instanceof Error && err.message ? ` : ${err.message}` : ""}. Réessayez.`,
+      );
+    }
   }
 
   const hasPlanned = slot.items.some((item) => itemStatus(item) === "planned");
