@@ -72,7 +72,16 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.replace(INVISIBLE, "").trim();
-    if (!line) continue;
+    if (!line) {
+      // Une ligne vide sépare deux groupes (ex. herbes / poisson, achetés chez
+      // deux commerçants) même sans montant ; un montant qui suit ensuite se
+      // rattache au groupe précédent (branche "amount" ci-dessous).
+      if (current.length > 0) {
+        groups.push({ items: current });
+        current = [];
+      }
+      continue;
+    }
 
     const amount = AMOUNT_LINE.exec(line);
     if (amount) {

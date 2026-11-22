@@ -165,9 +165,16 @@ describe("parseShoppingText sur la liste réelle", () => {
   const groups = parseShoppingText(REAL_LIST);
 
   it("reconnaît les montants de groupe, y compris le second épicier (26 MAD)", () => {
+    // Les herbes (sans montant) forment un groupe à part : une ligne vide les
+    // sépare du poisson (250 MAD) dans la liste d'origine.
     expect(groups.map((g) => g.amount)).toEqual([
-      84, 361, 26, 187, 72, 300, 250, 50, undefined,
+      84, 361, 26, 187, 72, 300, undefined, 250, 50, undefined,
     ]);
+  });
+
+  it("isole les herbes du poisson", () => {
+    expect(groups[6].items.map((i) => i.name)).toEqual(["ربيع مخلط", "نعناع", "كرافص", "بقولة"]);
+    expect(groups[7].items.map((i) => i.name)).toEqual(["سردين", "صطيك ديال الحوت سومو"]);
   });
 
   it("rattache chaque article au groupe qui le précède le montant", () => {
@@ -184,7 +191,7 @@ describe("parseShoppingText sur la liste réelle", () => {
   });
 
   it("garde le dernier article sans montant (poulet fermier)", () => {
-    expect(groups[8]).toEqual({ items: [{ name: "دجاجة بلدية" }] });
+    expect(groups[9]).toEqual({ items: [{ name: "دجاجة بلدية" }] });
   });
 
   it("n'oublie aucune ligne : 51 articles au total", () => {
@@ -194,6 +201,12 @@ describe("parseShoppingText sur la liste réelle", () => {
 });
 
 describe("parseShoppingText, cas simples", () => {
+  it("un montant après une ligne vide se rattache au groupe précédent", () => {
+    expect(parseShoppingText("Lait\n\n26dh")).toEqual([
+      { items: [{ name: "Lait" }], amount: 26 },
+    ]);
+  });
+
   it("un montant en tête, sans groupe précédent, est ignoré", () => {
     expect(parseShoppingText("50dh\nLait")).toEqual([{ items: [{ name: "Lait" }] }]);
   });
