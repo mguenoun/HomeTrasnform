@@ -299,6 +299,8 @@ export interface DishVariant {
 export interface CatalogIngredient {
   id: string;
   name: string;
+  /** Traduction du nom, partagée par tous les articles de ce nom. */
+  translation?: string;
   /** Dernier point de vente utilisé pour cet article. */
   vendor?: string;
   /** Dernière quantité saisie. */

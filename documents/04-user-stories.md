@@ -200,10 +200,11 @@ nombre de convives par repas, semaine du samedi au vendredi, 3 colonnes (snacks,
 **US-12.2** (P1) — En tant que membre, je veux une liste de courses hebdomadaire
 saisie à la main, groupée par point de vente avec le montant payé, que la famille coche en temps réel. — ✅ Fait (étape 1)
 **US-12.3** (P1) — En tant que membre, je veux envoyer le programme et la liste de
-courses sur WhatsApp, en français + darija. — 🚧 Partiel (envoi fait ; noms darija
-des plats/articles pas encore saisissables, seuls les libellés fixes sont bilingues)
+courses sur WhatsApp, en français + darija. — ✅ Fait (programme, liste complète, et
+commande par point de vente ; traductions saisies à la main ou suggérées, voir US-12.14)
 **US-12.4** (P2) — Référentiel de plats avec ingrédients par variante (2-5 personnes,
-ou par quantité pour un snack), noms darija, glisser-déposer dans le programme. — ⬜ Prévu (étape 2)
+ou par quantité pour un snack), noms darija, glisser-déposer dans le programme. — 🚧 Partiel (bibliothèque, variantes et
+noms faits ; **glisser-déposer** et plat réparti sur plusieurs jours à faire)
 **US-12.5** (P1) — Je colle la liste WhatsApp de la femme de ménage (arabe, sous-totaux
 reconnus) et le programme de la semaine ; je recopie la liste précédente. — 🚧 Partiel
 (collage de la liste et du programme fait ; recopie de la liste précédente à faire)
@@ -236,6 +237,16 @@ paiements séparés. — ✅ Fait
 vérifier) un plat du programme, un article de courses ou un plat de la bibliothèque. — ✅ Fait
 **US-12.15** (P2) — Je vois le programme de la semaine en calendrier à trois colonnes,
 comme le cahier. — ✅ Fait
+
+**US-12.16** (P1) — J'envoie à chaque commerçant, sur WhatsApp, uniquement ce qu'il reste à
+acheter chez lui (sans prix ni statut), et à la personne de ménage le programme ou la
+liste complète. Le bouton d'envoi est sur sa propre ligne, visible sur téléphone. — ✅ Fait
+**US-12.17** (P1) — Une traduction saisie une fois vaut pour tous les noms identiques
+(jours répétés, autres semaines, bibliothèque, courses), sans retraduire ni retaper ; la
+traduction déjà connue est proposée en premier. — ✅ Fait
+**US-12.18** (P1) — Les textes arabes longs (plat + traduction) passent à la ligne au lieu
+de déborder ; le calendrier défile horizontalement avec des flèches, jours figés, l'arabe
+sur une ligne et le français dessous. — ✅ Fait
 
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait

@@ -1,3 +1,4 @@
+import { translationFor, type TranslationIndex } from "./translations";
 import type {
   MealItem,
   MealPlan,
@@ -157,13 +158,24 @@ export function splitMealText(text: string): string[] {
     .filter((part) => part.length > 0);
 }
 
+/** Traduction d'un plat : celle du référentiel, sinon celle portée par l'élément. */
+export function itemTranslation(
+  item: { label: string; translation?: string },
+  translations?: TranslationIndex,
+): string | undefined {
+  return translationFor(translations, item.label) ?? item.translation;
+}
+
 /** "Nom — traduction", ou le nom seul sans traduction. */
 function withTranslation(name: string, translation?: string): string {
   return translation ? `${name} — ${translation}` : name;
 }
 
 /** Message WhatsApp du programme de la semaine. */
-export function buildPlanMessage(plan: MealPlan): string {
+export function buildPlanMessage(
+  plan: MealPlan,
+  translations?: TranslationIndex,
+): string {
   const lines: string[] = [
     "*Programme de la semaine — برنامج الأسبوع*",
     formatWeekRange(plan.weekId),
@@ -175,7 +187,7 @@ export function buildPlanMessage(plan: MealPlan): string {
         const snacks = snacksForDay(plan, day.key);
         if (snacks.items.length === 0) continue;
         const items = snacks.items
-          .map((it) => withTranslation(it.label, it.translation))
+          .map((it) => withTranslation(it.label, itemTranslation(it, translations)))
           .join(", ");
         dayLines.push(
           `${meal.fr} / ${meal.ar} : ${items}${snacks.inheritedFrom ? " (suite)" : ""}`,
@@ -185,7 +197,7 @@ export function buildPlanMessage(plan: MealPlan): string {
       const slot = plan.slots[slotKey(day.key, meal.key)];
       if (!slot || slot.items.length === 0) continue;
       const items = slot.items
-        .map((it) => withTranslation(it.label, it.translation))
+        .map((it) => withTranslation(it.label, itemTranslation(it, translations)))
         .join(", ");
       dayLines.push(
         `${meal.fr} / ${meal.ar} (${dinersOf(plan, slot)}) : ${items}`,
@@ -249,7 +261,10 @@ export function groupByVendor(items: ShoppingItem[]): VendorGroup[] {
 }
 
 /** Message WhatsApp de la liste de courses, par point de vente. */
-export function buildShoppingMessage(items: ShoppingItem[]): string {
+export function buildShoppingMessage(
+  items: ShoppingItem[],
+  translations?: TranslationIndex,
+): string {
   const lines = ["*Liste de courses — لائحة المشتريات*"];
   for (const group of groupByVendor(items)) {
     lines.push(
@@ -259,9 +274,28 @@ export function buildShoppingMessage(items: ShoppingItem[]): string {
     for (const item of group.items) {
       const qty = item.quantity ? ` (${item.quantity})` : "";
       lines.push(
-        `${item.checked ? "✅" : "▫️"} ${withTranslation(item.name, item.translation)}${qty}`,
+        `${item.checked ? "✅" : "▫️"} ${withTranslation(item.name, translationFor(translations, item.name) ?? item.translation)}${qty}`,
       );
     }
+  }
+  return lines.join("\n");
+}
+
+/**
+ * Message pour un commerçant : seulement ce qu'il reste à acheter chez lui
+ * (articles non pris), sans prix ni statut — rien qui ne le concerne pas.
+ */
+export function buildVendorMessage(
+  group: VendorGroup,
+  translations?: TranslationIndex,
+): string {
+  const lines = [`*${describeGroup(group.vendor, group.round)}*`];
+  for (const item of group.items) {
+    if (item.checked) continue;
+    const qty = item.quantity ? ` (${item.quantity})` : "";
+    lines.push(
+      `▫️ ${withTranslation(item.name, translationFor(translations, item.name) ?? item.translation)}${qty}`,
+    );
   }
   return lines.join("\n");
 }

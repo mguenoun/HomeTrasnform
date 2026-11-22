@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { catalogKey } from "../domain/catalog";
 import { missingPersonSizes } from "../domain/dishes";
+import { translationFor, type TranslationIndex } from "../domain/translations";
 import { deleteDish, saveDish } from "../services/meals";
 import { TranslationInput } from "./TranslationInput";
 import type { CatalogIngredient, Dish } from "../types";
@@ -35,11 +36,13 @@ export function DishEditor({
   dish,
   dishes,
   ingredients,
+  translations,
   onClose,
 }: {
   dish?: Dish;
   dishes: Dish[];
   ingredients: CatalogIngredient[];
+  translations?: TranslationIndex;
   onClose: () => void;
 }) {
   const [name, setName] = useState(dish?.name ?? "");
@@ -174,6 +177,7 @@ export function DishEditor({
             value={translation}
             onChange={setTranslation}
             source={name}
+            known={translationFor(translations, name)}
           />
         </div>
       </div>

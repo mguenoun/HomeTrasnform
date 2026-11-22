@@ -26,6 +26,7 @@ vi.mock("../../services/meals", () => ({
   HELPER_DAILY_RATE: 200,
   saveMealSlot: vi.fn().mockResolvedValue(undefined),
   saveMealSlots: vi.fn().mockResolvedValue(undefined),
+  setDishTranslation: vi.fn().mockResolvedValue(undefined),
   addShoppingItem: vi.fn().mockResolvedValue("id"),
   addShoppingItems: vi.fn().mockResolvedValue([]),
   setShoppingItemChecked: vi.fn().mockResolvedValue(undefined),
@@ -58,6 +59,7 @@ import {
   updateShoppingItem,
   saveMealSlot,
   saveMealSlots,
+  setDishTranslation,
   saveDish,
   deleteDish,
 } from "../../services/meals";
@@ -138,14 +140,14 @@ describe("MealsPage — programme", () => {
     expect(screen.getByText("Tajine")).toBeInTheDocument();
     expect(screen.getByText("6 p.")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Envoyer sur WhatsApp" }),
+      screen.getByRole("link", { name: "Envoyer le programme sur WhatsApp" }),
     ).toHaveAttribute("href", expect.stringContaining("https://wa.me/?text="));
   });
 
   it("n'affiche pas le bouton WhatsApp quand il n'y a rien à envoyer", () => {
     setup();
     expect(
-      screen.queryByRole("link", { name: "Envoyer sur WhatsApp" }),
+      screen.queryByRole("link", { name: /WhatsApp/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -310,7 +312,7 @@ describe("MealsPage — dépenses", () => {
     expect(screen.getAllByText("200,00 MAD").length).toBeGreaterThan(0); // ménage
     expect(screen.getByText(/lait et yaourt/)).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "Envoyer sur WhatsApp" }),
+      screen.queryByRole("link", { name: /WhatsApp/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -473,7 +475,7 @@ describe("MealsPage — bibliothèque de plats", () => {
     expect(screen.getByText("2, 4 pers.")).toBeInTheDocument();
     expect(screen.getByText("sans ingrédients")).toBeInTheDocument();
     expect(
-      screen.queryByRole("link", { name: "Envoyer sur WhatsApp" }),
+      screen.queryByRole("link", { name: /WhatsApp/ }),
     ).not.toBeInTheDocument();
   });
 
@@ -792,9 +794,12 @@ describe("MealsPage — correction et traduction", () => {
     await userEvent.type(screen.getByLabelText("Traduction"), "Couscous");
     await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
 
+    // Le libellé reste sur l'élément ; la traduction part dans le référentiel,
+    // où elle vaudra pour toutes les occurrences de ce nom.
     expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
-      items: [{ label: "كسكسو", translation: "Couscous" }],
+      items: [{ label: "كسكسو" }],
     });
+    expect(setDishTranslation).toHaveBeenCalledWith("كسكسو", "Couscous");
   });
 
   it("refuse de vider le nom d'un plat du programme", async () => {
@@ -812,5 +817,157 @@ describe("MealsPage — correction et traduction", () => {
     await userEvent.click(screen.getByRole("button", { name: "Modifier كسكسو" }));
     await userEvent.click(screen.getByRole("button", { name: "Annuler" }));
     expect(saveMealSlot).not.toHaveBeenCalled();
+  });
+});
+
+describe("MealsPage — partage WhatsApp", () => {
+  it("le bouton de partage est sur sa propre ligne, sous les onglets", () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }] } } });
+    const share = screen.getByRole("link", { name: "Envoyer le programme sur WhatsApp" });
+    const tablist = screen.getByRole("tablist");
+    expect(tablist).not.toContainElement(share);
+    expect(tablist.parentElement).not.toContainElement(share);
+  });
+
+  it("propose l'envoi de la liste complète dans l'onglet Courses", async () => {
+    setup({}, { items: { a: { id: "a", name: "Lait", checked: false, createdAt: 1 } } });
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(
+      screen.getByRole("link", { name: "Envoyer toute la liste sur WhatsApp" }),
+    ).toBeInTheDocument();
+  });
+
+  it("chaque point de vente a son envoi : seulement ses articles non pris", async () => {
+    setup({}, {
+      items: {
+        a: { id: "a", name: "Poulet", quantity: "1 kg", vendor: "Boucher", checked: false, createdAt: 1 },
+        b: { id: "b", name: "Kefta", vendor: "Boucher", checked: true, createdAt: 2 },
+        c: { id: "c", name: "Lait", vendor: "Épicier", checked: false, createdAt: 3 },
+      },
+    });
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+
+    const link = screen.getByRole("link", { name: "Envoyer à Boucher sur WhatsApp" });
+    const text = decodeURIComponent(link.getAttribute("href")!.split("text=")[1]);
+    expect(text).toBe("*Boucher*\n▫️ Poulet (1 kg)");
+    expect(text).not.toContain("Kefta");
+    expect(text).not.toContain("Lait");
+    expect(screen.getByRole("link", { name: "Envoyer à Épicier sur WhatsApp" })).toBeInTheDocument();
+  });
+
+  it("n'envoie rien à un point de vente dont tout est pris", async () => {
+    setup({}, {
+      items: { a: { id: "a", name: "Poulet", vendor: "Boucher", checked: true, createdAt: 1 } },
+    });
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(screen.queryByRole("link", { name: /Envoyer à Boucher/ })).not.toBeInTheDocument();
+  });
+});
+
+describe("MealsPage — texte long et défilement", () => {
+  const long =
+    "شعرية بالتقاطع + سلاطة فلفلة خضراء مشوية بالحامض والكمون مع الزيتون والطماطم";
+
+  it("une pastille longue passe à la ligne au lieu de déborder du cadre", () => {
+    setup({ slots: { tue_dinner: { items: [{ label: long }] } } });
+    const chip = screen.getByRole("button", { name: `Modifier ${long}` }).closest("li")!;
+    expect(chip).toHaveStyle({ whiteSpace: "normal" });
+    expect(chip.className).toContain("max-w-full");
+  });
+
+  it("une ligne de courses longue passe à la ligne", async () => {
+    setup({}, { items: { a: { id: "a", name: long, vendor: "Épicier", checked: false, createdAt: 1 } } });
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(screen.getByText(long).className).toContain("break-words");
+  });
+
+  it("le calendrier a des flèches qui font défiler le tableau", async () => {
+    const scrollBy = vi.fn();
+    HTMLElement.prototype.scrollBy = scrollBy as unknown as typeof HTMLElement.prototype.scrollBy;
+    setup({ slots: { sat_lunch: { items: [{ label: long }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+    const scroller = screen.getByRole("table").parentElement!;
+    Object.defineProperty(scroller, "clientWidth", { value: 300, configurable: true });
+
+    await userEvent.click(screen.getByRole("button", { name: "Défiler le calendrier vers la droite" }));
+    expect(scrollBy).toHaveBeenLastCalledWith({ left: 210, behavior: "smooth" });
+    await userEvent.click(screen.getByRole("button", { name: "Défiler le calendrier vers la gauche" }));
+    expect(scrollBy).toHaveBeenLastCalledWith({ left: -210, behavior: "smooth" });
+  });
+
+  it("le calendrier met l'arabe sur une ligne et la traduction dessous", async () => {
+    setup(
+      { slots: { sat_dinner: { items: [{ label: "شعرية الحليب" }] } } },
+      {},
+      [],
+      [],
+      [{ id: "x", name: "شعرية الحليب", translation: "Vermicelles au lait" }],
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+    const cell = screen.getByTestId("cell-sat-dinner");
+    const arabic = within(cell).getByText("شعرية الحليب");
+    const french = within(cell).getByText("Vermicelles au lait");
+    expect(arabic.className).toContain("block");
+    expect(french.className).toContain("block");
+    expect(arabic.compareDocumentPosition(french) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+});
+
+describe("MealsPage — une traduction vaut pour tous les noms identiques", () => {
+  const dishes: Dish[] = [
+    { id: "cheesecake", name: "Cheesecake", asSnack: true, translation: "شينز كيك" },
+  ];
+
+  it("un snack répété affiche la traduction du référentiel, sans la retaper", () => {
+    setup(
+      {
+        slots: {
+          sat_snack: { items: [{ label: "Cheesecake" }] },
+          wed_snack: { items: [{ label: "cheesecake" }] },
+        },
+      },
+      {},
+      [],
+      [],
+      dishes,
+    );
+    // les deux occurrences (casse différente) affichent la traduction
+    expect(screen.getAllByText("شينز كيك").length).toBe(2);
+  });
+
+  it("une traduction saisie sur un plat d'un jour sert aux autres semaines et au référentiel", () => {
+    setup({ slots: { sat_snack: { items: [{ label: "Cake", translation: "كيك" }] },
+                     tue_snack: { items: [{ label: "cake" }] } } });
+    expect(screen.getAllByText("كيك").length).toBe(2);
+  });
+
+  it("l'éditeur propose la traduction déjà connue quand on change le nom", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Riz" }] } } }, {}, [], [], dishes);
+    await userEvent.click(screen.getByRole("button", { name: "Modifier Riz" }));
+    const name = screen.getByLabelText("Nom, Déjeuner");
+    await userEvent.clear(name);
+    await userEvent.type(name, "Cheesecake");
+
+    expect(screen.getByText(/Déjà traduit ailleurs/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "شينز كيك" }));
+    expect(screen.getByLabelText("Traduction")).toHaveValue("شينز كيك");
+  });
+
+  it("l'éditeur ouvre un plat déjà traduit avec sa traduction pré-remplie, sans appel au service", async () => {
+    setup({ slots: { sat_snack: { items: [{ label: "Cheesecake" }] } } }, {}, [], [], dishes);
+    await userEvent.click(screen.getByRole("button", { name: "Modifier Cheesecake" }));
+    expect(screen.getByLabelText("Traduction")).toHaveValue("شينز كيك");
+    expect(vi.mocked(suggestTranslations)).not.toHaveBeenCalled();
+  });
+
+  it("la traduction d'un article de courses est reprise d'un article déjà traduit", async () => {
+    setup(
+      {},
+      { items: { a: { id: "a", name: "Lait", vendor: "Épicier", checked: false, createdAt: 1 } } },
+      [],
+      [{ id: "lait", name: "lait", translation: "حليب" }],
+    );
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(screen.getByText("حليب")).toBeInTheDocument();
   });
 });

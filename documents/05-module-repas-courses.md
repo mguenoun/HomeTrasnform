@@ -230,6 +230,19 @@ facultative) :
   explicite. Bonne pour les mots courants (français vers arabe surtout), mauvaise pour le
   vocabulaire marocain (taqtaa, tefal…). Pas de traduction « en masse » automatique : une
   traduction non relue ne doit pas partir dans un message WhatsApp.
+- **Traduction partagée (✅ livré 2026-11-22)** : une traduction appartient au **nom**,
+  pas à l'endroit où il apparaît. Elle s'écrit dans le référentiel (`dishes` pour les
+  plats, `ingredients` pour les articles) et se retrouve partout où ce nom apparaît
+  (programme, calendrier, messages WhatsApp, courses, autres semaines) : on ne retraduit
+  pas un snack qui se répète, ni dans le programme et la bibliothèque à la fois. La
+  traduction déjà connue est proposée en premier et pré-remplie ; effacer une traduction
+  se fait dans le référentiel. Les anciennes traductions portées par un élément restent
+  lues en repli.
+- **Partage WhatsApp (✅ livré 2026-11-22)** : le bouton d'envoi du programme ou de la
+  liste complète est sur sa **propre ligne** sous les onglets ; chaque point de vente a
+  son bouton « Envoyer sur WhatsApp » qui n'envoie que les articles **non pris** chez lui
+  (nom, traduction, quantité — ni prix ni statut). *Pas encore* : numéro de téléphone
+  mémorisé par commerçant pour ouvrir directement la bonne conversation.
 - **Vue calendrier (✅ livré 2026-11-22)** : en plus du détail jour par jour, le
   programme s'affiche comme le cahier (un jour par ligne, trois colonnes) ; les snacks
   reportés y sont en italique et un tap sur un jour ouvre son détail.

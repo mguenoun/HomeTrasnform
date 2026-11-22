@@ -384,6 +384,40 @@ export async function rememberDishes(
   );
 }
 
+/**
+ * Enregistre (ou efface, si vide) la traduction d'un plat dans le référentiel :
+ * elle vaut alors pour toutes les occurrences de ce nom (programme, autres
+ * semaines, bibliothèque).
+ */
+export async function setDishTranslation(
+  label: string,
+  translation: string,
+): Promise<void> {
+  const key = catalogKey(label);
+  if (!key) return;
+  const text = translation.trim();
+  await setDoc(
+    doc(db, DISHES, key),
+    { name: label.trim(), translation: text ? text : deleteField() },
+    { merge: true },
+  );
+}
+
+/** Idem pour un article de courses (catalogue `ingredients`). */
+export async function setIngredientTranslation(
+  name: string,
+  translation: string,
+): Promise<void> {
+  const key = catalogKey(name);
+  if (!key) return;
+  const text = translation.trim();
+  await setDoc(
+    doc(db, INGREDIENTS, key),
+    { name: name.trim(), translation: text ? text : deleteField() },
+    { merge: true },
+  );
+}
+
 export async function rememberIngredients(
   items: Array<{ name: string; vendor?: string; quantity?: string }>,
 ): Promise<void> {
@@ -578,7 +612,8 @@ export async function updateShoppingItem(
     doc(db, SHOPPING_LISTS, weekId),
     Object.fromEntries([
       [field("name"), name],
-      optional("translation", patch.translation.trim()),
+      // La traduction vit dans le catalogue (voir plus bas), pas sur l'article.
+      [field("translation"), deleteField()],
       optional("quantity", quantity),
       optional("vendor", vendor),
       ...(vendor !== normalizeVendor(previous.vendor)
@@ -589,4 +624,5 @@ export async function updateShoppingItem(
   await rememberIngredients([
     { name, vendor: vendor || undefined, quantity: quantity || undefined },
   ]);
+  await setIngredientTranslation(name, patch.translation);
 }

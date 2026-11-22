@@ -7,10 +7,13 @@ import {
 } from "../domain/expenses";
 import {
   DEFAULT_VENDORS,
+  buildVendorMessage,
   describeGroup,
   groupByVendor,
+  whatsappUrl,
   type VendorGroup,
 } from "../domain/mealPlan";
+import { translationFor, type TranslationIndex } from "../domain/translations";
 import { formatMad } from "../domain/money";
 import {
   addShoppingItem,
@@ -44,11 +47,13 @@ export function ShoppingListView({
   expenses,
   userId,
   ingredients = [],
+  translations,
 }: {
   list: ShoppingList;
   expenses: HouseholdExpense[];
   userId: string;
   ingredients?: CatalogIngredient[];
+  translations?: TranslationIndex;
 }) {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -110,7 +115,8 @@ export function ShoppingListView({
       id: item.id,
       draft: {
         name: item.name,
-        translation: item.translation ?? "",
+        // Traduction déjà connue pour ce nom (catalogue, autre article, autre semaine).
+        translation: translationFor(translations, item.name) ?? item.translation ?? "",
         quantity: item.quantity ?? "",
         vendor: item.vendor ?? "",
       },
@@ -284,6 +290,17 @@ export function ShoppingListView({
                     {groupBought === group.items.length && " ✓"}
                   </span>
                 </h3>
+                {group.vendor && groupBought < group.items.length && (
+                  <a
+                    href={whatsappUrl(buildVendorMessage(group, translations))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Envoyer à ${title} sur WhatsApp`}
+                    className="ht-btn px-2.5 py-1 text-xs"
+                  >
+                    Envoyer sur WhatsApp
+                  </a>
+                )}
                 <p className="text-xs text-[var(--ht-text-2)]">
                   {paid.payments > 0
                     ? `Payé ${formatMad(paid.total)}${paid.payments > 1 ? ` (${paid.payments} paiements)` : ""}`
@@ -326,6 +343,7 @@ export function ShoppingListView({
                               })
                             }
                             source={editing.draft.name}
+                            known={translationFor(translations, editing.draft.name)}
                           />
                           <div className="flex flex-col gap-2 sm:flex-row">
                             <input
@@ -396,17 +414,16 @@ export function ShoppingListView({
                         />
                         <span
                           dir="auto"
-                          className={`flex-1 text-sm ${
+                          className={`min-w-0 flex-1 break-words text-sm ${
                             item.checked
                               ? "text-[var(--ht-text-2)] line-through"
                               : "text-[var(--ht-text)]"
                           }`}
                         >
                           {item.name}
-                          {item.translation && (
-                            <span className="text-[var(--ht-text-2)]">
-                              {" "}
-                              · {item.translation}
+                          {(translationFor(translations, item.name) ?? item.translation) && (
+                            <span className="block text-xs text-[var(--ht-text-2)]">
+                              {translationFor(translations, item.name) ?? item.translation}
                             </span>
                           )}
                           {item.quantity && (

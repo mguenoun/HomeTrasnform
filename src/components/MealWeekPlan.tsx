@@ -3,12 +3,14 @@ import {
   MEALS,
   daysOfWeek,
   dinersOf,
+  itemTranslation,
   slotKey,
   snacksForDay,
   splitMealText,
   type WeekDay,
 } from "../domain/mealPlan";
-import { saveMealSlot } from "../services/meals";
+import { translationFor, type TranslationIndex } from "../domain/translations";
+import { saveMealSlot, setDishTranslation } from "../services/meals";
 import type { Dish, MealPlan, MealSlot } from "../types";
 import { TranslationInput } from "./TranslationInput";
 
@@ -19,11 +21,13 @@ function SlotEditor({
   day,
   mealKey,
   mealLabel,
+  translations,
 }: {
   plan: MealPlan;
   day: WeekDay;
   mealKey: string;
   mealLabel: string;
+  translations?: TranslationIndex;
 }) {
   const key = slotKey(day.key, mealKey);
   const slot = plan.slots[key] ?? EMPTY_SLOT;
@@ -72,15 +76,19 @@ function SlotEditor({
       setError("Le nom ne peut pas être vide.");
       return;
     }
-    const translation = editing.translation.trim();
+    const translation = editing.translation;
+    // Le libellé corrigé va sur l'élément ; la traduction, elle, est enregistrée
+    // dans le référentiel : elle vaut alors pour toutes les occurrences de ce nom
+    // (jours répétés, autres semaines, bibliothèque) sans être retapée.
     void save({
       ...slot,
       items: slot.items.map((item, i) =>
-        i === editing.index
-          ? { label, ...(translation ? { translation } : {}) }
-          : item,
+        i === editing.index ? { label } : item,
       ),
     });
+    setDishTranslation(label, translation).catch(() =>
+      setError("Échec de l'enregistrement de la traduction. Réessayez."),
+    );
     setEditing(null);
   }
 
@@ -125,7 +133,8 @@ function SlotEditor({
           {slot.items.map((item, index) => (
             <li
               key={`${item.label}-${index}`}
-              className="ht-pill ht-pill-neutral flex items-center gap-1"
+              className="ht-pill ht-pill-neutral flex max-w-full items-center gap-1"
+              style={{ whiteSpace: "normal", borderRadius: 12 }}
             >
               <button
                 type="button"
@@ -134,17 +143,17 @@ function SlotEditor({
                   setEditing({
                     index,
                     label: item.label,
-                    translation: item.translation ?? "",
+                    translation: itemTranslation(item, translations) ?? "",
                   })
                 }
                 dir="auto"
-                className="text-left"
+                className="min-w-0 break-words text-left"
               >
-                {item.label}
-                {item.translation && (
-                  <span className="text-[var(--ht-text-2)]">
-                    {" "}
-                    · {item.translation}
+                {/* Le nom sur une ligne, sa traduction (si elle existe) dessous. */}
+                <span className="block">{item.label}</span>
+                {itemTranslation(item, translations) && (
+                  <span className="block font-normal text-[var(--ht-text-2)]">
+                    {itemTranslation(item, translations)}
                   </span>
                 )}
               </button>
@@ -182,6 +191,7 @@ function SlotEditor({
             value={editing.translation}
             onChange={(translation) => setEditing({ ...editing, translation })}
             source={editing.label}
+            known={translationFor(translations, editing.label)}
           />
           <div className="flex gap-2">
             <button type="submit" className="ht-btn-cta-sm">
@@ -232,9 +242,11 @@ function SlotEditor({
 export function MealWeekPlan({
   plan,
   dishes = [],
+  translations,
 }: {
   plan: MealPlan;
   dishes?: Dish[];
+  translations?: TranslationIndex;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -264,6 +276,7 @@ export function MealWeekPlan({
               day={day}
               mealKey={meal.key}
               mealLabel={meal.fr}
+              translations={translations}
             />
           ))}
         </section>

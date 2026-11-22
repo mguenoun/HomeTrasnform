@@ -113,6 +113,14 @@ détail épique par épique ; en résumé :
   propositions). Vue calendrier du programme (`MealCalendar`). Piège rencontré : certains
   fichiers (ex. `src/types/index.ts`) sont en CRLF — un script de remplacement doit
   normaliser les fins de ligne avant de chercher un motif multi-lignes.
+  **Traductions partagées, débordements, partage (2026-11-22)** : `ht-pill` a
+  `white-space: nowrap` (d'où le débordement des textes arabes longs) — les pastilles
+  qui peuvent être longues surchargent ce style en ligne ; le bouton d'envoi WhatsApp
+  était sur la même ligne que les 4 onglets et sortait de l'écran sur téléphone (d'où
+  « je ne vois pas où partager »). Traduction = propriété du nom, stockée dans
+  `dishes`/`ingredients` et résolue via un index (`buildTranslationIndex`) : référentiel
+  d'abord, puis éléments saisis. Calendrier : colonne des jours figée
+  (`--ht-card-solid`, fond opaque requis dans les deux thèmes).
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

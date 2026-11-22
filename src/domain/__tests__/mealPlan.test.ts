@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   buildPlanMessage,
+  buildVendorMessage,
+  itemTranslation,
   buildShoppingMessage,
   daysOfWeek,
   dinersOf,
@@ -274,5 +276,51 @@ describe("passages multiples chez un même point de vente", () => {
     const lines = message.split("\n");
     expect(lines).toContain("*Épicier*");
     expect(lines).toContain("*Épicier — 2e passage*");
+  });
+});
+
+describe("traductions partagées dans les messages", () => {
+  const translations = new Map([["couscous", "كسكسو"]]);
+
+  it("le message du programme reprend la traduction du référentiel", () => {
+    const plan = emptyPlan("2026-11-21");
+    plan.slots.sat_lunch = { items: [{ label: "Couscous" }] };
+    expect(buildPlanMessage(plan, translations)).toContain("Couscous — كسكسو");
+    expect(buildPlanMessage(plan)).not.toContain("كسكسو");
+  });
+
+  it("la traduction du référentiel prime sur celle portée par l'élément", () => {
+    expect(itemTranslation({ label: "Couscous", translation: "ancienne" }, translations)).toBe("كسكسو");
+    expect(itemTranslation({ label: "Autre", translation: "ancienne" }, translations)).toBe("ancienne");
+    expect(itemTranslation({ label: "Autre" }, translations)).toBeUndefined();
+  });
+
+  it("le message de courses reprend la traduction du catalogue", () => {
+    const message = buildShoppingMessage(
+      [{ id: "a", name: "Couscous", vendor: "Épicier", checked: false, createdAt: 1 }],
+      translations,
+    );
+    expect(message).toContain("▫️ Couscous — كسكسو");
+  });
+});
+
+describe("buildVendorMessage (commande à un commerçant)", () => {
+  const items = [
+    { id: "a", name: "Poulet", quantity: "1 kg", vendor: "Boucher", checked: false, createdAt: 1 },
+    { id: "b", name: "Kefta", vendor: "Boucher", checked: true, createdAt: 2 },
+    { id: "c", name: "Merguez", vendor: "Boucher", price: 45, checked: false, createdAt: 3 },
+  ];
+
+  it("ne liste que ce qu'il reste à acheter, avec quantité, sans prix ni statut", () => {
+    const message = buildVendorMessage({ vendor: "Boucher", round: 1, items });
+    expect(message.split("\n")).toEqual(["*Boucher*", "▫️ Poulet (1 kg)", "▫️ Merguez"]);
+    expect(message).not.toContain("45");
+    expect(message).not.toContain("✅");
+  });
+
+  it("titre le passage à partir du deuxième", () => {
+    expect(buildVendorMessage({ vendor: "Épicier", round: 2, items }).split("\n")[0]).toBe(
+      "*Épicier — 2e passage*",
+    );
   });
 });

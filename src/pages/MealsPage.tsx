@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { DishLibrary } from "../components/DishLibrary";
 import { ExpensesView } from "../components/ExpensesView";
@@ -15,6 +15,7 @@ import {
   weekIdOf,
   whatsappUrl,
 } from "../domain/mealPlan";
+import { buildTranslationIndex } from "../domain/translations";
 import {
   useDishes,
   useExpenses,
@@ -45,6 +46,25 @@ export function MealsPage() {
   const dishes = useDishes();
   const ingredients = useIngredients();
 
+  // Une traduction appartient au nom : référentiel d'abord (corrigé à la main),
+  // puis ce qui est déjà saisi dans le programme et les courses. Un plat traduit
+  // une fois l'est partout, sans retaper ni retraduire.
+  const translations = useMemo(
+    () =>
+      buildTranslationIndex([
+        ...dishes.map((d) => ({ name: d.name, translation: d.translation })),
+        ...ingredients.map((i) => ({ name: i.name, translation: i.translation })),
+        ...Object.values(plan.slots).flatMap((slot) =>
+          slot.items.map((it) => ({ name: it.label, translation: it.translation })),
+        ),
+        ...Object.values(list.items).map((i) => ({
+          name: i.name,
+          translation: i.translation,
+        })),
+      ]),
+    [dishes, ingredients, plan, list],
+  );
+
   // Tap sur un jour du calendrier : on affiche le détail, puis on y défile une
   // fois le détail rendu (la section du jour n'existe pas avant).
   function openDay(dayKey: string) {
@@ -59,8 +79,8 @@ export function MealsPage() {
   const shareable = tab === "plan" || tab === "shopping";
   const shareMessage =
     tab === "plan"
-      ? buildPlanMessage(plan)
-      : buildShoppingMessage(Object.values(list.items));
+      ? buildPlanMessage(plan, translations)
+      : buildShoppingMessage(Object.values(list.items), translations);
   const hasContent =
     tab === "plan"
       ? Object.values(plan.slots).some((slot) => slot.items.length > 0)
@@ -114,8 +134,8 @@ export function MealsPage() {
         </button>
       </div>
 
-      <div className="mb-4 flex items-center justify-between gap-2">
-        <div role="tablist" className="ht-nav-pill">
+      <div className="mb-3">
+        <div role="tablist" className="ht-nav-pill w-full">
           {TABS.map(([key, label]) => (
             <button
               key={key}
@@ -129,17 +149,20 @@ export function MealsPage() {
             </button>
           ))}
         </div>
-        {shareable && hasContent && (
-          <a
-            href={whatsappUrl(shareMessage)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ht-btn px-3 py-1.5 text-sm"
-          >
-            Envoyer sur WhatsApp
-          </a>
-        )}
       </div>
+
+      {shareable && hasContent && (
+        <a
+          href={whatsappUrl(shareMessage)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ht-btn mb-4 flex w-full items-center justify-center px-3 py-2 text-sm font-semibold"
+        >
+          {tab === "plan"
+            ? "Envoyer le programme sur WhatsApp"
+            : "Envoyer toute la liste sur WhatsApp"}
+        </a>
+      )}
 
       {loading && <p className="text-[var(--ht-text-2)]">Chargement...</p>}
       {!loading && tab === "plan" && (
@@ -169,9 +192,10 @@ export function MealsPage() {
             <MealCalendar
               plan={plan}
               onSelectDay={openDay}
+              translations={translations}
             />
           ) : (
-            <MealWeekPlan plan={plan} dishes={dishes} />
+            <MealWeekPlan plan={plan} dishes={dishes} translations={translations} />
           )}
         </div>
       )}
@@ -181,10 +205,15 @@ export function MealsPage() {
           expenses={expenses}
           userId={userId}
           ingredients={ingredients}
+          translations={translations}
         />
       )}
       {tab === "library" && (
-        <DishLibrary dishes={dishes} ingredients={ingredients} />
+        <DishLibrary
+          dishes={dishes}
+          ingredients={ingredients}
+          translations={translations}
+        />
       )}
       {!loading && tab === "expenses" && (
         <ExpensesView weekId={weekId} userId={userId} expenses={expenses} />

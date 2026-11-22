@@ -5,17 +5,23 @@ import { suggestTranslations } from "../services/translate";
  * Champ de traduction manuel, avec suggestions facultatives d'un service
  * gratuit. Une suggestion ne fait que remplir le champ : elle reste modifiable
  * et n'est enregistrée qu'avec le reste du formulaire.
+ *
+ * `known` = traduction déjà enregistrée ailleurs pour ce nom (programme,
+ * bibliothèque, autre semaine) : proposée en premier, pour ne pas retraduire
+ * ce qui l'est déjà.
  */
 export function TranslationInput({
   value,
   onChange,
   source,
+  known,
   label = "Traduction",
 }: {
   value: string;
   onChange: (value: string) => void;
   /** Texte à traduire (le nom saisi). */
   source: string;
+  known?: string;
   label?: string;
 }) {
   const [suggestions, setSuggestions] = useState<string[] | null>(null);
@@ -38,7 +44,7 @@ export function TranslationInput({
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex min-w-0 flex-col gap-1">
       <div className="flex gap-1.5">
         <input
           value={value}
@@ -46,7 +52,7 @@ export function TranslationInput({
           placeholder={`${label} (facultatif)`}
           aria-label={label}
           dir="auto"
-          className="ht-input flex-1"
+          className="ht-input min-w-0 flex-1"
         />
         <button
           type="button"
@@ -57,6 +63,22 @@ export function TranslationInput({
           {loading ? "…" : "Suggérer"}
         </button>
       </div>
+      {known && known !== value && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs text-[var(--ht-text-2)]">
+            Déjà traduit ailleurs :
+          </span>
+          <button
+            type="button"
+            dir="auto"
+            onClick={() => onChange(known)}
+            className="ht-pill ht-pill-ok"
+            style={{ whiteSpace: "normal", borderRadius: 12 }}
+          >
+            {known}
+          </button>
+        </div>
+      )}
       {error && (
         <p role="alert" className="text-xs text-[var(--ht-danger)]">
           {error}
@@ -82,6 +104,7 @@ export function TranslationInput({
                 setSuggestions(null);
               }}
               className="ht-pill ht-pill-info"
+              style={{ whiteSpace: "normal", borderRadius: 12 }}
             >
               {suggestion}
             </button>

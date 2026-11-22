@@ -30,6 +30,8 @@ vi.mock("firebase/firestore", () => ({
 }));
 
 const {
+  setDishTranslation,
+  setIngredientTranslation,
   payVendorRound,
   updateShoppingItem,
   saveDish,
@@ -594,10 +596,16 @@ describe("updateShoppingItem (correction d'un article)", () => {
     });
     expect(updateDocMock.mock.calls[0][1]).toEqual({
       "items.abc.name": "Tomates",
-      "items.abc.translation": "طماطم",
+      // la traduction vit dans le catalogue : plus portée par l'article
+      "items.abc.translation": "__DELETE__",
       "items.abc.quantity": "2 kg",
       "items.abc.vendor": "Épicier",
     });
+    expect(writesTo("ingredients").at(-1)).toEqual([
+      expect.objectContaining({ __doc: "ingredients/tomates" }),
+      { name: "Tomates", translation: "طماطم" },
+      { merge: true },
+    ]);
   });
 
   it("supprime les champs vidés", async () => {
@@ -658,5 +666,34 @@ describe("updateShoppingItem (correction d'un article)", () => {
       vendor: "Fruits et légumes",
       quantity: "2 kg",
     });
+  });
+});
+
+describe("traductions partagées (écrites une fois dans le référentiel)", () => {
+  it("setDishTranslation enregistre la traduction sous la clé normalisée du plat", async () => {
+    await setDishTranslation("  Cheesecake ", " Gâteau au fromage ");
+    expect(setDocMock.mock.calls[0][0].__doc).toBe("dishes/cheesecake");
+    expect(setDocMock.mock.calls[0][1]).toEqual({
+      name: "Cheesecake",
+      translation: "Gâteau au fromage",
+    });
+    expect(setDocMock.mock.calls[0][2]).toEqual({ merge: true });
+  });
+
+  it("une traduction vide l'efface du référentiel", async () => {
+    await setDishTranslation("Cheesecake", "   ");
+    expect(setDocMock.mock.calls[0][1].translation).toBe("__DELETE__");
+  });
+
+  it("setIngredientTranslation écrit dans le catalogue d'articles", async () => {
+    await setIngredientTranslation("طماطم", "Tomates");
+    expect(setDocMock.mock.calls[0][0].__doc).toBe("ingredients/طماطم");
+    expect(setDocMock.mock.calls[0][1]).toEqual({ name: "طماطم", translation: "Tomates" });
+  });
+
+  it("ignore un nom vide", async () => {
+    await setDishTranslation("  ", "x");
+    await setIngredientTranslation("", "x");
+    expect(setDocMock).not.toHaveBeenCalled();
   });
 });

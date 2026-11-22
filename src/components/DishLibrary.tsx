@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { catalogKey } from "../domain/catalog";
 import { describeVariants } from "../domain/dishes";
+import type { TranslationIndex } from "../domain/translations";
 import type { CatalogIngredient, Dish } from "../types";
 import { DishEditor } from "./DishEditor";
 
@@ -14,9 +15,11 @@ type Editing = { kind: "new" } | { kind: "edit"; id: string } | null;
 export function DishLibrary({
   dishes,
   ingredients,
+  translations,
 }: {
   dishes: Dish[];
   ingredients: CatalogIngredient[];
+  translations?: TranslationIndex;
 }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [search, setSearch] = useState("");
@@ -40,6 +43,7 @@ export function DishLibrary({
         dish={editedDish}
         dishes={dishes}
         ingredients={ingredients}
+        translations={translations}
         onClose={() => setEditing(null)}
       />
     );
@@ -90,7 +94,7 @@ export function DishLibrary({
                   onClick={() => setEditing({ kind: "edit", id: dish.id })}
                   className="flex w-full items-center gap-3 px-4 py-2.5 text-left"
                 >
-                  <span dir="auto" className="flex-1 text-sm text-[var(--ht-text)]">
+                  <span dir="auto" className="min-w-0 flex-1 break-words text-sm text-[var(--ht-text)]">
                     {dish.name}
                     {dish.translation && (
                       <span className="text-[var(--ht-text-2)]">
