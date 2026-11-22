@@ -159,9 +159,12 @@ détail épique par épique ; en résumé :
 
 ## Prochaines étapes (proposées, non priorisées par l'utilisateur)
 
-- Module Repas & Courses : déployer l'étape 1 (hosting + règles), puis étape 1b
-  (import d'une liste WhatsApp, recopie de la liste), étape 2 (référentiel +
-  glisser-déposer, à prototyper sur iPhone en PWA), étape 3 (contrôle de couverture).
+- Module Repas & Courses : **en ligne depuis le 2026-11-22** (hosting + règles
+  Firestore, commit 950e679) : programme, courses par point de vente, import par
+  collage, dépenses, bibliothèque de plats. Prochaines briques : recopie de la liste
+  précédente, glisser-déposer (à prototyper sur iPhone en PWA), choix de la variante et
+  proposition de liste, contrôle de couverture (étape 3), plat réparti sur plusieurs
+  jours. À valider par l'utilisateur sur téléphone : import de la semaine réelle.
 
 - CI/CD : automatiser au moins `npm run build && npm run test && npm run lint`
   sur push (GitHub Actions), le déploiement peut rester manuel dans un
