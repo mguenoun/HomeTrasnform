@@ -20,8 +20,10 @@ const {
   addShoppingItem,
   removeShoppingItem,
   saveDefaultDiners,
+  normalizeVendor,
   saveMealSlot,
   setShoppingItemChecked,
+  setVendorAmount,
   subscribeToMealPlan,
   subscribeToShoppingList,
 } = await import("../meals");
@@ -86,6 +88,35 @@ describe("liste de courses", () => {
     expect(setDocMock).not.toHaveBeenCalled();
   });
 
+  it("enregistre le point de vente normalisé, et l'omet s'il est vide", async () => {
+    const withVendor = await addShoppingItem("2026-11-21", {
+      name: "Poulet",
+      vendor: "  Boucher  ",
+    });
+    expect(setDocMock.mock.calls[0][1].items[withVendor].vendor).toBe("Boucher");
+
+    const noVendor = await addShoppingItem("2026-11-21", { name: "Sel" });
+    expect("vendor" in setDocMock.mock.calls[1][1].items[noVendor]).toBe(false);
+  });
+
+  it("enregistre le montant payé chez un point de vente, ou l'efface", async () => {
+    await setVendorAmount("2026-11-21", "Boucher", 300);
+    expect(setDocMock.mock.calls[0][1]).toEqual({
+      weekId: "2026-11-21",
+      vendorAmounts: { Boucher: 300 },
+    });
+
+    await setVendorAmount("2026-11-21", "Boucher", null);
+    expect(setDocMock.mock.calls[1][1].vendorAmounts.Boucher).toBe("__DELETE__");
+  });
+
+  it("refuse un montant invalide ou un point de vente vide", async () => {
+    await expect(setVendorAmount("2026-11-21", "Boucher", -5)).rejects.toThrow();
+    await expect(setVendorAmount("2026-11-21", "Boucher", NaN)).rejects.toThrow();
+    await expect(setVendorAmount("2026-11-21", "  ", 10)).rejects.toThrow();
+    expect(setDocMock).not.toHaveBeenCalled();
+  });
+
   it("coche un article par chemin de champ, sans réécrire la liste", async () => {
     await setShoppingItemChecked("2026-W47", "abc", true);
     expect(updateDocMock.mock.calls[0][1]).toEqual({ "items.abc.checked": true });
@@ -129,6 +160,19 @@ describe("abonnements", () => {
       return () => {};
     });
     subscribeToShoppingList("2026-W47", onChange);
-    expect(onChange).toHaveBeenCalledWith({ weekId: "2026-W47", items: {} });
+    expect(onChange).toHaveBeenCalledWith({
+      weekId: "2026-W47",
+      items: {},
+      vendorAmounts: {},
+    });
+  });
+});
+
+describe("normalizeVendor", () => {
+  it("retire les séparateurs de chemin Firestore et normalise les espaces", () => {
+    expect(normalizeVendor("  Fruits   et légumes ")).toBe("Fruits et légumes");
+    expect(normalizeVendor("a/b.c")).toBe("a b c");
+    expect(normalizeVendor("__x__")).toBe("x");
+    expect(normalizeVendor(undefined)).toBe("");
   });
 });

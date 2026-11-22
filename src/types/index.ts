@@ -189,10 +189,10 @@ export interface BudgetItemAttachment {
 export type MealSlotKey = string;
 
 export interface MealItem {
-  /** Texte libre (ou nom copié depuis le référentiel, étape 2). */
+  /** Texte libre, dans la langue de saisie (arabe ou français). */
   label: string;
-  /** Nom en darija, facultatif. */
-  labelAr?: string;
+  /** Traduction dans l'autre langue, facultative. */
+  translation?: string;
 }
 
 export interface MealSlot {
@@ -202,7 +202,7 @@ export interface MealSlot {
 }
 
 export interface MealPlan {
-  /** ISO-8601, ex. "2026-W47" (identifiant du document). */
+  /** Date du premier jour de la semaine, ex. "2026-11-21" (id du document). */
   weekId: string;
   defaultDiners: number;
   slots: Record<MealSlotKey, MealSlot>;
@@ -210,10 +210,13 @@ export interface MealPlan {
 
 export interface ShoppingItem {
   id: string;
+  /** Dans la langue de saisie (arabe ou français). */
   name: string;
-  nameAr?: string;
-  /** Quantité en texte libre en v1 (ex. "2 kg"). */
+  translation?: string;
+  /** Texte libre : "2 kg", "5 DH", "1 paquet", "1/4 kg"… */
   quantity?: string;
+  /** Point de vente (boucher, épicier…) ; absent = non classé. */
+  vendor?: string;
   checked: boolean;
   createdAt: number;
 }
@@ -222,4 +225,6 @@ export interface ShoppingList {
   weekId: string;
   /** Map par id : permet de cocher un article sans réécrire toute la liste. */
   items: Record<string, ShoppingItem>;
+  /** Montant payé (MAD) par point de vente — alimente les dépenses (étape 4). */
+  vendorAmounts: Record<string, number>;
 }

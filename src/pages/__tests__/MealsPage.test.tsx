@@ -13,6 +13,7 @@ vi.mock("../../services/meals", () => ({
   saveMealSlot: vi.fn().mockResolvedValue(undefined),
   addShoppingItem: vi.fn().mockResolvedValue("id"),
   setShoppingItemChecked: vi.fn().mockResolvedValue(undefined),
+  setVendorAmount: vi.fn().mockResolvedValue(undefined),
   removeShoppingItem: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -25,11 +26,11 @@ const mockedUseShoppingList = vi.mocked(useShoppingList);
 
 function setup(plan: Partial<MealPlan> = {}, list: Partial<ShoppingList> = {}) {
   mockedUseMealPlan.mockReturnValue({
-    plan: { weekId: "2026-W47", defaultDiners: 4, slots: {}, ...plan },
+    plan: { weekId: "2026-11-21", defaultDiners: 4, slots: {}, ...plan },
     loading: false,
   });
   mockedUseShoppingList.mockReturnValue({
-    list: { weekId: "2026-W47", items: {}, ...list },
+    list: { weekId: "2026-11-21", items: {}, vendorAmounts: {}, ...list },
     loading: false,
   });
   render(
@@ -49,14 +50,43 @@ describe("MealsPage", () => {
     const input = screen.getAllByLabelText(/Ajouter un plat, Déjeuner/)[0];
     await userEvent.type(input, "Restes{enter}");
 
-    expect(saveMealSlot).toHaveBeenCalledWith(expect.any(String), "mon_lunch", {
+    expect(saveMealSlot).toHaveBeenCalledWith(expect.any(String), "sat_lunch", {
       items: [{ label: "Restes" }],
     });
   });
 
+  it("découpe un repas composé « A + B » en deux éléments, en arabe comme en français", async () => {
+    setup();
+    const input = screen.getAllByLabelText(/Ajouter un plat, Déjeuner/)[0];
+    await userEvent.type(input, "كسكسو + سلاض فروي{enter}");
+
+    expect(saveMealSlot).toHaveBeenCalledWith(expect.any(String), "sat_lunch", {
+      items: [{ label: "كسكسو" }, { label: "سلاض فروي" }],
+    });
+  });
+
+  it("affiche les courses par point de vente avec le montant payé", async () => {
+    setup(
+      {},
+      {
+        items: {
+          a: { id: "a", name: "شعرية", vendor: "Épicier", checked: false, createdAt: 1 },
+          b: { id: "b", name: "Poulet", vendor: "Boucher", checked: false, createdAt: 2 },
+        },
+        vendorAmounts: { Boucher: 300, Épicier: 50 },
+      },
+    );
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+
+    expect(screen.getByRole("heading", { name: "Boucher" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Épicier" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Montant payé, Boucher")).toHaveValue(300);
+    expect(screen.getByText(/Total payé/)).toHaveTextContent("350,00 MAD");
+  });
+
   it("affiche les repas déjà planifiés et propose l'envoi WhatsApp", () => {
     setup({
-      slots: { mon_lunch: { diners: 6, items: [{ label: "Tajine" }] } },
+      slots: { sat_lunch: { diners: 6, items: [{ label: "Tajine" }] } },
     });
     expect(screen.getByText("Tajine")).toBeInTheDocument();
     expect(screen.getByText("6 p.")).toBeInTheDocument();
@@ -77,11 +107,13 @@ describe("MealsPage", () => {
     await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
     await userEvent.type(screen.getByLabelText("Article"), "Piles");
     await userEvent.type(screen.getByLabelText("Quantité"), "4");
+    await userEvent.type(screen.getByLabelText("Point de vente"), "Épicier");
     await userEvent.click(screen.getByRole("button", { name: "Ajouter" }));
 
     expect(addShoppingItem).toHaveBeenCalledWith(expect.any(String), {
       name: "Piles",
       quantity: "4",
+      vendor: "Épicier",
     });
   });
 });

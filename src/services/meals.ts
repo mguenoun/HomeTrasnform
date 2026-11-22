@@ -54,7 +54,9 @@ export async function saveMealSlot(
   const cleanItems = slot.items
     .map((item) => ({
       label: item.label.trim(),
-      ...(item.labelAr?.trim() ? { labelAr: item.labelAr.trim() } : {}),
+      ...(item.translation?.trim()
+        ? { translation: item.translation.trim() }
+        : {}),
     }))
     .filter((item) => item.label.length > 0);
   await setDoc(
@@ -95,14 +97,32 @@ export function subscribeToShoppingList(
     const data = snapshot.exists()
       ? (snapshot.data() as Partial<ShoppingList>)
       : {};
-    onChange({ weekId, items: data.items ?? {} });
+    onChange({
+      weekId,
+      items: data.items ?? {},
+      vendorAmounts: data.vendorAmounts ?? {},
+    });
   });
 }
 
 export interface NewShoppingItemInput {
   name: string;
-  nameAr?: string;
+  translation?: string;
   quantity?: string;
+  vendor?: string;
+}
+
+/**
+ * Nom de point de vente utilisable comme clé de map Firestore : espaces
+ * normalisés, sans "/" ni "." (séparateurs de chemin), et jamais de la forme
+ * réservée `__x__`.
+ */
+export function normalizeVendor(vendor: string | undefined): string {
+  const cleaned = (vendor ?? "")
+    .replace(/[/.]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return /^__.*__$/.test(cleaned) ? cleaned.replace(/_/g, "") : cleaned;
 }
 
 export async function addShoppingItem(
@@ -118,8 +138,9 @@ export async function addShoppingItem(
   const item: ShoppingItem = stripUndefined({
     id,
     name,
-    nameAr: input.nameAr?.trim() || undefined,
+    translation: input.translation?.trim() || undefined,
     quantity: input.quantity?.trim() || undefined,
+    vendor: normalizeVendor(input.vendor) || undefined,
     checked: false,
     createdAt,
   }) as ShoppingItem;
@@ -129,6 +150,26 @@ export async function addShoppingItem(
     { merge: true },
   );
   return id;
+}
+
+/** Montant payé chez un point de vente ; `null` efface le montant. */
+export async function setVendorAmount(
+  weekId: string,
+  vendor: string,
+  amount: number | null,
+): Promise<void> {
+  const key = normalizeVendor(vendor);
+  if (!key) {
+    throw new Error("Choisissez d'abord un point de vente.");
+  }
+  if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
+    throw new Error("Le montant doit être un nombre positif.");
+  }
+  await setDoc(
+    doc(db, SHOPPING_LISTS, weekId),
+    { weekId, vendorAmounts: { [key]: amount === null ? deleteField() : amount } },
+    { merge: true },
+  );
 }
 
 export async function setShoppingItemChecked(

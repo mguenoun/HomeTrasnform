@@ -42,7 +42,7 @@ export function useShoppingList(weekId: string): {
 
   const ready = state?.weekId === weekId;
   return {
-    list: ready ? state : { weekId, items: {} },
+    list: ready ? state : { weekId, items: {}, vendorAmounts: {} },
     loading: !ready,
   };
 }

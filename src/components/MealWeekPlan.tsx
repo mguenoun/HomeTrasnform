@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
 import {
-  DAYS,
   MEALS,
-  datesOfWeek,
+  daysOfWeek,
   dinersOf,
   slotKey,
+  splitMealText,
 } from "../domain/mealPlan";
 import { saveMealSlot } from "../services/meals";
 import type { MealPlan, MealSlot } from "../types";
@@ -39,10 +39,14 @@ function SlotEditor({
 
   function handleAdd(event: FormEvent) {
     event.preventDefault();
-    const label = draft.trim();
-    if (!label) return;
+    // "couscous + salade" -> deux éléments (la plupart des repas sont composés).
+    const labels = splitMealText(draft);
+    if (labels.length === 0) return;
     setDraft("");
-    void save({ ...slot, items: [...slot.items, { label }] });
+    void save({
+      ...slot,
+      items: [...slot.items, ...labels.map((label) => ({ label }))],
+    });
   }
 
   return (
@@ -105,7 +109,7 @@ function SlotEditor({
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          placeholder="Ajouter un plat…"
+          placeholder="Ajouter (ex. couscous + salade)…"
           aria-label={`Ajouter un plat, ${mealLabel}`}
           className="ht-input flex-1"
         />
@@ -120,13 +124,12 @@ function SlotEditor({
 }
 
 export function MealWeekPlan({ plan }: { plan: MealPlan }) {
-  const dates = datesOfWeek(plan.weekId);
   return (
     <div className="flex flex-col gap-3">
-      {DAYS.map((day, i) => (
+      {daysOfWeek(plan.weekId).map((day) => (
         <section key={day.key} className="ht-card p-4">
           <h3 className="mb-1 text-sm font-extrabold text-[var(--ht-text)]">
-            {day.fr} {dates[i].getDate()}
+            {day.fr} {day.date.getDate()}
           </h3>
           {MEALS.map((meal) => (
             <SlotEditor
