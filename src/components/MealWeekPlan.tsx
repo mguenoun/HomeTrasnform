@@ -1,5 +1,12 @@
 import { useState, type FormEvent } from "react";
-import { withFeedback, type Feedback } from "../domain/feedback";
+import {
+  myVote,
+  voteCounts,
+  withFeedbackNote,
+  withVote,
+  type Feedback,
+} from "../domain/feedback";
+import { useAuth } from "../context/AuthContext";
 import {
   MEALS,
   daysOfWeek,
@@ -69,6 +76,7 @@ function SlotEditor({
     : [];
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const uid = useAuth().user?.uid;
   // Plat en cours de correction/traduction (index dans le créneau).
   const [editing, setEditing] = useState<{
     index: number;
@@ -114,8 +122,13 @@ function SlotEditor({
     updateItem(index, (item) => withStatus(item, status, reason));
   }
 
-  function setFeedback(index: number, feedback: Feedback | null, note?: string) {
-    updateItem(index, (item) => withFeedback(item, feedback, note));
+  function vote(index: number, value: Feedback) {
+    if (!uid) return;
+    updateItem(index, (item) => withVote(item, uid, value));
+  }
+
+  function setNote(index: number, note: string) {
+    updateItem(index, (item) => withFeedbackNote(item, note));
   }
 
   function handleAdd(event: FormEvent) {
@@ -308,36 +321,38 @@ function SlotEditor({
                 {status === "prepared" && (
                   <div className="flex flex-wrap items-center gap-1.5 pl-1 text-xs font-normal">
                     <span className="text-[var(--ht-text-2)]">Retour :</span>
-                    <button
-                      type="button"
-                      aria-label={`Retour positif sur ${item.label}`}
-                      aria-pressed={item.feedback === "up"}
-                      onClick={() =>
-                        setFeedback(index, item.feedback === "up" ? null : "up", item.feedbackNote)
-                      }
-                      className={`rounded-md border border-current px-1.5 py-0.5 ${item.feedback === "up" ? "" : "opacity-50"}`}
-                    >
-                      👍
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Retour négatif sur ${item.label}`}
-                      aria-pressed={item.feedback === "down"}
-                      onClick={() =>
-                        setFeedback(index, item.feedback === "down" ? null : "down", item.feedbackNote)
-                      }
-                      className={`rounded-md border border-current px-1.5 py-0.5 ${item.feedback === "down" ? "" : "opacity-50"}`}
-                    >
-                      👎
-                    </button>
-                    {item.feedback && (
+                    {(["up", "down"] as const).map((value) => {
+                      const counts = voteCounts(item);
+                      const mine = myVote(item, uid);
+                      const pressed = mine === value;
+                      // Un vote par personne : pour changer d'avis, annuler d'abord.
+                      const locked = mine !== undefined && !pressed;
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-label={`${value === "up" ? "Retour positif" : "Retour négatif"} sur ${item.label}`}
+                          aria-pressed={pressed}
+                          disabled={locked}
+                          title={locked ? "Annulez d'abord votre vote pour en changer" : undefined}
+                          onClick={() => vote(index, value)}
+                          className={`rounded-md border border-current px-1.5 py-0.5 ${pressed ? "font-extrabold" : "opacity-50"} ${locked ? "cursor-not-allowed" : ""}`}
+                        >
+                          {value === "up" ? "👍" : "👎"} ({counts[value]})
+                        </button>
+                      );
+                    })}
+                    {(() => {
+                      const counts = voteCounts(item);
+                      return counts.up + counts.down > 0;
+                    })() && (
                       <input
-                        key={`${index}-${item.feedback}-${item.feedbackNote ?? ""}`}
+                        key={`${index}-${item.feedbackNote ?? ""}`}
                         defaultValue={item.feedbackNote ?? ""}
                         onBlur={(e) => {
                           const value = e.target.value.trim();
                           if (value === (item.feedbackNote ?? "")) return;
-                          setFeedback(index, item.feedback ?? null, value);
+                          setNote(index, value);
                         }}
                         placeholder="Remarque (facultatif)"
                         aria-label={`Remarque sur ${item.label}`}

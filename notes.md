@@ -137,6 +137,12 @@ détail épique par épique ; en résumé :
   `approx` ; comparaison de noms dans les deux langues), collection `pantry`
   (garde-manger), `CoveragePanel` en tête de l'onglet Courses. Ne contrôle que les plats
   `planned`. **Règles Firestore modifiées** (`pantry`) : à déployer avec le hosting.
+  **Votes par personne + partage en tableau (2026-11-22)** : `MealItem.votes` (uid -> up/down),
+  l'ancien `feedback` sans auteur compte comme un vote non annulable ; `withVote` refuse le
+  vote opposé (annuler d'abord). Partage en image : `domain/shareTable.ts` +
+  `services/tableImage.ts` (canvas, `navigator.share` avec fichier, sinon téléchargement) ;
+  non testé sur iPhone (le rendu canvas n'est pas exercé par jsdom). Édition d'un plat :
+  le formulaire attend l'écriture et reste ouvert avec l'erreur.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

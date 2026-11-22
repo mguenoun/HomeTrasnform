@@ -82,6 +82,16 @@ export function subscribeToAllMealPlans(
  * Remplace un seul créneau (merge) : deux personnes qui modifient deux
  * créneaux différents au même moment ne s'écrasent pas.
  */
+/** Votes valides (👍/👎 d'une personne identifiée) ; `undefined` s'il n'y en a aucun. */
+function cleanVotes(
+  votes: MealItem["votes"],
+): Record<string, "up" | "down"> | undefined {
+  const entries = Object.entries(votes ?? {}).filter(
+    ([uid, vote]) => uid && (vote === "up" || vote === "down"),
+  );
+  return entries.length > 0 ? Object.fromEntries(entries) : undefined;
+}
+
 export async function saveMealSlot(
   weekId: string,
   key: MealSlotKey,
@@ -104,8 +114,11 @@ export async function saveMealSlot(
       (item.feedback === "up" || item.feedback === "down")
         ? { feedback: item.feedback }
         : {}),
+      ...(item.status === "prepared" && cleanVotes(item.votes)
+        ? { votes: cleanVotes(item.votes) }
+        : {}),
       ...(item.status === "prepared" &&
-      (item.feedback === "up" || item.feedback === "down") &&
+      (item.feedback === "up" || item.feedback === "down" || cleanVotes(item.votes)) &&
       item.feedbackNote?.trim()
         ? { feedbackNote: item.feedbackNote.trim() }
         : {}),

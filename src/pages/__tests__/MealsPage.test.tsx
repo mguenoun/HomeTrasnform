@@ -11,6 +11,10 @@ import type {
   ShoppingList,
 } from "../../types";
 
+vi.mock("../../services/tableImage", () => ({
+  shareTableImage: vi.fn().mockResolvedValue("shared"),
+}));
+
 vi.mock("../../context/AuthContext", () => ({
   useAuth: () => ({ user: { uid: "u1" } }),
 }));
@@ -1262,35 +1266,43 @@ describe("MealsPage — retour 👍/👎 sur les plats préparés", () => {
     expect(screen.queryByRole("button", { name: /Retour négatif/ })).not.toBeInTheDocument();
   });
 
-  it("enregistre un 👍 sur un plat préparé", async () => {
+  it("enregistre le 👍 de la personne connectée, avec le compte entre parenthèses", async () => {
     setup({ slots: prepared() });
+    expect(screen.getByRole("button", { name: "Retour positif sur Couscous" })).toHaveTextContent("(0)");
     await userEvent.click(screen.getByRole("button", { name: "Retour positif sur Couscous" }));
     expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
-      items: [{ label: "Couscous", status: "prepared", feedback: "up" }],
+      items: [{ label: "Couscous", status: "prepared", votes: { u1: "up" } }],
     });
   });
 
-  it("enregistre un 👎, et un second appui l'efface", async () => {
-    setup({ slots: prepared() });
-    await userEvent.click(screen.getByRole("button", { name: "Retour négatif sur Couscous" }));
-    expect(saveMealSlot).toHaveBeenLastCalledWith("2026-11-21", "sat_lunch", {
-      items: [{ label: "Couscous", status: "prepared", feedback: "down" }],
+  it("affiche les votes de tous, et mon vote en appuyé", () => {
+    setup({ slots: prepared({ votes: { u1: "up", u2: "up", u3: "down" } }) });
+    const up = screen.getByRole("button", { name: "Retour positif sur Couscous" });
+    const down = screen.getByRole("button", { name: "Retour négatif sur Couscous" });
+    expect(up).toHaveTextContent("(2)");
+    expect(down).toHaveTextContent("(1)");
+    expect(up).toHaveAttribute("aria-pressed", "true");
+    expect(down).toHaveAttribute("aria-pressed", "false");
+  });
+
+  it("le pouce opposé est bloqué tant que mon vote n'est pas annulé", () => {
+    setup({ slots: prepared({ votes: { u1: "up" } }) });
+    expect(screen.getByRole("button", { name: "Retour négatif sur Couscous" })).toBeDisabled();
+  });
+
+  it("un second appui sur le même pouce annule mon vote, pas celui des autres", async () => {
+    setup({ slots: prepared({ votes: { u1: "up", u2: "up" } }) });
+    await userEvent.click(screen.getByRole("button", { name: "Retour positif sur Couscous" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous", status: "prepared", votes: { u2: "up" } }],
     });
   });
 
-  it("un second appui sur le même pouce efface le retour et sa remarque", async () => {
-    setup({ slots: prepared({ feedback: "up", feedbackNote: "délicieux" }) });
+  it("annuler le dernier vote efface aussi la remarque", async () => {
+    setup({ slots: prepared({ votes: { u1: "up" }, feedbackNote: "délicieux" }) });
     await userEvent.click(screen.getByRole("button", { name: "Retour positif sur Couscous" }));
     expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
       items: [{ label: "Couscous", status: "prepared" }],
-    });
-  });
-
-  it("passer de 👍 à 👎 conserve la remarque", async () => {
-    setup({ slots: prepared({ feedback: "up", feedbackNote: "à revoir" }) });
-    await userEvent.click(screen.getByRole("button", { name: "Retour négatif sur Couscous" }));
-    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
-      items: [{ label: "Couscous", status: "prepared", feedback: "down", feedbackNote: "à revoir" }],
     });
   });
 
@@ -1634,5 +1646,34 @@ describe("MealsPage — contrôle des oublis", () => {
     );
     await openShopping();
     expect(screen.getByText(/Rien d'oublié/)).toBeInTheDocument();
+  });
+});
+
+describe("MealsPage — partage en tableau", () => {
+  it("propose le programme en texte ou en tableau (image)", async () => {
+    const { shareTableImage } = await import("../../services/tableImage");
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }] } } });
+    expect(screen.getByRole("link", { name: "Envoyer le programme sur WhatsApp" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer le programme en tableau (image)" }));
+    const [table, filename] = vi.mocked(shareTableImage).mock.calls.at(-1)!;
+    expect(filename).toBe("programme-2026-11-21.png");
+    expect(table.sections[0].rows[0][2]).toBe("Couscous");
+  });
+
+  it("propose la liste en tableau, un bloc par point de vente", async () => {
+    const { shareTableImage } = await import("../../services/tableImage");
+    setup({}, { items: { a: { id: "a", name: "Lait", vendor: "Épicier", checked: false, createdAt: 1 } } });
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer la liste en tableau (image)" }));
+    const [table] = vi.mocked(shareTableImage).mock.calls.at(-1)!;
+    expect(table.sections[0].heading).toBe("Épicier");
+  });
+
+  it("affiche l'erreur si l'image ne peut pas être créée", async () => {
+    const { shareTableImage } = await import("../../services/tableImage");
+    vi.mocked(shareTableImage).mockRejectedValueOnce(new Error("Pas de canvas"));
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer le programme en tableau (image)" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Pas de canvas");
   });
 });

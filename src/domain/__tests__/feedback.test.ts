@@ -5,39 +5,73 @@ import {
   buildFeedbackMessage,
   computeDishStats,
   sortDishes,
-  withFeedback,
+  withVote,
+  voteCounts,
+  myVote,
+  withFeedbackNote,
 } from "../feedback";
 import { withStatus } from "../mealStatus";
 
-describe("withFeedback", () => {
+describe("votes par personne", () => {
   const prepared = { label: "Couscous", status: "prepared" as const };
 
-  it("enregistre un retour sur un plat préparé, avec sa remarque rognée", () => {
-    expect(withFeedback(prepared, "up")).toEqual({ ...prepared, feedback: "up" });
-    expect(withFeedback(prepared, "down", "  trop salé ")).toEqual({
-      ...prepared,
-      feedback: "down",
-      feedbackNote: "trop salé",
-    });
+  it("enregistre le vote d'une personne sur un plat préparé", () => {
+    expect(withVote(prepared, "u1", "up")).toEqual({ ...prepared, votes: { u1: "up" } });
   });
 
-  it("remplace un retour existant et efface la remarque avec le retour", () => {
-    const rated = { ...prepared, feedback: "up" as const, feedbackNote: "délicieux" };
-    expect(withFeedback(rated, "down")).toEqual({ ...prepared, feedback: "down" });
-    expect(withFeedback(rated, null)).toEqual(prepared);
+  it("additionne les votes de plusieurs personnes", () => {
+    const item = withVote(withVote(prepared, "u1", "up"), "u2", "down");
+    expect(item.votes).toEqual({ u1: "up", u2: "down" });
+    expect(voteCounts(item)).toEqual({ up: 1, down: 1 });
   });
 
-  it("ignore un retour sur un plat qui n'est pas préparé", () => {
+  it("un second clic sur le même pouce annule le vote de cette personne seulement", () => {
+    const both = { ...prepared, votes: { u1: "up" as const, u2: "up" as const } };
+    const item = withVote(both, "u1", "up");
+    expect(item.votes).toEqual({ u2: "up" });
+  });
+
+  it("refuse de passer directement de 👍 à 👎 : il faut annuler d'abord", () => {
+    const voted = { ...prepared, votes: { u1: "up" as const } };
+    expect(withVote(voted, "u1", "down")).toBe(voted);
+    expect(withVote(withVote(voted, "u1", "up"), "u1", "down").votes).toEqual({ u1: "down" });
+  });
+
+  it("le dernier vote annulé efface la remarque", () => {
+    const voted = { ...prepared, votes: { u1: "up" as const }, feedbackNote: "délicieux" };
+    expect(withVote(voted, "u1", "up")).toEqual(prepared);
+  });
+
+  it("l'ancien retour sans auteur compte comme un vote", () => {
+    expect(voteCounts({ ...prepared, feedback: "down" })).toEqual({ up: 0, down: 1 });
+    expect(voteCounts({ ...prepared, feedback: "up", votes: { u1: "up" } })).toEqual({ up: 2, down: 0 });
+  });
+
+  it("myVote lit le vote de la personne connectée", () => {
+    const voted = { ...prepared, votes: { u1: "down" as const } };
+    expect(myVote(voted, "u1")).toBe("down");
+    expect(myVote(voted, "u2")).toBeUndefined();
+    expect(myVote(voted, undefined)).toBeUndefined();
+  });
+
+  it("ignore un vote sur un plat qui n'est pas préparé", () => {
     const planned = { label: "Tarte" };
     const skipped = { label: "Tarte", status: "skipped" as const };
-    expect(withFeedback(planned, "up")).toBe(planned);
-    expect(withFeedback(skipped, "down")).toBe(skipped);
+    expect(withVote(planned, "u1", "up")).toBe(planned);
+    expect(withVote(skipped, "u1", "down")).toBe(skipped);
   });
 
   it("ne mute pas l'élément d'origine", () => {
-    const item = { ...prepared, feedback: "up" as const };
-    withFeedback(item, null);
-    expect(item.feedback).toBe("up");
+    const item = { ...prepared, votes: { u1: "up" as const } };
+    withVote(item, "u1", "up");
+    expect(item.votes).toEqual({ u1: "up" });
+  });
+
+  it("la remarque ne se pose qu'avec au moins un vote, rognée", () => {
+    expect(withFeedbackNote(prepared, "trop salé")).toEqual(prepared);
+    const voted = { ...prepared, votes: { u1: "down" as const } };
+    expect(withFeedbackNote(voted, "  trop salé ")).toEqual({ ...voted, feedbackNote: "trop salé" });
+    expect(withFeedbackNote({ ...voted, feedbackNote: "x" }, "  ")).toEqual(voted);
   });
 });
 

@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { MEALS, daysOfWeek, dinersOf, itemTranslation, slotKey, snacksForDay } from "../domain/mealPlan";
+import { voteCounts } from "../domain/feedback";
 import { itemStatus } from "../domain/mealStatus";
 import type { TranslationIndex } from "../domain/translations";
 import type { MealItem, MealPlan } from "../types";
@@ -31,8 +32,12 @@ function Items({
               {status === "prepared" && <span aria-label="préparé">✓ </span>}
               {status === "skipped" && <span aria-label="non préparé">✗ </span>}
               {item.label}
-              {item.feedback === "up" && <span aria-label="apprécié"> 👍</span>}
-              {item.feedback === "down" && <span aria-label="à améliorer"> 👎</span>}
+              {voteCounts(item).up > 0 && (
+                <span aria-label="apprécié"> 👍{voteCounts(item).up}</span>
+              )}
+              {voteCounts(item).down > 0 && (
+                <span aria-label="à améliorer"> 👎{voteCounts(item).down}</span>
+              )}
             </span>
             {translation && (
               <span

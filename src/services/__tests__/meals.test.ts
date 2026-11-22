@@ -815,3 +815,32 @@ describe("garde-manger (ingrédients en stock)", () => {
     expect(onChange.mock.calls[0][0].map((p: { id: string }) => p.id)).toEqual(["huile", "sel"]);
   });
 });
+
+describe("saveMealSlot — votes par personne", () => {
+  it("conserve les votes d'un plat préparé et leur remarque", async () => {
+    await saveMealSlot("2026-11-21", "sat_lunch", {
+      items: [
+        { label: "Couscous", status: "prepared", votes: { u1: "up", u2: "down" }, feedbackNote: " bon " },
+      ],
+    });
+    const written = setDocMock.mock.calls[0][1].slots.sat_lunch.items[0];
+    expect(written).toEqual({
+      label: "Couscous",
+      status: "prepared",
+      votes: { u1: "up", u2: "down" },
+      feedbackNote: "bon",
+    });
+  });
+
+  it("n'écrit pas de votes sur un plat non préparé ni de votes invalides", async () => {
+    await saveMealSlot("2026-11-21", "sat_lunch", {
+      items: [
+        { label: "Tarte", votes: { u1: "up" } },
+        { label: "Riz", status: "prepared", votes: { u1: "bof" as never } },
+      ],
+    });
+    const items = setDocMock.mock.calls[0][1].slots.sat_lunch.items;
+    expect(items[0]).toEqual({ label: "Tarte" });
+    expect(items[1]).toEqual({ label: "Riz", status: "prepared" });
+  });
+});

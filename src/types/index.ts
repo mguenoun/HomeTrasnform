@@ -198,7 +198,9 @@ export interface MealItem {
   status?: MealStatus;
   /** Pourquoi ce plat n'a pas été préparé (« Pas le temps »…), seulement si non préparé. */
   skipReason?: string;
-  /** Retour sur un plat préparé : 👍 ("up") ou 👎 ("down"). */
+  /** Votes 👍/👎 sur un plat préparé, un par personne (clé = uid). */
+  votes?: Record<string, "up" | "down">;
+  /** Ancien retour unique, sans auteur : compté comme un vote, non annulable. */
   feedback?: "up" | "down";
   /** Remarque sur le retour (« trop salé »…), seulement avec un retour. */
   feedbackNote?: string;

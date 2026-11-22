@@ -11,24 +11,60 @@ import type { TranslationIndex } from "./translations";
 
 export type Feedback = "up" | "down";
 
+export interface VoteCounts {
+  up: number;
+  down: number;
+}
+
+/** Votes d'un plat : un par personne, plus l'ancien retour sans auteur (compté une fois). */
+export function voteCounts(item: MealItem): VoteCounts {
+  const counts = { up: 0, down: 0 };
+  for (const vote of Object.values(item.votes ?? {})) {
+    if (vote === "up") counts.up += 1;
+    else if (vote === "down") counts.down += 1;
+  }
+  if (item.feedback === "up") counts.up += 1;
+  if (item.feedback === "down") counts.down += 1;
+  return counts;
+}
+
+/** Vote de cette personne, s'il existe. */
+export function myVote(item: MealItem, uid: string | undefined): Feedback | undefined {
+  return uid ? item.votes?.[uid] : undefined;
+}
+
 /**
- * Nouvel élément avec ce retour. N'a de sens que pour un plat préparé : sinon
- * l'élément est renvoyé tel quel. `null` efface le retour et sa remarque.
+ * Nouvel élément avec le vote de `uid`. Un vote par personne : voter comme
+ * déjà fait l'annule ; voter l'inverse est refusé (il faut d'abord annuler),
+ * l'élément est alors renvoyé tel quel. N'a de sens que pour un plat préparé.
+ * La remarque, commune au plat, disparaît avec le dernier vote.
  */
-export function withFeedback(
+export function withVote(
   item: MealItem,
-  feedback: Feedback | null,
-  note?: string,
+  uid: string,
+  vote: Feedback,
 ): MealItem {
-  if (itemStatus(item) !== "prepared") return item;
-  const { feedback: _feedback, feedbackNote: _note, ...rest } = item;
-  void _feedback;
+  if (itemStatus(item) !== "prepared" || !uid) return item;
+  const current = item.votes?.[uid];
+  if (current && current !== vote) return item;
+  const votes = { ...item.votes };
+  if (current === vote) delete votes[uid];
+  else votes[uid] = vote;
+  const { votes: _votes, ...rest } = item;
+  void _votes;
+  const next: MealItem = Object.keys(votes).length > 0 ? { ...rest, votes } : rest;
+  const counts = voteCounts(next);
+  if (counts.up + counts.down === 0) delete next.feedbackNote;
+  return next;
+}
+
+/** Remarque commune sur le plat (vide = efface). Sans vote, elle n'a pas lieu d'être. */
+export function withFeedbackNote(item: MealItem, note: string): MealItem {
+  const { feedbackNote: _note, ...rest } = item;
   void _note;
-  if (!feedback) return rest;
-  const text = note?.trim();
-  return text
-    ? { ...rest, feedback, feedbackNote: text }
-    : { ...rest, feedback };
+  const counts = voteCounts(item);
+  const text = note.trim();
+  return text && counts.up + counts.down > 0 ? { ...rest, feedbackNote: text } : rest;
 }
 
 // ---------------------------------------------------------------------------
@@ -58,8 +94,9 @@ export function computeDishStats(plans: MealPlan[]): Map<string, DishStats> {
         if (!key) continue;
         const entry = stats.get(key) ?? { served: 0, up: 0, down: 0 };
         entry.served += 1;
-        if (item.feedback === "up") entry.up += 1;
-        if (item.feedback === "down") entry.down += 1;
+        const counts = voteCounts(item);
+        entry.up += counts.up;
+        entry.down += counts.down;
         if (!entry.lastWeek || plan.weekId > entry.lastWeek) {
           entry.lastWeek = plan.weekId;
         }
@@ -141,9 +178,10 @@ export function buildFeedbackMessage(
     for (const meal of MEALS) {
       for (const item of plan.slots[slotKey(day.key, meal.key)]?.items ?? []) {
         const status = itemStatus(item);
-        if (status === "prepared" && item.feedback === "up") {
+        const counts = voteCounts(item);
+        if (status === "prepared" && counts.up > counts.down) {
           liked.push({ text: lineFor(item, day.fr, translations) });
-        } else if (status === "prepared" && item.feedback === "down") {
+        } else if (status === "prepared" && counts.down > counts.up) {
           improve.push({ text: lineFor(item, day.fr, translations) });
         } else if (status === "skipped") {
           const reason = item.skipReason ? ` : ${item.skipReason}` : "";

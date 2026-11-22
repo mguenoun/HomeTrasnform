@@ -23,7 +23,9 @@ import {
   filterPlan,
   type StatusFilter,
 } from "../domain/mealStatus";
+import { buildProgramTable, buildShoppingTable } from "../domain/shareTable";
 import { buildTranslationIndex } from "../domain/translations";
+import { shareTableImage } from "../services/tableImage";
 import {
   useDishes,
   useExpenses,
@@ -47,6 +49,8 @@ export function MealsPage() {
   const userId = user?.uid ?? "";
   const [weekId, setWeekId] = useState(() => weekIdOf(new Date()));
   const [tab, setTab] = useState<Tab>("plan");
+  const [sharingTable, setSharingTable] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
   // Programme : vue d'ensemble en calendrier, ou détail jour par jour (saisie).
   const [planView, setPlanView] = useState<"detail" | "calendar">("detail");
   // Vue filtrée sur ce qui est préparé, planifié ou non préparé.
@@ -95,6 +99,24 @@ export function MealsPage() {
     tab === "plan"
       ? buildPlanMessage(plan, translations)
       : buildShoppingMessage(Object.values(list.items), translations);
+  async function shareAsTable() {
+    setShareError(null);
+    setSharingTable(true);
+    try {
+      await shareTableImage(
+        tab === "plan"
+          ? buildProgramTable(plan, translations)
+          : buildShoppingTable(Object.values(list.items), translations),
+        tab === "plan" ? `programme-${weekId}.png` : `courses-${weekId}.png`,
+      );
+    } catch (err) {
+      setShareError(
+        err instanceof Error ? err.message : "Impossible de créer l'image.",
+      );
+    } finally {
+      setSharingTable(false);
+    }
+  }
   const hasContent =
     tab === "plan"
       ? Object.values(plan.slots).some((slot) => slot.items.length > 0)
@@ -166,16 +188,35 @@ export function MealsPage() {
       </div>
 
       {shareable && hasContent && (
-        <a
-          href={whatsappUrl(shareMessage)}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ht-btn mb-4 flex w-full items-center justify-center px-3 py-2 text-sm font-semibold"
-        >
-          {tab === "plan"
-            ? "Envoyer le programme sur WhatsApp"
-            : "Envoyer toute la liste sur WhatsApp"}
-        </a>
+        <div className="mb-4 flex flex-col gap-2">
+          <a
+            href={whatsappUrl(shareMessage)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ht-btn flex w-full items-center justify-center px-3 py-2 text-sm font-semibold"
+          >
+            {tab === "plan"
+              ? "Envoyer le programme sur WhatsApp"
+              : "Envoyer toute la liste sur WhatsApp"}
+          </a>
+          <button
+            type="button"
+            disabled={sharingTable}
+            onClick={() => void shareAsTable()}
+            className="ht-btn flex w-full items-center justify-center px-3 py-2 text-sm font-semibold"
+          >
+            {sharingTable
+              ? "Création de l'image…"
+              : tab === "plan"
+                ? "Envoyer le programme en tableau (image)"
+                : "Envoyer la liste en tableau (image)"}
+          </button>
+          {shareError && (
+            <p role="alert" className="text-sm text-[var(--ht-danger)]">
+              {shareError}
+            </p>
+          )}
+        </div>
       )}
 
       {loading && <p className="text-[var(--ht-text-2)]">Chargement...</p>}

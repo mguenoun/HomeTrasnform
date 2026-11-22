@@ -69,6 +69,7 @@ export function withStatus(
     status: _status,
     skipReason: _reason,
     feedback: _feedback,
+    votes: _votes,
     feedbackNote: _feedbackNote,
     ...rest
   } = item;
@@ -81,7 +82,8 @@ export function withStatus(
       ...rest,
       status,
       ...(_feedback ? { feedback: _feedback } : {}),
-      ...(_feedback && _feedbackNote ? { feedbackNote: _feedbackNote } : {}),
+      ...(_votes ? { votes: _votes } : {}),
+      ...((_feedback || _votes) && _feedbackNote ? { feedbackNote: _feedbackNote } : {}),
     };
   }
   const note = reason?.trim();

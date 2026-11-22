@@ -264,6 +264,14 @@ qui choisira la variante d'ingrédients. — ✅ Fait
 **US-12.22** (P2) — Je marque des ingrédients « en stock » (sel, huile…) pour qu'ils ne
 soient jamais signalés comme oubliés, et je peux les remettre à contrôler. — ✅ Fait
 
+**US-12.23** (P1) — Le 👍/👎 est par personne : chacun voit le nombre de votes positifs et
+négatifs entre parenthèses, ne vote qu'une fois, un second clic sur le même pouce annule
+son vote, et pour changer d'avis il doit d'abord annuler. — ✅ Fait
+
+**US-12.24** (P1) — Je choisis d'envoyer le programme ou la liste en texte, ou en tableau
+(image PNG : jours × repas pour le programme, un bloc par point de vente pour la liste),
+via la feuille de partage du téléphone (WhatsApp) ou en téléchargement. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait
