@@ -319,3 +319,31 @@ describe("parseProgramText", () => {
     expect(parsed.slots).toEqual({});
   });
 });
+
+describe("parseShoppingText, titres de point de vente", () => {
+  it("« # Boucher » donne le point de vente du groupe qui suit", () => {
+    expect(parseShoppingText("# Boucher\nكفتة\n300dh")).toEqual([
+      { items: [{ name: "كفتة" }], amount: 300, vendor: "Boucher" },
+    ]);
+  });
+
+  it("le titre vaut jusqu'au prochain titre, et deux groupes peuvent le partager", () => {
+    const groups = parseShoppingText(
+      "# Épicier\nحليب\n26dh\n\nسكر\n\n# Boucher\nلحم\n300dh",
+    );
+    expect(groups.map((g) => g.vendor)).toEqual(["Épicier", "Épicier", "Boucher"]);
+    expect(groups.map((g) => g.amount)).toEqual([26, undefined, 300]);
+  });
+
+  it("un titre ferme le groupe en cours, sans montant", () => {
+    const groups = parseShoppingText("a\n# Boucher\nb");
+    expect(groups).toEqual([
+      { items: [{ name: "a" }] },
+      { items: [{ name: "b" }], vendor: "Boucher" },
+    ]);
+  });
+
+  it("sans titre, aucun point de vente n'est supposé", () => {
+    expect(parseShoppingText("a\n10dh")[0].vendor).toBeUndefined();
+  });
+});

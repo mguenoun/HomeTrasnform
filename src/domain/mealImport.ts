@@ -17,6 +17,8 @@ export interface ParsedShoppingGroup {
   items: ParsedShoppingItem[];
   /** Montant payé pour ce groupe (MAD), si une ligne de montant le clôt. */
   amount?: number;
+  /** Point de vente, si une ligne « # Boucher » le précède. */
+  vendor?: string;
 }
 
 // Caractères de contrôle bidirectionnels ajoutés par WhatsApp autour de l'arabe.
@@ -75,9 +77,24 @@ export function parseShoppingLine(line: string): ParsedShoppingItem | null {
   return name ? { name, ...(quantity ? { quantity } : {}) } : null;
 }
 
+// "# Boucher" : nomme le point de vente des groupes qui suivent (jusqu'au
+// prochain titre). Permet de préparer un import sans avoir à classer à la main.
+const VENDOR_HEADER = /^[#＃]\s*(.+)$/;
+
 export function parseShoppingText(text: string): ParsedShoppingGroup[] {
   const groups: ParsedShoppingGroup[] = [];
   let current: ParsedShoppingItem[] = [];
+  let vendor: string | undefined;
+
+  const flush = (amount?: number) => {
+    if (current.length === 0) return;
+    groups.push({
+      items: current,
+      ...(amount !== undefined ? { amount } : {}),
+      ...(vendor ? { vendor } : {}),
+    });
+    current = [];
+  };
 
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.replace(INVISIBLE, "").trim();
@@ -85,10 +102,14 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
       // Une ligne vide sépare deux groupes (ex. herbes / poisson, achetés chez
       // deux commerçants) même sans montant ; un montant qui suit ensuite se
       // rattache au groupe précédent (branche "amount" ci-dessous).
-      if (current.length > 0) {
-        groups.push({ items: current });
-        current = [];
-      }
+      flush();
+      continue;
+    }
+
+    const header = VENDOR_HEADER.exec(line);
+    if (header) {
+      flush();
+      vendor = header[1].trim();
       continue;
     }
 
@@ -96,8 +117,7 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
     if (amount) {
       const value = Number(amount[1].replace(",", "."));
       if (current.length > 0) {
-        groups.push({ items: current, amount: value });
-        current = [];
+        flush(value);
       } else if (groups.length > 0 && groups[groups.length - 1].amount === undefined) {
         groups[groups.length - 1].amount = value;
       }
@@ -107,7 +127,7 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
     const item = parseShoppingLine(line);
     if (item) current.push(item);
   }
-  if (current.length > 0) groups.push({ items: current });
+  flush();
   return groups;
 }
 

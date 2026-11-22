@@ -254,6 +254,22 @@ describe("MealsPage — courses", () => {
     );
   });
 
+  it("pré-remplit le point de vente donné par un titre « # » du texte collé", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Coller une liste WhatsApp" }),
+    );
+    await userEvent.type(
+      screen.getByLabelText("Liste à importer"),
+      "# Boucher{enter}كفتة{enter}300dh",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Analyser" }));
+
+    expect(screen.getByLabelText("Point de vente, groupe 1")).toHaveValue("Boucher");
+    expect(screen.getByLabelText("Montant payé, groupe 1")).toHaveValue(300);
+  });
+
   it("refuse d'enregistrer un montant sans point de vente, sans rien écrire", async () => {
     setup();
     await userEvent.click(screen.getByRole("tab", { name: "Courses" }));

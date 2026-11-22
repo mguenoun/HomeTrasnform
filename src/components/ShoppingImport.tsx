@@ -43,7 +43,7 @@ export function ShoppingImport({
     setDrafts(
       groups.map((group) => ({
         group,
-        vendor: "",
+        vendor: group.vendor ?? "",
         amount: group.amount === undefined ? "" : String(group.amount),
       })),
     );
@@ -151,7 +151,8 @@ export function ShoppingImport({
           />
           <p className="text-xs text-[var(--ht-text-2)]">
             Une ligne par article. Une ligne de montant seul (ex. 187dh) clôt un
-            groupe d&apos;articles payés ensemble.
+            groupe d&apos;articles payés ensemble, une ligne vide sépare deux groupes, et
+            une ligne « # Boucher » donne le point de vente des groupes qui suivent.
           </p>
           <button
             type="button"

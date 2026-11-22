@@ -28,3 +28,6 @@ ui-debug.log
 *.njsproj
 *.sln
 *.sw?
+
+# Données personnelles à importer dans l app (jamais commitées)
+import-*.txt
