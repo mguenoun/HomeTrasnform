@@ -219,6 +219,11 @@ export interface ShoppingItem {
   vendor?: string;
   /** Prix payé pour cet article (MAD), facultatif : détail, pas la source de vérité. */
   price?: number;
+  /**
+   * Passage chez ce point de vente (absent = 1). Les articles non pris quand on
+   * paie passent au passage suivant, pour garder les paiements séparés.
+   */
+  round?: number;
   checked: boolean;
   createdAt: number;
 }
@@ -247,6 +252,8 @@ export interface HouseholdExpense {
   weekId: string;
   /** Point de vente (courses uniquement). */
   vendor?: string;
+  /** Passage chez ce point de vente (absent = 1). */
+  round?: number;
   note?: string;
   createdBy: string;
   createdAt: number;

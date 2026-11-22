@@ -36,6 +36,27 @@ export function summarizeExpenses(expenses: HouseholdExpense[]): ExpenseSummary 
   };
 }
 
+/** Total payé pour un passage précis chez un point de vente. */
+export function paidFor(
+  expenses: HouseholdExpense[],
+  vendor: string,
+  round: number,
+): { total: number; payments: number } {
+  let total = 0;
+  let payments = 0;
+  for (const expense of expenses) {
+    if (
+      expense.type === "groceries" &&
+      (expense.vendor ?? "") === vendor &&
+      (expense.round && expense.round > 1 ? expense.round : 1) === round
+    ) {
+      total += expense.amount;
+      payments += 1;
+    }
+  }
+  return { total, payments };
+}
+
 /** Somme des prix saisis par article (détail facultatif, pas la source de vérité). */
 export function sumItemPrices(items: ShoppingItem[]): number {
   return items.reduce((sum, item) => sum + (item.price ?? 0), 0);

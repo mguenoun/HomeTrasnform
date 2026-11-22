@@ -140,6 +140,15 @@ tout instant « X achetés · Y restants » avec une barre d'avancement, et « M
 est pris » ne laisse voir que le reste. Un article non trouvé reste « à acheter » même
 après le paiement du point de vente (cas du lait et du yaourt, payés plus tard ailleurs).
 
+**Passages multiples chez un même point de vente** (✅ livré 2026-11-22) : un même point
+de vente peut être visité plusieurs fois, chaque passage ayant son propre paiement. Quand
+on paie un passage alors que des articles ne sont pas pris, ces articles passent
+automatiquement au **passage suivant** (« Épicier — 2e passage »), et le paiement est
+enregistré **dans la même écriture atomique** (jamais un paiement sans report). Dans une
+liste collée, un point de vente qui revient devient un passage 2. Le total par point de
+vente (onglet Dépenses) cumule tous ses passages ; changer l'article de point de vente le
+remet au passage 1.
+
 **Points de vente** : chaque article porte un point de vente (liste par défaut éditable,
 saisie libre) ; la liste s'affiche et s'envoie **groupée par point de vente**, avec le
 **montant payé** par point de vente (alimente les dépenses, étape 4). L'application
@@ -211,6 +220,19 @@ facultative) :
   - Le choix du service se fait après un essai sur des exemples réels (décision 7).
   - Alternative payante mais meilleure sur le darija : API Claude via le Worker
     (clé et coût à gérer) — hors v1.
+- **Correction et traduction (✅ livré 2026-11-22)** : tout plat du programme (tap sur
+  son nom), tout article de courses (✎) et tout plat de la bibliothèque se corrige et
+  se traduit à la main. Un bouton **« Suggérer »** interroge le service gratuit MyMemory
+  (sans clé, seul le nom est envoyé). Résultats **à vérifier** : le service s'appuie en
+  partie sur des sous-titres, sa première réponse est souvent du bruit (« Oh, mon
+  Dieu… » pour « طماطم »), donc on filtre (phrases, questions, longueur) et on classe les
+  trois meilleures propositions, qu'on choisit ; rien n'est écrit sans enregistrement
+  explicite. Bonne pour les mots courants (français vers arabe surtout), mauvaise pour le
+  vocabulaire marocain (taqtaa, tefal…). Pas de traduction « en masse » automatique : une
+  traduction non relue ne doit pas partir dans un message WhatsApp.
+- **Vue calendrier (✅ livré 2026-11-22)** : en plus du détail jour par jour, le
+  programme s'affiche comme le cahier (un jour par ligne, trois colonnes) ; les snacks
+  reportés y sont en italique et un tap sur un jour ouvre son détail.
 - Texte arabe en RTL : `dir="auto"` dans l'interface, et tests sur l'ordre mixte FR/AR
   dans le message généré.
 - L'interface de l'app reste en français (les utilisateurs sont la famille).

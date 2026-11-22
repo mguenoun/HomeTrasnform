@@ -229,6 +229,14 @@ personnes, et pour un snack ceux d'une quantité donnée (« 10 petites pizzas �
 cela soit obligatoire pour utiliser la liste de courses. — ✅ Fait (saisie ; l'usage des
 variantes pour proposer la liste est à l'étape 3)
 
+**US-12.13** (P1) — Quand je paie un point de vente alors qu'il reste des articles non
+pris, ceux-ci passent dans un 2e passage chez ce point de vente, pour garder les
+paiements séparés. — ✅ Fait
+**US-12.14** (P1) — Je corrige et je traduis (à la main, ou avec des suggestions à
+vérifier) un plat du programme, un article de courses ou un plat de la bibliothèque. — ✅ Fait
+**US-12.15** (P2) — Je vois le programme de la semaine en calendrier à trois colonnes,
+comme le cahier. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

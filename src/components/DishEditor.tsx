@@ -2,6 +2,7 @@ import { useState } from "react";
 import { catalogKey } from "../domain/catalog";
 import { missingPersonSizes } from "../domain/dishes";
 import { deleteDish, saveDish } from "../services/meals";
+import { TranslationInput } from "./TranslationInput";
 import type { CatalogIngredient, Dish } from "../types";
 
 interface IngredientDraft {
@@ -168,14 +169,13 @@ export function DishEditor({
           dir="auto"
           className="ht-input flex-1"
         />
-        <input
-          value={translation}
-          onChange={(e) => setTranslation(e.target.value)}
-          placeholder="Traduction (facultatif)"
-          aria-label="Traduction"
-          dir="auto"
-          className="ht-input flex-1"
-        />
+        <div className="flex-1">
+          <TranslationInput
+            value={translation}
+            onChange={setTranslation}
+            source={name}
+          />
+        </div>
       </div>
 
       <div role="radiogroup" aria-label="Type de plat" className="flex flex-wrap gap-4">

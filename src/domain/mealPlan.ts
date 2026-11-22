@@ -201,20 +201,48 @@ export function buildPlanMessage(plan: MealPlan): string {
   return lines.join("\n");
 }
 
-/** Articles regroupés par point de vente (sans point de vente en dernier). */
-export function groupByVendor(
-  items: ShoppingItem[],
-): Array<{ vendor: string; items: ShoppingItem[] }> {
-  const byVendor = new Map<string, ShoppingItem[]>();
+export interface VendorGroup {
+  vendor: string;
+  /** Passage chez ce point de vente (1 = premier). */
+  round: number;
+  items: ShoppingItem[];
+}
+
+export function roundOf(entry: { round?: number }): number {
+  return entry.round && entry.round > 1 ? entry.round : 1;
+}
+
+/** "Épicier", ou "Épicier — 2e passage" à partir du deuxième. */
+export function describeGroup(vendor: string, round: number): string {
+  const name = vendor || "Sans point de vente";
+  return round > 1 ? `${name} — ${round}e passage` : name;
+}
+
+/**
+ * Articles regroupés par (point de vente, passage) : un même point de vente peut
+ * être visité plusieurs fois, chaque passage ayant son propre paiement. Sans
+ * point de vente en dernier.
+ */
+export function groupByVendor(items: ShoppingItem[]): VendorGroup[] {
+  const groups = new Map<string, VendorGroup>();
   for (const item of items) {
     const vendor = item.vendor ?? "";
-    byVendor.set(vendor, [...(byVendor.get(vendor) ?? []), item]);
+    const round = roundOf(item);
+    const key = `${vendor}\u0000${round}`;
+    const group = groups.get(key) ?? { vendor, round, items: [] };
+    group.items.push(item);
+    groups.set(key, group);
   }
-  return [...byVendor.entries()]
-    .sort(([a], [b]) => (a === "" ? 1 : b === "" ? -1 : a.localeCompare(b, "fr")))
-    .map(([vendor, group]) => ({
-      vendor,
-      items: group.sort(
+  return [...groups.values()]
+    .sort((a, b) => {
+      if (a.vendor !== b.vendor) {
+        return a.vendor === "" ? 1 : b.vendor === "" ? -1 : a.vendor.localeCompare(b.vendor, "fr");
+      }
+      return a.round - b.round;
+    })
+    .map((group) => ({
+      ...group,
+      items: group.items.sort(
         (x, y) => Number(x.checked) - Number(y.checked) || x.createdAt - y.createdAt,
       ),
     }));
@@ -224,7 +252,10 @@ export function groupByVendor(
 export function buildShoppingMessage(items: ShoppingItem[]): string {
   const lines = ["*Liste de courses — لائحة المشتريات*"];
   for (const group of groupByVendor(items)) {
-    lines.push("", `*${group.vendor || "Autres — أخرى"}*`);
+    lines.push(
+      "",
+      `*${group.vendor ? describeGroup(group.vendor, group.round) : "Autres — أخرى"}*`,
+    );
     for (const item of group.items) {
       const qty = item.quantity ? ` (${item.quantity})` : "";
       lines.push(

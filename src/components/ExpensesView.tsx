@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { summarizeExpenses, toDateInputValue } from "../domain/expenses";
-import { DEFAULT_VENDORS } from "../domain/mealPlan";
+import { DEFAULT_VENDORS, describeGroup, roundOf } from "../domain/mealPlan";
 import { formatMad } from "../domain/money";
 import { addExpense, HELPER_DAILY_RATE, removeExpense } from "../services/meals";
 import type { ExpenseType, HouseholdExpense } from "../types";
@@ -203,7 +203,9 @@ export function ExpensesView({
               <span dir="auto" className="flex-1 text-sm text-[var(--ht-text)]">
                 {expense.type === "helper"
                   ? TYPE_LABEL.helper
-                  : expense.vendor || TYPE_LABEL.groceries}
+                  : expense.vendor
+                    ? describeGroup(expense.vendor, roundOf(expense))
+                    : TYPE_LABEL.groceries}
                 {expense.note && (
                   <span className="text-[var(--ht-text-2)]"> — {expense.note}</span>
                 )}

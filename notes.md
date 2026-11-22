@@ -105,6 +105,14 @@ détail épique par épique ; en résumé :
   saisie est **facultative** : la liste de courses globale reste indépendante des plats.
   Prochaine brique : choisir la variante selon convives/quantité, proposer la liste et
   contrôler la couverture (étape 3 du brief).
+  **Passages, correction/traduction, calendrier (2026-11-22)** : un point de vente peut
+  avoir plusieurs passages (champ `round` sur articles et paiements, absent = 1) ;
+  `payVendorRound` écrit paiement + report des articles non pris dans un `writeBatch`
+  (atomique). Traduction : MyMemory (gratuit, sans clé, CORS ouvert) — sa 1re réponse est
+  souvent du bruit de sous-titres, d'où `rankSuggestions` (filtre + classement, 3
+  propositions). Vue calendrier du programme (`MealCalendar`). Piège rencontré : certains
+  fichiers (ex. `src/types/index.ts`) sont en CRLF — un script de remplacement doit
+  normaliser les fins de ligne avant de chercher un motif multi-lignes.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

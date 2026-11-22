@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Breadcrumb } from "../components/Breadcrumb";
 import { DishLibrary } from "../components/DishLibrary";
 import { ExpensesView } from "../components/ExpensesView";
+import { MealCalendar } from "../components/MealCalendar";
 import { MealWeekPlan } from "../components/MealWeekPlan";
 import { ProgramImport } from "../components/ProgramImport";
 import { ShoppingListView } from "../components/ShoppingListView";
@@ -36,11 +37,24 @@ export function MealsPage() {
   const userId = user?.uid ?? "";
   const [weekId, setWeekId] = useState(() => weekIdOf(new Date()));
   const [tab, setTab] = useState<Tab>("plan");
+  // Programme : vue d'ensemble en calendrier, ou détail jour par jour (saisie).
+  const [planView, setPlanView] = useState<"detail" | "calendar">("detail");
   const { plan, loading: planLoading } = useMealPlan(weekId);
   const { list, loading: listLoading } = useShoppingList(weekId);
   const { expenses, loading: expensesLoading } = useExpenses(weekId);
   const dishes = useDishes();
   const ingredients = useIngredients();
+
+  // Tap sur un jour du calendrier : on affiche le détail, puis on y défile une
+  // fois le détail rendu (la section du jour n'existe pas avant).
+  function openDay(dayKey: string) {
+    setPlanView("detail");
+    setTimeout(() => {
+      document
+        .getElementById(`day-${dayKey}`)
+        ?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+    }, 0);
+  }
 
   const shareable = tab === "plan" || tab === "shopping";
   const shareMessage =
@@ -130,8 +144,35 @@ export function MealsPage() {
       {loading && <p className="text-[var(--ht-text-2)]">Chargement...</p>}
       {!loading && tab === "plan" && (
         <div className="flex flex-col">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <div role="group" aria-label="Affichage du programme" className="flex gap-1.5">
+              {(
+                [
+                  ["detail", "Détail"],
+                  ["calendar", "Calendrier"],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={planView === key}
+                  onClick={() => setPlanView(key)}
+                  className={`ht-btn px-3 py-1.5 text-sm ${planView === key ? "font-extrabold" : ""}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <ProgramImport weekId={weekId} />
-          <MealWeekPlan plan={plan} dishes={dishes} />
+          {planView === "calendar" ? (
+            <MealCalendar
+              plan={plan}
+              onSelectDay={openDay}
+            />
+          ) : (
+            <MealWeekPlan plan={plan} dishes={dishes} />
+          )}
         </div>
       )}
       {!loading && tab === "shopping" && (

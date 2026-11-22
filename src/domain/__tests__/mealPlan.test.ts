@@ -5,7 +5,9 @@ import {
   daysOfWeek,
   dinersOf,
   emptyPlan,
+  describeGroup,
   groupByVendor,
+  roundOf,
   shiftWeek,
   snacksForDay,
   splitMealText,
@@ -222,5 +224,55 @@ describe("snacksForDay (report des snacks sur les jours vides)", () => {
       "Petit-déj & goûter / فطور / كوتي : Cake citron, Cake salé (suite)",
     );
     expect(p.slots.wed_snack).toBeUndefined();
+  });
+});
+
+describe("passages multiples chez un même point de vente", () => {
+  const item = (id: string, vendor: string, round?: number, checked = false) => ({
+    id,
+    name: id,
+    vendor,
+    ...(round ? { round } : {}),
+    checked,
+    createdAt: id.charCodeAt(0),
+  });
+
+  it("sépare un même point de vente en passages, dans l'ordre", () => {
+    const groups = groupByVendor([
+      item("a", "Épicier"),
+      item("b", "Épicier", 2),
+      item("c", "Boucher"),
+      item("d", "Épicier"),
+    ]);
+    expect(groups.map((g) => [g.vendor, g.round])).toEqual([
+      ["Boucher", 1],
+      ["Épicier", 1],
+      ["Épicier", 2],
+    ]);
+    expect(groups[1].items.map((i) => i.id)).toEqual(["a", "d"]);
+    expect(groups[2].items.map((i) => i.id)).toEqual(["b"]);
+  });
+
+  it("un article sans passage est au passage 1", () => {
+    expect(roundOf({})).toBe(1);
+    expect(roundOf({ round: 1 })).toBe(1);
+    expect(roundOf({ round: 3 })).toBe(3);
+    expect(roundOf({ round: 0 })).toBe(1);
+  });
+
+  it("nomme les passages à partir du deuxième", () => {
+    expect(describeGroup("Épicier", 1)).toBe("Épicier");
+    expect(describeGroup("Épicier", 2)).toBe("Épicier — 2e passage");
+    expect(describeGroup("", 1)).toBe("Sans point de vente");
+  });
+
+  it("le message WhatsApp titre chaque passage séparément", () => {
+    const message = buildShoppingMessage([
+      item("a", "Épicier"),
+      item("b", "Épicier", 2),
+    ]);
+    const lines = message.split("\n");
+    expect(lines).toContain("*Épicier*");
+    expect(lines).toContain("*Épicier — 2e passage*");
   });
 });

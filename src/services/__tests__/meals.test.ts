@@ -6,6 +6,11 @@ const setDocMock = vi.fn().mockResolvedValue(undefined);
 const updateDocMock = vi.fn().mockResolvedValue(undefined);
 const addDocMock = vi.fn().mockResolvedValue({ id: "exp1" });
 const deleteDocMock = vi.fn().mockResolvedValue(undefined);
+const batchMock = {
+  set: vi.fn(),
+  update: vi.fn(),
+  commit: vi.fn().mockResolvedValue(undefined),
+};
 const onSnapshotMock = vi.fn();
 
 vi.mock("firebase/firestore", () => ({
@@ -18,12 +23,15 @@ vi.mock("firebase/firestore", () => ({
   deleteField: vi.fn(() => "__DELETE__"),
   addDoc: (...args: unknown[]) => addDocMock(...args),
   deleteDoc: (...args: unknown[]) => deleteDocMock(...args),
+  writeBatch: () => batchMock,
   collection: vi.fn((_db, name: string) => ({ __collection: name })),
   query: vi.fn((ref, ...clauses) => ({ ...ref, clauses })),
   where: vi.fn((field, op, value) => ({ field, op, value })),
 }));
 
 const {
+  payVendorRound,
+  updateShoppingItem,
   saveDish,
   deleteDish,
   rememberDishes,
@@ -484,5 +492,171 @@ describe("saveDish (ingrédients par plat)", () => {
   it("supprime un plat", async () => {
     await deleteDish("soupe");
     expect(deleteDocMock.mock.calls[0][0].__doc).toBe("dishes/soupe");
+  });
+});
+
+describe("payVendorRound (paiement + report des articles non pris)", () => {
+  const base = {
+    vendor: "  Épicier ",
+    round: 1,
+    amount: 361,
+    date: "2026-11-21",
+    createdBy: "u1",
+    leftoverItemIds: [] as string[],
+  };
+
+  it("écrit le paiement ET reporte les articles non pris au passage suivant, en un lot atomique", async () => {
+    await payVendorRound("2026-11-21", { ...base, leftoverItemIds: ["lait", "yaourt"] });
+
+    expect(batchMock.set).toHaveBeenCalledTimes(1);
+    const payload = batchMock.set.mock.calls[0][1];
+    expect(payload).toMatchObject({
+      type: "groceries",
+      amount: 361,
+      vendor: "Épicier",
+      weekId: "2026-11-21",
+      date: "2026-11-21",
+      createdBy: "u1",
+    });
+    expect("round" in payload).toBe(false); // passage 1 : champ omis
+
+    const [listRef, updates] = batchMock.update.mock.calls[0];
+    expect(listRef.__doc).toBe("shoppingLists/2026-11-21");
+    expect(updates).toEqual({ "items.lait.round": 2, "items.yaourt.round": 2 });
+    expect(batchMock.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("sans article restant, n'écrit que le paiement", async () => {
+    await payVendorRound("2026-11-21", base);
+    expect(batchMock.set).toHaveBeenCalledTimes(1);
+    expect(batchMock.update).not.toHaveBeenCalled();
+    expect(batchMock.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("paie le passage 2 et reporte vers le passage 3", async () => {
+    await payVendorRound("2026-11-21", { ...base, round: 2, leftoverItemIds: ["x"] });
+    expect(batchMock.set.mock.calls[0][1].round).toBe(2);
+    expect(batchMock.update.mock.calls[0][1]).toEqual({ "items.x.round": 3 });
+  });
+
+  it("refuse montant invalide, date invalide ou point de vente vide, sans rien écrire", async () => {
+    await expect(payVendorRound("w", { ...base, amount: 0 })).rejects.toThrow(/montant/);
+    await expect(payVendorRound("w", { ...base, amount: NaN })).rejects.toThrow(/montant/);
+    await expect(payVendorRound("w", { ...base, date: "21/11" })).rejects.toThrow(/date/);
+    await expect(payVendorRound("w", { ...base, vendor: " " })).rejects.toThrow(/point de vente/);
+    expect(batchMock.commit).not.toHaveBeenCalled();
+  });
+
+  it("ne reporte rien si le lot échoue (pas de demi-paiement)", async () => {
+    batchMock.commit.mockRejectedValueOnce(new Error("réseau"));
+    await expect(
+      payVendorRound("2026-11-21", { ...base, leftoverItemIds: ["a"] }),
+    ).rejects.toThrow("réseau");
+  });
+});
+
+describe("passages à l'ajout", () => {
+  it("mémorise le passage d'un article (seulement à partir de 2)", async () => {
+    const [first, second] = await addShoppingItems("2026-11-21", [
+      { name: "a", vendor: "Épicier", round: 1 },
+      { name: "b", vendor: "Épicier", round: 2 },
+    ]);
+    const { items } = writesTo("shoppingLists")[0][1];
+    expect("round" in items[first]).toBe(false);
+    expect(items[second].round).toBe(2);
+  });
+
+  it("mémorise le passage d'un paiement de courses, jamais pour les honoraires", async () => {
+    const base = { amount: 26, date: "2026-11-22", weekId: "2026-11-21", createdBy: "u1" };
+    await addExpense({ ...base, type: "groceries", vendor: "Épicier", round: 2 });
+    await addExpense({ ...base, type: "helper", round: 2 });
+    expect(addDocMock.mock.calls[0][1].round).toBe(2);
+    expect("round" in addDocMock.mock.calls[1][1]).toBe(false);
+  });
+});
+
+describe("updateShoppingItem (correction d'un article)", () => {
+  const previous = {
+    id: "abc",
+    name: "ancien",
+    vendor: "Épicier",
+    round: 2,
+    checked: false,
+    createdAt: 1,
+  };
+
+  it("modifie nom, traduction, quantité et point de vente par chemins de champ", async () => {
+    await updateShoppingItem("2026-11-21", previous, {
+      name: "  Tomates ",
+      translation: " طماطم ",
+      quantity: " 2 kg ",
+      vendor: "Épicier",
+    });
+    expect(updateDocMock.mock.calls[0][1]).toEqual({
+      "items.abc.name": "Tomates",
+      "items.abc.translation": "طماطم",
+      "items.abc.quantity": "2 kg",
+      "items.abc.vendor": "Épicier",
+    });
+  });
+
+  it("supprime les champs vidés", async () => {
+    await updateShoppingItem("2026-11-21", previous, {
+      name: "x",
+      translation: "",
+      quantity: "  ",
+      vendor: "Épicier",
+    });
+    const updates = updateDocMock.mock.calls[0][1];
+    expect(updates["items.abc.translation"]).toBe("__DELETE__");
+    expect(updates["items.abc.quantity"]).toBe("__DELETE__");
+  });
+
+  it("changer de point de vente remet l'article au premier passage", async () => {
+    await updateShoppingItem("2026-11-21", previous, {
+      name: "x",
+      translation: "",
+      quantity: "",
+      vendor: "Boucher",
+    });
+    const updates = updateDocMock.mock.calls[0][1];
+    expect(updates["items.abc.vendor"]).toBe("Boucher");
+    expect(updates["items.abc.round"]).toBe("__DELETE__");
+  });
+
+  it("garde le passage quand le point de vente ne change pas", async () => {
+    await updateShoppingItem("2026-11-21", previous, {
+      name: "x",
+      translation: "",
+      quantity: "",
+      vendor: "  Épicier ",
+    });
+    expect("items.abc.round" in updateDocMock.mock.calls[0][1]).toBe(false);
+  });
+
+  it("refuse un nom vide sans rien écrire", async () => {
+    await expect(
+      updateShoppingItem("2026-11-21", previous, {
+        name: "  ",
+        translation: "",
+        quantity: "",
+        vendor: "",
+      }),
+    ).rejects.toThrow(/vide/);
+    expect(updateDocMock).not.toHaveBeenCalled();
+  });
+
+  it("alimente le catalogue avec la correction", async () => {
+    await updateShoppingItem("2026-11-21", previous, {
+      name: "Tomates",
+      translation: "",
+      quantity: "2 kg",
+      vendor: "Fruits et légumes",
+    });
+    expect(writesTo("ingredients")[0][1]).toEqual({
+      name: "Tomates",
+      vendor: "Fruits et légumes",
+      quantity: "2 kg",
+    });
   });
 });

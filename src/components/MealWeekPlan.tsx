@@ -10,6 +10,7 @@ import {
 } from "../domain/mealPlan";
 import { saveMealSlot } from "../services/meals";
 import type { Dish, MealPlan, MealSlot } from "../types";
+import { TranslationInput } from "./TranslationInput";
 
 const EMPTY_SLOT: MealSlot = { items: [] };
 
@@ -35,6 +36,12 @@ function SlotEditor({
     : [];
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
+  // Plat en cours de correction/traduction (index dans le créneau).
+  const [editing, setEditing] = useState<{
+    index: number;
+    label: string;
+    translation: string;
+  } | null>(null);
 
   async function save(next: MealSlot) {
     setError(null);
@@ -55,6 +62,26 @@ function SlotEditor({
       ...slot,
       items: [...slot.items, ...labels.map((label) => ({ label }))],
     });
+  }
+
+  function handleEditSave(event: FormEvent) {
+    event.preventDefault();
+    if (!editing) return;
+    const label = editing.label.trim();
+    if (!label) {
+      setError("Le nom ne peut pas être vide.");
+      return;
+    }
+    const translation = editing.translation.trim();
+    void save({
+      ...slot,
+      items: slot.items.map((item, i) =>
+        i === editing.index
+          ? { label, ...(translation ? { translation } : {}) }
+          : item,
+      ),
+    });
+    setEditing(null);
   }
 
   return (
@@ -100,7 +127,27 @@ function SlotEditor({
               key={`${item.label}-${index}`}
               className="ht-pill ht-pill-neutral flex items-center gap-1"
             >
-              <span dir="auto">{item.label}</span>
+              <button
+                type="button"
+                aria-label={`Modifier ${item.label}`}
+                onClick={() =>
+                  setEditing({
+                    index,
+                    label: item.label,
+                    translation: item.translation ?? "",
+                  })
+                }
+                dir="auto"
+                className="text-left"
+              >
+                {item.label}
+                {item.translation && (
+                  <span className="text-[var(--ht-text-2)]">
+                    {" "}
+                    · {item.translation}
+                  </span>
+                )}
+              </button>
               <button
                 type="button"
                 aria-label={`Retirer ${item.label}`}
@@ -117,6 +164,38 @@ function SlotEditor({
             </li>
           ))}
         </ul>
+      )}
+
+      {editing && (
+        <form
+          onSubmit={handleEditSave}
+          className="flex flex-col gap-2 rounded-lg border border-[var(--ht-input-border)] p-2.5"
+        >
+          <input
+            value={editing.label}
+            onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+            aria-label={`Nom, ${mealLabel}`}
+            dir="auto"
+            className="ht-input"
+          />
+          <TranslationInput
+            value={editing.translation}
+            onChange={(translation) => setEditing({ ...editing, translation })}
+            source={editing.label}
+          />
+          <div className="flex gap-2">
+            <button type="submit" className="ht-btn-cta-sm">
+              Enregistrer
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditing(null)}
+              className="ht-btn px-3 py-1.5 text-sm"
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
       )}
 
       {inheritedFrom && (
@@ -174,7 +253,7 @@ export function MealWeekPlan({
           ))}
       </datalist>
       {daysOfWeek(plan.weekId).map((day) => (
-        <section key={day.key} className="ht-card p-4">
+        <section key={day.key} id={`day-${day.key}`} className="ht-card p-4">
           <h3 className="mb-1 text-sm font-extrabold text-[var(--ht-text)]">
             {day.fr} {day.date.getDate()}
           </h3>

@@ -70,13 +70,27 @@ export function ShoppingImport({
     setError(null);
     setBusy(true);
     try {
+      // Un même point de vente qui revient dans la liste = un nouveau passage
+      // (ex. le deuxième épicier, payé à part) : ses articles et son paiement
+      // restent séparés du premier.
+      const seen = new Map<string, number>();
+      const rounds = drafts.map((d) => {
+        const key = d.vendor.trim().replace(/\s+/g, " ").toLowerCase();
+        const round = (seen.get(key) ?? 0) + 1;
+        seen.set(key, round);
+        return round;
+      });
       await addShoppingItems(
         weekId,
-        drafts.flatMap((d) =>
-          d.group.items.map((item) => ({ ...item, vendor: d.vendor })),
+        drafts.flatMap((d, i) =>
+          d.group.items.map((item) => ({
+            ...item,
+            vendor: d.vendor,
+            round: rounds[i],
+          })),
         ),
       );
-      for (const d of drafts) {
+      for (const [i, d] of drafts.entries()) {
         const amount = Number(d.amount);
         if (d.amount.trim() !== "" && amount > 0) {
           await addExpense({
@@ -85,6 +99,7 @@ export function ShoppingImport({
             date,
             weekId,
             vendor: d.vendor,
+            round: rounds[i],
             createdBy: userId,
           });
         }

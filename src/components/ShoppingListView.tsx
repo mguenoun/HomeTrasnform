@@ -1,25 +1,43 @@
 import { useState, type FormEvent } from "react";
 import { catalogKey } from "../domain/catalog";
 import {
+  paidFor,
   sumItemPrices,
-  summarizeExpenses,
   toDateInputValue,
 } from "../domain/expenses";
-import { DEFAULT_VENDORS, groupByVendor } from "../domain/mealPlan";
+import {
+  DEFAULT_VENDORS,
+  describeGroup,
+  groupByVendor,
+  type VendorGroup,
+} from "../domain/mealPlan";
 import { formatMad } from "../domain/money";
 import {
-  addExpense,
   addShoppingItem,
+  payVendorRound,
   removeShoppingItem,
   setShoppingItemChecked,
   setShoppingItemPrice,
+  updateShoppingItem,
 } from "../services/meals";
 import type {
   CatalogIngredient,
   HouseholdExpense,
+  ShoppingItem,
   ShoppingList,
 } from "../types";
 import { ShoppingImport } from "./ShoppingImport";
+import { TranslationInput } from "./TranslationInput";
+
+const groupKey = (group: { vendor: string; round: number }) =>
+  `${group.vendor}\u0000${group.round}`;
+
+interface ItemDraft {
+  name: string;
+  translation: string;
+  quantity: string;
+  vendor: string;
+}
 
 export function ShoppingListView({
   list,
@@ -37,19 +55,20 @@ export function ShoppingListView({
   const [vendor, setVendor] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [hideChecked, setHideChecked] = useState(false);
-  // Point de vente dont le paiement est en cours de saisie ("Terminer ici").
+  // Passage dont le paiement est en cours de saisie ("Payer ici").
   const [paying, setPaying] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
   const [payNote, setPayNote] = useState("");
   const [paidMessage, setPaidMessage] = useState<string | null>(null);
+  // Article en cours de correction/traduction.
+  const [editing, setEditing] = useState<{ id: string; draft: ItemDraft } | null>(
+    null,
+  );
 
   const items = Object.values(list.items);
   const groups = groupByVendor(items);
   const bought = items.filter((i) => i.checked).length;
   const remaining = items.length - bought;
-  const paidByVendor = new Map(
-    summarizeExpenses(expenses).byVendor.map((v) => [v.vendor, v]),
-  );
   const usedVendors = items.map((i) => i.vendor).filter((v): v is string => !!v);
   const knownVendors = [...new Set([...DEFAULT_VENDORS, ...usedVendors])];
 
@@ -86,27 +105,58 @@ export function ShoppingListView({
     void run(() => addShoppingItem(list.weekId, input));
   }
 
-  function startPayment(group: { vendor: string; items: typeof items }) {
+  function startEdit(item: ShoppingItem) {
+    setEditing({
+      id: item.id,
+      draft: {
+        name: item.name,
+        translation: item.translation ?? "",
+        quantity: item.quantity ?? "",
+        vendor: item.vendor ?? "",
+      },
+    });
+  }
+
+  async function saveEdit(event: FormEvent, item: ShoppingItem) {
+    event.preventDefault();
+    if (!editing) return;
+    setError(null);
+    try {
+      await updateShoppingItem(list.weekId, item, editing.draft);
+      setEditing(null);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Échec de l'enregistrement.",
+      );
+    }
+  }
+
+  function startPayment(group: VendorGroup) {
     const detail = sumItemPrices(group.items);
-    setPaying(group.vendor);
+    setPaying(groupKey(group));
     setPayAmount(detail > 0 ? String(detail) : "");
     setPayNote("");
     setPaidMessage(null);
   }
 
-  async function confirmPayment(vendorName: string) {
+  async function confirmPayment(group: VendorGroup) {
     setError(null);
+    const leftover = group.items.filter((i) => !i.checked);
     try {
-      await addExpense({
-        type: "groceries",
+      await payVendorRound(list.weekId, {
+        vendor: group.vendor,
+        round: group.round,
         amount: Number(payAmount),
         date: toDateInputValue(new Date()),
-        weekId: list.weekId,
-        vendor: vendorName,
         note: payNote,
         createdBy: userId,
+        leftoverItemIds: leftover.map((i) => i.id),
       });
-      setPaidMessage(`Paiement enregistré chez ${vendorName}.`);
+      setPaidMessage(
+        leftover.length > 0
+          ? `Paiement enregistré chez ${group.vendor}. ${leftover.length} article${leftover.length > 1 ? "s" : ""} non pris reporté${leftover.length > 1 ? "s" : ""} vers « ${describeGroup(group.vendor, group.round + 1)} ».`
+          : `Paiement enregistré chez ${group.vendor}.`,
+      );
       setPaying(null);
     } catch (err) {
       setError(
@@ -216,24 +266,26 @@ export function ShoppingListView({
         </p>
       ) : (
         groups.map((group) => {
-          const paid = paidByVendor.get(group.vendor);
+          const key = groupKey(group);
+          const title = describeGroup(group.vendor, group.round);
+          const paid = paidFor(expenses, group.vendor, group.round);
           const detail = sumItemPrices(group.items);
           const groupBought = group.items.filter((i) => i.checked).length;
           const visible = hideChecked
             ? group.items.filter((i) => !i.checked)
             : group.items;
           return (
-            <section key={group.vendor || "__none"} className="ht-card">
+            <section key={key} className="ht-card">
               <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-4 pt-3">
                 <h3 className="text-sm font-extrabold text-[var(--ht-text)]">
-                  {group.vendor || "Sans point de vente"}{" "}
+                  {title}{" "}
                   <span className="font-normal text-[var(--ht-text-2)]">
                     {groupBought}/{group.items.length} pris
                     {groupBought === group.items.length && " ✓"}
                   </span>
                 </h3>
                 <p className="text-xs text-[var(--ht-text-2)]">
-                  {paid
+                  {paid.payments > 0
                     ? `Payé ${formatMad(paid.total)}${paid.payments > 1 ? ` (${paid.payments} paiements)` : ""}`
                     : "Pas encore payé"}
                   {detail > 0 && ` · détail articles ${formatMad(detail)}`}
@@ -246,113 +298,214 @@ export function ShoppingListView({
                 </p>
               ) : (
                 <ul className="divide-y divide-[var(--ht-input-border)]">
-                  {visible.map((item) => (
-                    <li
-                      key={item.id}
-                      className="flex items-center gap-3 px-4 py-2.5"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={item.checked}
-                        aria-label={`Acheté : ${item.name}`}
-                        onChange={(e) =>
-                          void run(() =>
-                            setShoppingItemChecked(
-                              list.weekId,
-                              item.id,
-                              e.target.checked,
-                            ),
-                          )
-                        }
-                      />
-                      <span
-                        dir="auto"
-                        className={`flex-1 text-sm ${
-                          item.checked
-                            ? "text-[var(--ht-text-2)] line-through"
-                            : "text-[var(--ht-text)]"
-                        }`}
+                  {visible.map((item) =>
+                    editing?.id === item.id ? (
+                      <li key={item.id} className="px-4 py-2.5">
+                        <form
+                          onSubmit={(e) => void saveEdit(e, item)}
+                          className="flex flex-col gap-2"
+                        >
+                          <input
+                            value={editing.draft.name}
+                            onChange={(e) =>
+                              setEditing({
+                                ...editing,
+                                draft: { ...editing.draft, name: e.target.value },
+                              })
+                            }
+                            aria-label="Nom de l'article"
+                            dir="auto"
+                            className="ht-input"
+                          />
+                          <TranslationInput
+                            value={editing.draft.translation}
+                            onChange={(translation) =>
+                              setEditing({
+                                ...editing,
+                                draft: { ...editing.draft, translation },
+                              })
+                            }
+                            source={editing.draft.name}
+                          />
+                          <div className="flex flex-col gap-2 sm:flex-row">
+                            <input
+                              value={editing.draft.quantity}
+                              onChange={(e) =>
+                                setEditing({
+                                  ...editing,
+                                  draft: {
+                                    ...editing.draft,
+                                    quantity: e.target.value,
+                                  },
+                                })
+                              }
+                              placeholder="Quantité"
+                              aria-label="Quantité de l'article"
+                              dir="auto"
+                              className="ht-input sm:w-40"
+                            />
+                            <input
+                              value={editing.draft.vendor}
+                              onChange={(e) =>
+                                setEditing({
+                                  ...editing,
+                                  draft: {
+                                    ...editing.draft,
+                                    vendor: e.target.value,
+                                  },
+                                })
+                              }
+                              placeholder="Point de vente"
+                              aria-label="Point de vente de l'article"
+                              list="meal-vendors"
+                              className="ht-input sm:w-40"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <button type="submit" className="ht-btn-cta-sm">
+                              Enregistrer
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditing(null)}
+                              className="ht-btn px-3 py-1.5 text-sm"
+                            >
+                              Annuler
+                            </button>
+                          </div>
+                        </form>
+                      </li>
+                    ) : (
+                      <li
+                        key={item.id}
+                        className="flex items-center gap-3 px-4 py-2.5"
                       >
-                        {item.name}
-                        {item.quantity && (
-                          <span className="text-[var(--ht-text-2)]">
-                            {" "}
-                            — {item.quantity}
-                          </span>
-                        )}
-                      </span>
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="any"
-                        placeholder="Prix"
-                        aria-label={`Prix, ${item.name}`}
-                        defaultValue={item.price ?? ""}
-                        onBlur={(e) => {
-                          const raw = e.target.value.trim();
-                          const next = raw === "" ? null : Number(raw);
-                          if (next === (item.price ?? null)) return;
-                          void run(() =>
-                            setShoppingItemPrice(list.weekId, item.id, next),
-                          );
-                        }}
-                        className="ht-input w-16 py-0.5 text-right text-xs"
-                      />
-                      <button
-                        type="button"
-                        aria-label={`Supprimer ${item.name}`}
-                        onClick={() =>
-                          void run(() =>
-                            removeShoppingItem(list.weekId, item.id),
-                          )
-                        }
-                        className="text-[var(--ht-text-2)]"
-                      >
-                        ×
-                      </button>
-                    </li>
-                  ))}
+                        <input
+                          type="checkbox"
+                          checked={item.checked}
+                          aria-label={`Acheté : ${item.name}`}
+                          onChange={(e) =>
+                            void run(() =>
+                              setShoppingItemChecked(
+                                list.weekId,
+                                item.id,
+                                e.target.checked,
+                              ),
+                            )
+                          }
+                        />
+                        <span
+                          dir="auto"
+                          className={`flex-1 text-sm ${
+                            item.checked
+                              ? "text-[var(--ht-text-2)] line-through"
+                              : "text-[var(--ht-text)]"
+                          }`}
+                        >
+                          {item.name}
+                          {item.translation && (
+                            <span className="text-[var(--ht-text-2)]">
+                              {" "}
+                              · {item.translation}
+                            </span>
+                          )}
+                          {item.quantity && (
+                            <span className="text-[var(--ht-text-2)]">
+                              {" "}
+                              — {item.quantity}
+                            </span>
+                          )}
+                        </span>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="any"
+                          placeholder="Prix"
+                          aria-label={`Prix, ${item.name}`}
+                          defaultValue={item.price ?? ""}
+                          onBlur={(e) => {
+                            const raw = e.target.value.trim();
+                            const next = raw === "" ? null : Number(raw);
+                            if (next === (item.price ?? null)) return;
+                            void run(() =>
+                              setShoppingItemPrice(list.weekId, item.id, next),
+                            );
+                          }}
+                          className="ht-input w-16 py-0.5 text-right text-xs"
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Modifier ${item.name}`}
+                          onClick={() => startEdit(item)}
+                          className="text-[var(--ht-text-2)]"
+                        >
+                          ✎
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Supprimer ${item.name}`}
+                          onClick={() =>
+                            void run(() =>
+                              removeShoppingItem(list.weekId, item.id),
+                            )
+                          }
+                          className="text-[var(--ht-text-2)]"
+                        >
+                          ×
+                        </button>
+                      </li>
+                    ),
+                  )}
                 </ul>
               )}
 
               {group.vendor && (
                 <div className="border-t border-[var(--ht-input-border)] px-4 py-2.5">
-                  {paying === group.vendor ? (
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="any"
-                        value={payAmount}
-                        onChange={(e) => setPayAmount(e.target.value)}
-                        placeholder="Montant payé (MAD)"
-                        aria-label={`Montant payé chez ${group.vendor}`}
-                        className="ht-input sm:w-44"
-                      />
-                      <input
-                        value={payNote}
-                        onChange={(e) => setPayNote(e.target.value)}
-                        placeholder="Note (facultatif)"
-                        aria-label={`Note du paiement chez ${group.vendor}`}
-                        dir="auto"
-                        className="ht-input flex-1"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => void confirmPayment(group.vendor)}
-                        className="ht-btn-cta-sm"
-                      >
-                        Valider
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPaying(null)}
-                        className="ht-btn px-3 py-1.5 text-sm"
-                      >
-                        Annuler
-                      </button>
+                  {paying === key ? (
+                    <div className="flex flex-col gap-2">
+                      {groupBought < group.items.length && (
+                        <p className="text-xs text-[var(--ht-text-2)]">
+                          Les {group.items.length - groupBought} articles non pris
+                          iront dans « {describeGroup(group.vendor, group.round + 1)} »
+                          pour garder les paiements séparés.
+                        </p>
+                      )}
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          min="0"
+                          step="any"
+                          value={payAmount}
+                          onChange={(e) => setPayAmount(e.target.value)}
+                          placeholder="Montant payé (MAD)"
+                          aria-label={`Montant payé chez ${title}`}
+                          className="ht-input sm:w-44"
+                        />
+                        <input
+                          value={payNote}
+                          onChange={(e) => setPayNote(e.target.value)}
+                          placeholder="Note (facultatif)"
+                          aria-label={`Note du paiement chez ${title}`}
+                          dir="auto"
+                          className="ht-input flex-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void confirmPayment(group)}
+                          className="ht-btn-cta-sm"
+                        >
+                          Valider
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPaying(null)}
+                          className="ht-btn px-3 py-1.5 text-sm"
+                        >
+                          Annuler
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <button
@@ -361,8 +514,8 @@ export function ShoppingListView({
                       className="ht-btn px-3 py-1.5 text-sm"
                     >
                       {groupBought < group.items.length
-                        ? `Payer ${group.vendor} (il reste ${group.items.length - groupBought})`
-                        : `Payer ${group.vendor}`}
+                        ? `Payer ${title} (il reste ${group.items.length - groupBought})`
+                        : `Payer ${title}`}
                     </button>
                   )}
                 </div>

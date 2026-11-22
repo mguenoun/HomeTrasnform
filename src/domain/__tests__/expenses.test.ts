@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { HouseholdExpense } from "../../types";
-import { sumItemPrices, summarizeExpenses, toDateInputValue } from "../expenses";
+import { paidFor, sumItemPrices, summarizeExpenses, toDateInputValue } from "../expenses";
 
 const expense = (
   over: Partial<HouseholdExpense> & Pick<HouseholdExpense, "type" | "amount">,
@@ -68,5 +68,38 @@ describe("toDateInputValue", () => {
   it("formate en heure locale, sans décalage UTC", () => {
     expect(toDateInputValue(new Date(2026, 10, 21, 0, 30))).toBe("2026-11-21");
     expect(toDateInputValue(new Date(2026, 0, 5, 23, 59))).toBe("2026-01-05");
+  });
+});
+
+describe("paidFor (par passage)", () => {
+  const list = [
+    expense({ type: "groceries", amount: 361, vendor: "Épicier" }),
+    expense({ type: "groceries", amount: 26, vendor: "Épicier", round: 2 }),
+    expense({ type: "groceries", amount: 10, vendor: "Épicier" }),
+    expense({ type: "groceries", amount: 300, vendor: "Boucher" }),
+    expense({ type: "helper", amount: 200 }),
+  ];
+
+  it("ne cumule que les paiements du passage demandé", () => {
+    expect(paidFor(list, "Épicier", 1)).toEqual({ total: 371, payments: 2 });
+    expect(paidFor(list, "Épicier", 2)).toEqual({ total: 26, payments: 1 });
+  });
+
+  it("traite un paiement sans passage comme le passage 1", () => {
+    expect(paidFor(list, "Boucher", 1)).toEqual({ total: 300, payments: 1 });
+  });
+
+  it("ignore les honoraires et renvoie zéro sans paiement", () => {
+    expect(paidFor(list, "Poissonnier", 1)).toEqual({ total: 0, payments: 0 });
+    expect(paidFor(list, "", 1)).toEqual({ total: 0, payments: 0 });
+  });
+
+  it("le total par point de vente reste cumulé sur tous les passages", () => {
+    const summary = summarizeExpenses(list);
+    expect(summary.byVendor.find((v) => v.vendor === "Épicier")).toEqual({
+      vendor: "Épicier",
+      total: 397,
+      payments: 3,
+    });
   });
 });

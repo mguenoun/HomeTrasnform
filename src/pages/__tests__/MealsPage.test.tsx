@@ -30,11 +30,17 @@ vi.mock("../../services/meals", () => ({
   addShoppingItems: vi.fn().mockResolvedValue([]),
   setShoppingItemChecked: vi.fn().mockResolvedValue(undefined),
   setShoppingItemPrice: vi.fn().mockResolvedValue(undefined),
+  payVendorRound: vi.fn().mockResolvedValue(undefined),
+  updateShoppingItem: vi.fn().mockResolvedValue(undefined),
   removeShoppingItem: vi.fn().mockResolvedValue(undefined),
   addExpense: vi.fn().mockResolvedValue(undefined),
   removeExpense: vi.fn().mockResolvedValue(undefined),
   saveDish: vi.fn().mockResolvedValue("id"),
   deleteDish: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../services/translate", () => ({
+  suggestTranslations: vi.fn(),
 }));
 
 import {
@@ -48,11 +54,14 @@ import {
   addExpense,
   addShoppingItem,
   addShoppingItems,
+  payVendorRound,
+  updateShoppingItem,
   saveMealSlot,
   saveMealSlots,
   saveDish,
   deleteDish,
 } from "../../services/meals";
+import { suggestTranslations } from "../../services/translate";
 import { MealsPage } from "../MealsPage";
 
 const mockedUseMealPlan = vi.mocked(useMealPlan);
@@ -244,9 +253,9 @@ describe("MealsPage — courses", () => {
     await userEvent.click(screen.getByRole("button", { name: /Importer 3 articles/ }));
 
     expect(addShoppingItems).toHaveBeenCalledWith("2026-11-21", [
-      { name: "البيض", vendor: "Œufs" },
-      { name: "توم", quantity: "نصف كيلو", vendor: "Épicier" },
-      { name: "كمون", quantity: "5 دراهم", vendor: "Épicier" },
+      { name: "البيض", vendor: "Œufs", round: 1 },
+      { name: "توم", quantity: "نصف كيلو", vendor: "Épicier", round: 1 },
+      { name: "كمون", quantity: "5 دراهم", vendor: "Épicier", round: 1 },
     ]);
     expect(addExpense).toHaveBeenCalledTimes(2);
     expect(addExpense).toHaveBeenCalledWith(
@@ -387,20 +396,24 @@ describe("MealsPage — mode courses par point de vente", () => {
     await userEvent.type(amount, "300");
     await userEvent.click(screen.getByRole("button", { name: "Valider" }));
 
-    expect(addExpense).toHaveBeenCalledWith(
+    // Le paiement et le report de l'article non pris (Kefta) partent ensemble.
+    expect(payVendorRound).toHaveBeenCalledWith(
+      "2026-11-21",
       expect.objectContaining({
-        type: "groceries",
-        amount: 300,
         vendor: "Boucher",
-        weekId: "2026-11-21",
+        round: 1,
+        amount: 300,
         createdBy: "u1",
+        leftoverItemIds: ["b"],
       }),
     );
-    expect(screen.getByRole("status")).toHaveTextContent("Paiement enregistré chez Boucher");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "1 article non pris reporté vers « Boucher — 2e passage »",
+    );
   });
 
   it("refuse un paiement sans montant et n'écrit rien", async () => {
-    vi.mocked(addExpense).mockRejectedValueOnce(
+    vi.mocked(payVendorRound).mockRejectedValueOnce(
       new Error("Le montant doit être un nombre positif."),
     );
     setup({}, { items: shoppingItems });
@@ -588,5 +601,216 @@ describe("MealsPage — bibliothèque de plats", () => {
     await userEvent.type(screen.getByLabelText("Article"), "Piles");
     await userEvent.click(screen.getByRole("button", { name: "Ajouter" }));
     expect(addShoppingItem).toHaveBeenCalled();
+  });
+});
+
+describe("MealsPage — vue calendrier du programme", () => {
+  const plan = {
+    slots: {
+      sat_snack: { items: [{ label: "Cheesecake" }] },
+      sat_lunch: { diners: 6, items: [{ label: "Couscous" }, { label: "Salade" }] },
+      sat_dinner: { items: [{ label: "شعرية الحليب", translation: "Vermicelles au lait" }] },
+      tue_snack: { items: [{ label: "Cake" }] },
+    },
+  };
+
+  it("affiche un jour par ligne et trois colonnes, comme le cahier", async () => {
+    setup(plan);
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+
+    expect(screen.getByRole("columnheader", { name: "Petit-déj & goûter" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Déjeuner" })).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Dîner" })).toBeInTheDocument();
+    expect(within(screen.getByTestId("cell-sat-lunch")).getByText("Couscous")).toBeInTheDocument();
+    expect(within(screen.getByTestId("cell-sat-lunch")).getByText("6 p.")).toBeInTheDocument();
+    expect(within(screen.getByTestId("cell-sat-dinner")).getByText("Vermicelles au lait")).toBeInTheDocument();
+  });
+
+  it("reporte les snacks sur les jours vides (en italique) et laisse vides déjeuner/dîner", async () => {
+    setup(plan);
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+
+    // dimanche : pas de snack propre -> reprend Cheesecake du samedi
+    expect(within(screen.getByTestId("cell-sun-snack")).getByText("Cheesecake")).toBeInTheDocument();
+    // mercredi reprend le cake du mardi
+    expect(within(screen.getByTestId("cell-wed-snack")).getByText("Cake")).toBeInTheDocument();
+    // un déjeuner vide n'est jamais reporté
+    expect(within(screen.getByTestId("cell-sun-lunch")).getByText("—")).toBeInTheDocument();
+  });
+
+  it("un tap sur un jour ouvre le détail de la semaine", async () => {
+    setup(plan);
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+    await userEvent.click(screen.getByRole("button", { name: /Détail du mardi/ }));
+
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getAllByLabelText(/Ajouter un plat, Déjeuner/).length).toBe(7);
+  });
+
+  it("le calendrier reste proposé même sans aucun repas", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+    expect(screen.getAllByText("—").length).toBeGreaterThan(10);
+  });
+});
+
+describe("MealsPage — passages multiples chez un point de vente", () => {
+  it("affiche le passage 2 comme un groupe à part, avec son propre paiement", async () => {
+    setup(
+      {},
+      {
+        items: {
+          a: { id: "a", name: "Farine", vendor: "Épicier", checked: true, createdAt: 1 },
+          b: { id: "b", name: "Lait", vendor: "Épicier", round: 2, checked: false, createdAt: 2 },
+        },
+      },
+      [
+        expense({ type: "groceries", amount: 361, vendor: "Épicier" }),
+        expense({ type: "groceries", amount: 26, vendor: "Épicier", round: 2 }),
+      ],
+    );
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+
+    const first = screen.getByRole("heading", { name: /^Épicier 1\/1/ }).closest("section")!;
+    expect(within(first).getByText(/Payé 361,00 MAD/)).toBeInTheDocument();
+    const second = screen.getByRole("heading", { name: /Épicier — 2e passage/ }).closest("section")!;
+    expect(within(second).getByText("Lait")).toBeInTheDocument();
+    expect(within(second).getByText(/Payé 26,00 MAD/)).toBeInTheDocument();
+  });
+
+  it("annonce avant de payer où iront les articles non pris", async () => {
+    setup({}, {
+      items: {
+        a: { id: "a", name: "Farine", vendor: "Épicier", checked: true, createdAt: 1 },
+        b: { id: "b", name: "Lait", vendor: "Épicier", checked: false, createdAt: 2 },
+      },
+    });
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(screen.getByRole("button", { name: /Payer Épicier/ }));
+
+    expect(
+      screen.getByText(/Les 1 articles non pris iront dans « Épicier — 2e passage »/),
+    ).toBeInTheDocument();
+  });
+
+  it("un point de vente répété dans la liste collée devient un passage 2", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(screen.getByRole("button", { name: "Coller une liste WhatsApp" }));
+    await userEvent.type(
+      screen.getByLabelText("Liste à importer"),
+      "# Épicier{enter}فارينة{enter}361dh{enter}{enter}# Épicier{enter}حليب{enter}26dh",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Analyser" }));
+    await userEvent.click(screen.getByRole("button", { name: /Importer 2 articles/ }));
+
+    expect(addShoppingItems).toHaveBeenCalledWith("2026-11-21", [
+      { name: "فارينة", vendor: "Épicier", round: 1 },
+      { name: "حليب", vendor: "Épicier", round: 2 },
+    ]);
+    expect(addExpense).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 26, vendor: "Épicier", round: 2 }),
+    );
+  });
+});
+
+describe("MealsPage — correction et traduction", () => {
+  const mockedSuggest = vi.mocked(suggestTranslations);
+  const shopping = {
+    items: {
+      a: { id: "a", name: "طماطم", vendor: "Fruits et légumes", quantity: "2 كيلو", checked: false, createdAt: 1 },
+    },
+  };
+
+  it("corrige un article de courses : nom, quantité, point de vente", async () => {
+    setup({}, shopping);
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(screen.getByRole("button", { name: "Modifier طماطم" }));
+
+    const name = screen.getByLabelText("Nom de l'article");
+    expect(name).toHaveValue("طماطم");
+    await userEvent.clear(name);
+    await userEvent.type(name, "مطيشة");
+    await userEvent.clear(screen.getByLabelText("Quantité de l'article"));
+    await userEvent.type(screen.getByLabelText("Quantité de l'article"), "3 كيلو");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(updateShoppingItem).toHaveBeenCalledWith(
+      "2026-11-21",
+      expect.objectContaining({ id: "a" }),
+      { name: "مطيشة", translation: "", quantity: "3 كيلو", vendor: "Fruits et légumes" },
+    );
+  });
+
+  it("propose des traductions, qu'on choisit avant d'enregistrer (rien n'est écrit tout seul)", async () => {
+    mockedSuggest.mockResolvedValueOnce(["Tomate", "Tomates"]);
+    setup({}, shopping);
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(screen.getByRole("button", { name: "Modifier طماطم" }));
+    await userEvent.click(screen.getByRole("button", { name: "Suggérer" }));
+
+    expect(mockedSuggest).toHaveBeenCalledWith("طماطم");
+    expect(updateShoppingItem).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Tomate" }));
+    expect(screen.getByLabelText("Traduction")).toHaveValue("Tomate");
+    expect(updateShoppingItem).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(updateShoppingItem).toHaveBeenCalledWith(
+      "2026-11-21",
+      expect.anything(),
+      expect.objectContaining({ translation: "Tomate" }),
+    );
+  });
+
+  it("dit quand le service ne trouve rien de fiable, et laisse saisir à la main", async () => {
+    mockedSuggest.mockResolvedValueOnce([]);
+    setup({}, shopping);
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(screen.getByRole("button", { name: "Modifier طماطم" }));
+    await userEvent.click(screen.getByRole("button", { name: "Suggérer" }));
+
+    expect(screen.getByText(/Aucune suggestion fiable/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText("Traduction"), "Tomates");
+    expect(screen.getByLabelText("Traduction")).toHaveValue("Tomates");
+  });
+
+  it("affiche l'erreur du service de traduction sans bloquer l'édition", async () => {
+    mockedSuggest.mockRejectedValueOnce(new Error("Quota gratuit de traduction épuisé pour aujourd'hui."));
+    setup({}, shopping);
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    await userEvent.click(screen.getByRole("button", { name: "Modifier طماطم" }));
+    await userEvent.click(screen.getByRole("button", { name: "Suggérer" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("Quota");
+    expect(screen.getByRole("button", { name: "Enregistrer" })).toBeEnabled();
+  });
+
+  it("corrige et traduit un plat du programme", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "كسكسو" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier كسكسو" }));
+    await userEvent.type(screen.getByLabelText("Traduction"), "Couscous");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "كسكسو", translation: "Couscous" }],
+    });
+  });
+
+  it("refuse de vider le nom d'un plat du programme", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "كسكسو" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier كسكسو" }));
+    await userEvent.clear(screen.getByLabelText("Nom, Déjeuner"));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent("vide");
+  });
+
+  it("annuler une correction n'écrit rien", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "كسكسو" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier كسكسو" }));
+    await userEvent.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(saveMealSlot).not.toHaveBeenCalled();
   });
 });

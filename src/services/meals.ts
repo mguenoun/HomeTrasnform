@@ -9,6 +9,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
@@ -152,6 +153,8 @@ export interface NewShoppingItemInput {
   quantity?: string;
   vendor?: string;
   price?: number;
+  /** Passage chez ce point de vente ; absent ou 1 = premier. */
+  round?: number;
 }
 
 /** Espaces normalisés ; chaîne vide si absent. */
@@ -183,6 +186,7 @@ function buildShoppingItem(
     quantity: input.quantity?.trim() || undefined,
     vendor: normalizeVendor(input.vendor) || undefined,
     price: input.price,
+    round: input.round && input.round > 1 ? input.round : undefined,
     checked: false,
     // L'index garde l'ordre de saisie quand plusieurs articles sont ajoutés
     // dans la même milliseconde (import d'une liste collée).
@@ -293,6 +297,8 @@ export interface NewExpenseInput {
   date: string;
   weekId: string;
   vendor?: string;
+  /** Passage chez ce point de vente ; absent ou 1 = premier. */
+  round?: number;
   note?: string;
   createdBy: string;
 }
@@ -317,6 +323,10 @@ export async function addExpense(input: NewExpenseInput): Promise<void> {
       // Un paiement de la personne de ménage n'a pas de point de vente.
       vendor:
         input.type === "groceries" ? normalizeVendor(input.vendor) : undefined,
+      round:
+        input.type === "groceries" && input.round && input.round > 1
+          ? input.round
+          : undefined,
       note: input.note?.trim() || undefined,
       createdBy: input.createdBy,
       createdAt: Date.now(),
@@ -470,4 +480,113 @@ export function subscribeToIngredients(
         .sort((a, b) => a.name.localeCompare(b.name)),
     );
   });
+}
+
+// ---------------------------------------------------------------------------
+// Paiement d'un passage chez un point de vente, et correction d'un article.
+// ---------------------------------------------------------------------------
+
+export interface PaymentInput {
+  vendor: string;
+  /** Passage payé (1 = premier). */
+  round: number;
+  amount: number;
+  /** "YYYY-MM-DD" */
+  date: string;
+  note?: string;
+  createdBy: string;
+  /** Articles non pris : reportés au passage suivant du même point de vente. */
+  leftoverItemIds: string[];
+}
+
+/**
+ * Enregistre le paiement d'un passage et reporte les articles non pris au
+ * passage suivant, de façon atomique : jamais un paiement sans report (les
+ * articles manquants resteraient dans un passage déjà payé), ni l'inverse.
+ * Garde ainsi les paiements séparés (ex. le lait et le yaourt, payés plus tard
+ * chez un autre épicier, forment « Épicier — 2e passage »).
+ */
+export async function payVendorRound(
+  weekId: string,
+  input: PaymentInput,
+): Promise<void> {
+  const vendor = normalizeVendor(input.vendor);
+  if (!vendor) {
+    throw new Error("Indiquez le point de vente.");
+  }
+  if (!Number.isFinite(input.amount) || input.amount <= 0) {
+    throw new Error("Le montant doit être un nombre positif.");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+    throw new Error("La date est invalide.");
+  }
+  const round = input.round > 1 ? input.round : 1;
+  const batch = writeBatch(db);
+  batch.set(
+    doc(collection(db, EXPENSES)),
+    stripUndefined({
+      type: "groceries",
+      amount: input.amount,
+      date: input.date,
+      weekId,
+      vendor,
+      round: round > 1 ? round : undefined,
+      note: input.note?.trim() || undefined,
+      createdBy: input.createdBy,
+      createdAt: Date.now(),
+    }),
+  );
+  if (input.leftoverItemIds.length > 0) {
+    batch.update(
+      doc(db, SHOPPING_LISTS, weekId),
+      Object.fromEntries(
+        input.leftoverItemIds.map((id) => [`items.${id}.round`, round + 1]),
+      ),
+    );
+  }
+  await batch.commit();
+}
+
+export interface ShoppingItemPatch {
+  name: string;
+  translation: string;
+  quantity: string;
+  vendor: string;
+}
+
+/**
+ * Corrige un article : nom, traduction, quantité, point de vente. Un champ vidé
+ * est supprimé. Changer de point de vente remet l'article au premier passage.
+ */
+export async function updateShoppingItem(
+  weekId: string,
+  previous: ShoppingItem,
+  patch: ShoppingItemPatch,
+): Promise<void> {
+  const name = patch.name.trim();
+  if (!name) {
+    throw new Error("Le nom de l'article ne peut pas être vide.");
+  }
+  const vendor = normalizeVendor(patch.vendor);
+  const field = (key: string) => `items.${previous.id}.${key}`;
+  const optional = (key: string, value: string): [string, unknown] => [
+    field(key),
+    value ? value : deleteField(),
+  ];
+  const quantity = patch.quantity.trim();
+  await updateDoc(
+    doc(db, SHOPPING_LISTS, weekId),
+    Object.fromEntries([
+      [field("name"), name],
+      optional("translation", patch.translation.trim()),
+      optional("quantity", quantity),
+      optional("vendor", vendor),
+      ...(vendor !== normalizeVendor(previous.vendor)
+        ? [[field("round"), deleteField()]]
+        : []),
+    ]),
+  );
+  await rememberIngredients([
+    { name, vendor: vendor || undefined, quantity: quantity || undefined },
+  ]);
 }
