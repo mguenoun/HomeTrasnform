@@ -97,7 +97,7 @@ détail épique par épique ; en résumé :
   mieux » : une panne du référentiel ne bloque pas la saisie). Précisions de
   l'utilisateur sur l'import : « و » = « et » (ôté en tête de ligne sauf devant
   ورق/ورد/وزن/وجبة/وسط/وقت), « حك » = boîte (ex. « حك ماييص » = 1 boîte de maïs),
-  « ليشو » = un chou.
+  « ليشو » = un chou, « طون » = thon (PAS une unité : « جوج طون زيت » = 2 boîtes de thon à l’huile), « حك مطيشة … » = bouteille en verre de concentré de tomates de 2 kg.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

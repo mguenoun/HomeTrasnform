@@ -137,6 +137,33 @@ describe("parseShoppingLine", () => {
     });
   });
 
+  it("« جوج طون زيت » = 2 boîtes de thon à l'huile (طون est le thon, pas une unité)", () => {
+    expect(parseShoppingLine("—جوج طون زيت")).toEqual({
+      name: "طون زيت",
+      quantity: "جوج",
+    });
+  });
+
+  it("importe sans les perdre les lignes avec faute de frappe ou nom ambigu", () => {
+    // Faute de saisie de la source (caractères illisibles) : importée telle quelle,
+    // à corriger dans la liste.
+    expect(parseShoppingLine("—وباكية ككاو غ٠ط٠")).toEqual({
+      name: "ككاو غ٠ط٠",
+      quantity: "باكية",
+    });
+    // Sachet de levure chimique ; courgettes (« كرجيك » = faute pour « كرجيت »).
+    expect(parseShoppingLine("—باكية خمرات حمرين")?.quantity).toBe("باكية");
+    expect(parseShoppingLine("—وكيلو كرعة كرجيك")).toEqual({
+      name: "كرعة كرجيك",
+      quantity: "كيلو",
+    });
+    // Bouteille en verre de concentré de tomates de 2 kg : la phrase est gardée.
+    expect(parseShoppingLine("—حك مطيشة كبير جاجة من وزن 2كيلو")).toEqual({
+      name: "مطيشة كبير جاجة من وزن 2كيلو",
+      quantity: "حك",
+    });
+  });
+
   it("retire le « ديال » (de) en tête du nom", () => {
     expect(parseShoppingLine("—باكية ديال نصف سباكيتي")?.name).toBe("نصف سباكيتي");
   });

@@ -27,7 +27,8 @@ const AMOUNT_LINE =
 
 const NUM = String.raw`(?:\d+(?:[.,/]\d+)?|جوج|نصف|ربعة|ربع|ثلاثة|تلاتة)`;
 // "حك" = boîte (de conserve), confirmé par l'utilisateur ("حك ماييص" = 1 boîte de maïs).
-const UNIT = String.raw`(?:كيلو|كغ|غرام|لتر|دراهم|درهم|باكية|باكيات|دنون|طون|علبة|حك|kg|g|l|dhs?|paquets?|boîtes?|bottes?)`;
+// "طون" n'est PAS une unité : c'est le thon ("جوج طون زيت" = 2 boîtes de thon à l'huile).
+const UNIT = String.raw`(?:كيلو|كغ|غرام|لتر|دراهم|درهم|باكية|باكيات|دنون|علبة|حك|kg|g|l|dhs?|paquets?|boîtes?|bottes?)`;
 // nombre et/ou unité en tête, éventuellement suivi de "و نصف"/"ونصف" ("كيلو و نصف")
 const QUANTITY = new RegExp(
   `^(?=[^\\s])(${NUM})?\\s*(${UNIT})?(?:\\s*و\\s*(${NUM}))?(?=\\s|$)`,
