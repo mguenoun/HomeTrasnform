@@ -215,8 +215,10 @@ export interface ShoppingItem {
   translation?: string;
   /** Texte libre : "2 kg", "5 DH", "1 paquet", "1/4 kg"… */
   quantity?: string;
-  /** Point de vente (boucher, épicier…) ; absent = non classé. */
+  /** Point de vente prévu (boucher, épicier…) ; absent = non classé. */
   vendor?: string;
+  /** Prix payé pour cet article (MAD), facultatif : détail, pas la source de vérité. */
+  price?: number;
   checked: boolean;
   createdAt: number;
 }
@@ -225,6 +227,27 @@ export interface ShoppingList {
   weekId: string;
   /** Map par id : permet de cocher un article sans réécrire toute la liste. */
   items: Record<string, ShoppingItem>;
-  /** Montant payé (MAD) par point de vente — alimente les dépenses (étape 4). */
-  vendorAmounts: Record<string, number>;
+}
+
+export type ExpenseType = "groceries" | "helper";
+
+/**
+ * Un paiement réel. Distinct du point de vente *prévu* sur un article : un même
+ * point de vente peut donner lieu à plusieurs paiements (ex. lait et yaourt
+ * achetés plus tard chez un autre épicier), à des dates différentes.
+ */
+export interface HouseholdExpense {
+  id: string;
+  type: ExpenseType;
+  /** MAD. */
+  amount: number;
+  /** "YYYY-MM-DD". */
+  date: string;
+  /** Semaine du programme à laquelle le paiement est rattaché. */
+  weekId: string;
+  /** Point de vente (courses uniquement). */
+  vendor?: string;
+  note?: string;
+  createdBy: string;
+  createdAt: number;
 }

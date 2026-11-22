@@ -6,7 +6,7 @@ exhaustif reste dans [`documents/`](documents/) (avec statut par item) ; ce
 fichier donne la vue synthétique et le contexte des décisions qui n'ont pas
 forcément leur place dans un document de spec.
 
-Dernière mise à jour : 2026-11-22.
+Dernière mise à jour : 2026-11-22 (soir).
 
 ## État d'avancement
 
@@ -80,6 +80,15 @@ détail épique par épique ; en résumé :
   **groupées par point de vente avec montant payé**. Le vrai besoin est d'éviter les
   **oublis** d'ingrédients (cha3ria oublié = plat non préparé) : priorité à un contrôle
   de couverture programme/liste plutôt qu'à une génération automatique complète.
+  **Import et dépenses (2026-11-22)** : l'utilisateur n'ayant pas d'accès admin
+  depuis une session Claude Code (voir plus haut), l'import des données réelles
+  passe par l'app elle-même (collage de la liste WhatsApp et du programme,
+  parseurs dans `src/domain/mealImport.ts`, testés sur la liste réelle). Modèle
+  corrigé : **point de vente prévu (article) ≠ paiement réel** (collection
+  `householdExpenses`, plusieurs paiements possibles chez le même point de vente),
+  prix par article facultatif, honoraires 200 MAD/jour (sam/mar/jeu). Limite connue
+  du parseur : un article commençant par « و » non suivi d'une quantité (ex.
+  « وليشو ») garde le « و » — corrigeable à la main dans la liste.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

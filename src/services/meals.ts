@@ -1,15 +1,23 @@
 import {
+  addDoc,
+  collection,
+  deleteDoc,
   deleteField,
   doc,
   onSnapshot,
+  query,
   setDoc,
   updateDoc,
+  where,
   type Unsubscribe,
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { stripUndefined } from "../firebase/sanitize";
 import { DEFAULT_DINERS } from "../domain/mealPlan";
 import type {
+  ExpenseType,
+  HouseholdExpense,
+  MealItem,
   MealPlan,
   MealSlot,
   MealSlotKey,
@@ -71,6 +79,32 @@ export async function saveMealSlot(
   );
 }
 
+/**
+ * Importe plusieurs créneaux d'un coup (programme collé). Les créneaux absents
+ * de `slots` ne sont pas touchés ; ceux fournis remplacent l'existant.
+ */
+export async function saveMealSlots(
+  weekId: string,
+  slots: Record<MealSlotKey, MealItem[]>,
+): Promise<void> {
+  const entries = Object.entries(slots)
+    .map(([key, items]) => [
+      key,
+      {
+        items: items
+          .map((item) => ({ label: item.label.trim() }))
+          .filter((item) => item.label.length > 0),
+      },
+    ] as const)
+    .filter(([, slot]) => slot.items.length > 0);
+  if (entries.length === 0) return;
+  await setDoc(
+    doc(db, MEAL_PLANS, weekId),
+    { weekId, slots: Object.fromEntries(entries) },
+    { merge: true },
+  );
+}
+
 export async function saveDefaultDiners(
   weekId: string,
   defaultDiners: number,
@@ -97,11 +131,7 @@ export function subscribeToShoppingList(
     const data = snapshot.exists()
       ? (snapshot.data() as Partial<ShoppingList>)
       : {};
-    onChange({
-      weekId,
-      items: data.items ?? {},
-      vendorAmounts: data.vendorAmounts ?? {},
-    });
+    onChange({ weekId, items: data.items ?? {} });
   });
 }
 
@@ -110,66 +140,95 @@ export interface NewShoppingItemInput {
   translation?: string;
   quantity?: string;
   vendor?: string;
+  price?: number;
 }
 
-/**
- * Nom de point de vente utilisable comme clé de map Firestore : espaces
- * normalisés, sans "/" ni "." (séparateurs de chemin), et jamais de la forme
- * réservée `__x__`.
- */
+/** Espaces normalisés ; chaîne vide si absent. */
 export function normalizeVendor(vendor: string | undefined): string {
-  const cleaned = (vendor ?? "")
-    .replace(/[/.]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-  return /^__.*__$/.test(cleaned) ? cleaned.replace(/_/g, "") : cleaned;
+  return (vendor ?? "").replace(/\s+/g, " ").trim();
+}
+
+function assertValidPrice(price: number | undefined | null): void {
+  if (price != null && (!Number.isFinite(price) || price < 0)) {
+    throw new Error("Le prix doit être un nombre positif.");
+  }
+}
+
+function buildShoppingItem(
+  input: NewShoppingItemInput,
+  createdAt: number,
+  index: number,
+): ShoppingItem {
+  const name = input.name.trim();
+  if (!name) {
+    throw new Error("Le nom de l'article ne peut pas être vide.");
+  }
+  assertValidPrice(input.price);
+  const id = `${createdAt.toString(36)}${index.toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  return stripUndefined({
+    id,
+    name,
+    translation: input.translation?.trim() || undefined,
+    quantity: input.quantity?.trim() || undefined,
+    vendor: normalizeVendor(input.vendor) || undefined,
+    price: input.price,
+    checked: false,
+    // L'index garde l'ordre de saisie quand plusieurs articles sont ajoutés
+    // dans la même milliseconde (import d'une liste collée).
+    createdAt: createdAt + index,
+  }) as ShoppingItem;
 }
 
 export async function addShoppingItem(
   weekId: string,
   input: NewShoppingItemInput,
 ): Promise<string> {
-  const name = input.name.trim();
-  if (!name) {
-    throw new Error("Le nom de l'article ne peut pas être vide.");
-  }
-  const createdAt = Date.now();
-  const id = `${createdAt.toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-  const item: ShoppingItem = stripUndefined({
-    id,
-    name,
-    translation: input.translation?.trim() || undefined,
-    quantity: input.quantity?.trim() || undefined,
-    vendor: normalizeVendor(input.vendor) || undefined,
-    checked: false,
-    createdAt,
-  }) as ShoppingItem;
-  await setDoc(
-    doc(db, SHOPPING_LISTS, weekId),
-    { weekId, items: { [id]: item } },
-    { merge: true },
-  );
+  const [id] = await addShoppingItems(weekId, [input]);
   return id;
 }
 
-/** Montant payé chez un point de vente ; `null` efface le montant. */
-export async function setVendorAmount(
+/** Ajoute plusieurs articles en une seule écriture (import d'une liste collée). */
+export async function addShoppingItems(
   weekId: string,
-  vendor: string,
-  amount: number | null,
-): Promise<void> {
-  const key = normalizeVendor(vendor);
-  if (!key) {
-    throw new Error("Choisissez d'abord un point de vente.");
-  }
-  if (amount !== null && (!Number.isFinite(amount) || amount < 0)) {
-    throw new Error("Le montant doit être un nombre positif.");
-  }
+  inputs: NewShoppingItemInput[],
+): Promise<string[]> {
+  const createdAt = Date.now();
+  // Toutes les validations avant la moindre écriture : un article invalide
+  // n'enregistre pas la moitié de la liste.
+  const items = inputs.map((input, index) =>
+    buildShoppingItem(input, createdAt, index),
+  );
+  if (items.length === 0) return [];
   await setDoc(
     doc(db, SHOPPING_LISTS, weekId),
-    { weekId, vendorAmounts: { [key]: amount === null ? deleteField() : amount } },
+    { weekId, items: Object.fromEntries(items.map((item) => [item.id, item])) },
     { merge: true },
   );
+  return items.map((item) => item.id);
+}
+
+/** Prix payé pour un article ; `null` l'efface. */
+export async function setShoppingItemPrice(
+  weekId: string,
+  itemId: string,
+  price: number | null,
+): Promise<void> {
+  assertValidPrice(price);
+  await updateDoc(doc(db, SHOPPING_LISTS, weekId), {
+    [`items.${itemId}.price`]: price === null ? deleteField() : price,
+  });
+}
+
+/** Déplace un article vers un autre point de vente ; chaîne vide = non classé. */
+export async function setShoppingItemVendor(
+  weekId: string,
+  itemId: string,
+  vendor: string,
+): Promise<void> {
+  const normalized = normalizeVendor(vendor);
+  await updateDoc(doc(db, SHOPPING_LISTS, weekId), {
+    [`items.${itemId}.vendor`]: normalized ? normalized : deleteField(),
+  });
 }
 
 export async function setShoppingItemChecked(
@@ -189,4 +248,70 @@ export async function removeShoppingItem(
   await updateDoc(doc(db, SHOPPING_LISTS, weekId), {
     [`items.${itemId}`]: deleteField(),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Dépenses : un document par paiement, rattaché à une semaine.
+// ---------------------------------------------------------------------------
+
+const EXPENSES = "householdExpenses";
+
+/** Tarif journalier habituel de la personne de ménage (MAD). */
+export const HELPER_DAILY_RATE = 200;
+
+export function subscribeToExpenses(
+  weekId: string,
+  onChange: (expenses: HouseholdExpense[]) => void,
+): Unsubscribe {
+  return onSnapshot(
+    query(collection(db, EXPENSES), where("weekId", "==", weekId)),
+    (snapshot) => {
+      const expenses = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }) as HouseholdExpense)
+        .sort((a, b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+      onChange(expenses);
+    },
+  );
+}
+
+export interface NewExpenseInput {
+  type: ExpenseType;
+  amount: number;
+  /** "YYYY-MM-DD" */
+  date: string;
+  weekId: string;
+  vendor?: string;
+  note?: string;
+  createdBy: string;
+}
+
+export async function addExpense(input: NewExpenseInput): Promise<void> {
+  if (!Number.isFinite(input.amount) || input.amount <= 0) {
+    throw new Error("Le montant doit être un nombre positif.");
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.date)) {
+    throw new Error("La date est invalide.");
+  }
+  if (input.type === "groceries" && !normalizeVendor(input.vendor)) {
+    throw new Error("Indiquez le point de vente.");
+  }
+  await addDoc(
+    collection(db, EXPENSES),
+    stripUndefined({
+      type: input.type,
+      amount: input.amount,
+      date: input.date,
+      weekId: input.weekId,
+      // Un paiement de la personne de ménage n'a pas de point de vente.
+      vendor:
+        input.type === "groceries" ? normalizeVendor(input.vendor) : undefined,
+      note: input.note?.trim() || undefined,
+      createdBy: input.createdBy,
+      createdAt: Date.now(),
+    }),
+  );
+}
+
+export async function removeExpense(expenseId: string): Promise<void> {
+  await deleteDoc(doc(db, EXPENSES, expenseId));
 }

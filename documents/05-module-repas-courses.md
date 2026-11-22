@@ -137,10 +137,18 @@ revient chaque semaine.
 **Séparées des budgets existants** (décision 2026-11-21) : les rubriques budgétaires
 restent réservées aux chantiers/projets. Deux types, une seule saisie simple (date, montant MAD, note, photo du ticket
 facultative) :
-- **Courses** : rattachées à une semaine ; un ticket peut être saisi en un montant
-  global (suffisant en v1), pas ligne par ligne.
+- **Courses** : un paiement = **point de vente + montant + date**, rattaché à une
+  semaine. **Prévu ≠ payé** (décision 2026-11-22) : l'article porte le point de vente
+  *prévu* ; les paiements sont des enregistrements séparés. Un même point de vente peut
+  donc donner **plusieurs paiements** (cas réel : lait et yaourt non trouvés chez le
+  premier épicier, payés plus tard ailleurs, 26 MAD) ; le total du point de vente est
+  leur somme. Le **prix par article** reste possible mais **facultatif** (détail, jamais
+  la source de vérité : on affiche « détail articles » à côté du payé sans les imposer
+  égaux).
 - **Honoraires** : un **paiement daté** (date, montant, note) — décision 2026-11-21 ;
-  pas de suivi par jour travaillé ni par heure.
+  pas de suivi par heure. La personne de ménage est payée **200 MAD par jour travaillé**
+  (en général samedi, mardi, jeudi) : le formulaire pré-remplit 200 MAD, modifiable.
+  *Idée non faite* : rappeler les jours habituels sans paiement saisi.
 - Vues : total de la semaine / du mois, répartition courses vs honoraires, histogramme
   hebdomadaire. **Réutiliser** `formatMad` (`src/domain/money.ts`), la logique de
   paiements datés (`src/domain/payments.ts`) et l'histogramme déjà livré sur la fiche
@@ -266,8 +274,11 @@ Rappel hebdomadaire optionnel : « Le programme de la semaine n'est pas planifi�
 1. **Fondations + saisie simple** — ✅ livré en code. Règles Firestore, semaine du samedi,
    programme hebdo en saisie libre (3 créneaux, « A + B »), liste de courses manuelle
    cochable **groupée par point de vente avec montant payé**, envoi WhatsApp.
-1b. **Import et reprise de liste** — collage d'une liste WhatsApp (arabe, sous-totaux
-   reconnus), recopie de la liste précédente, points de vente habituels mémorisés.
+1b. **Import et dépenses** — ✅ livré en code (2026-11-22) : collage d'une liste WhatsApp
+   (arabe, quantités libres, sous-totaux reconnus, points de vente et montants
+   confirmés avant écriture), collage du programme, paiements courses/honoraires avec
+   prix par article facultatif. *Reste* : recopie de la liste précédente, point de vente
+   habituel mémorisé par article.
 2. **Référentiel + glisser-déposer** — plats, ingrédients, drop dans la grille,
    copie de semaine, plat réparti sur plusieurs jours, noms arabe/français.
 3. **Proposition de courses et contrôle de couverture** — liste proposée depuis le

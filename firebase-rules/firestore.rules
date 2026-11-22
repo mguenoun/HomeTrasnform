@@ -156,6 +156,10 @@ service cloud.firestore {
       allow read, write: if isFamilyMember();
     }
 
+    match /householdExpenses/{expenseId} {
+      allow read, write: if isFamilyMember();
+    }
+
     match /tasks/{taskId} {
       allow read: if isFamilyMember() &&
         (resource.data.get('visibility', 'shared') != 'private' ||

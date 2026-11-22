@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { Breadcrumb } from "../components/Breadcrumb";
+import { ExpensesView } from "../components/ExpensesView";
 import { MealWeekPlan } from "../components/MealWeekPlan";
+import { ProgramImport } from "../components/ProgramImport";
 import { ShoppingListView } from "../components/ShoppingListView";
+import { useAuth } from "../context/AuthContext";
 import {
   buildPlanMessage,
   buildShoppingMessage,
@@ -10,16 +13,30 @@ import {
   weekIdOf,
   whatsappUrl,
 } from "../domain/mealPlan";
-import { useMealPlan, useShoppingList } from "../hooks/useMeals";
+import {
+  useExpenses,
+  useMealPlan,
+  useShoppingList,
+} from "../hooks/useMeals";
 
-type Tab = "plan" | "shopping";
+type Tab = "plan" | "shopping" | "expenses";
+
+const TABS: Array<[Tab, string]> = [
+  ["plan", "Programme"],
+  ["shopping", "Courses"],
+  ["expenses", "Dépenses"],
+];
 
 export function MealsPage() {
+  const { user } = useAuth();
+  const userId = user?.uid ?? "";
   const [weekId, setWeekId] = useState(() => weekIdOf(new Date()));
   const [tab, setTab] = useState<Tab>("plan");
   const { plan, loading: planLoading } = useMealPlan(weekId);
   const { list, loading: listLoading } = useShoppingList(weekId);
+  const { expenses, loading: expensesLoading } = useExpenses(weekId);
 
+  const shareable = tab !== "expenses";
   const shareMessage =
     tab === "plan"
       ? buildPlanMessage(plan)
@@ -28,7 +45,12 @@ export function MealsPage() {
     tab === "plan"
       ? Object.values(plan.slots).some((slot) => slot.items.length > 0)
       : Object.keys(list.items).length > 0;
-  const loading = tab === "plan" ? planLoading : listLoading;
+  const loading =
+    tab === "plan"
+      ? planLoading
+      : tab === "shopping"
+        ? listLoading || expensesLoading
+        : expensesLoading;
 
   return (
     <div className="min-h-screen p-6">
@@ -72,12 +94,7 @@ export function MealsPage() {
 
       <div className="mb-4 flex items-center justify-between gap-2">
         <div role="tablist" className="ht-nav-pill">
-          {(
-            [
-              ["plan", "Programme"],
-              ["shopping", "Courses"],
-            ] as const
-          ).map(([key, label]) => (
+          {TABS.map(([key, label]) => (
             <button
               key={key}
               type="button"
@@ -90,7 +107,7 @@ export function MealsPage() {
             </button>
           ))}
         </div>
-        {hasContent && (
+        {shareable && hasContent && (
           <a
             href={whatsappUrl(shareMessage)}
             target="_blank"
@@ -103,8 +120,18 @@ export function MealsPage() {
       </div>
 
       {loading && <p className="text-[var(--ht-text-2)]">Chargement...</p>}
-      {!loading && tab === "plan" && <MealWeekPlan plan={plan} />}
-      {!loading && tab === "shopping" && <ShoppingListView list={list} />}
+      {!loading && tab === "plan" && (
+        <div className="flex flex-col">
+          <ProgramImport weekId={weekId} />
+          <MealWeekPlan plan={plan} />
+        </div>
+      )}
+      {!loading && tab === "shopping" && (
+        <ShoppingListView list={list} expenses={expenses} userId={userId} />
+      )}
+      {!loading && tab === "expenses" && (
+        <ExpensesView weekId={weekId} userId={userId} expenses={expenses} />
+      )}
     </div>
   );
 }

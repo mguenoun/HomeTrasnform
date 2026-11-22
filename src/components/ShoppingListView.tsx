@@ -1,15 +1,25 @@
 import { useState, type FormEvent } from "react";
+import { sumItemPrices, summarizeExpenses } from "../domain/expenses";
 import { DEFAULT_VENDORS, groupByVendor } from "../domain/mealPlan";
 import { formatMad } from "../domain/money";
 import {
   addShoppingItem,
   removeShoppingItem,
   setShoppingItemChecked,
-  setVendorAmount,
+  setShoppingItemPrice,
 } from "../services/meals";
-import type { ShoppingList } from "../types";
+import type { HouseholdExpense, ShoppingList } from "../types";
+import { ShoppingImport } from "./ShoppingImport";
 
-export function ShoppingListView({ list }: { list: ShoppingList }) {
+export function ShoppingListView({
+  list,
+  expenses,
+  userId,
+}: {
+  list: ShoppingList;
+  expenses: HouseholdExpense[];
+  userId: string;
+}) {
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("");
   const [vendor, setVendor] = useState("");
@@ -17,13 +27,11 @@ export function ShoppingListView({ list }: { list: ShoppingList }) {
 
   const items = Object.values(list.items);
   const groups = groupByVendor(items);
-  const knownVendors = [
-    ...new Set([
-      ...DEFAULT_VENDORS,
-      ...items.map((i) => i.vendor).filter((v): v is string => !!v),
-    ]),
-  ];
-  const total = Object.values(list.vendorAmounts).reduce((a, b) => a + b, 0);
+  const paidByVendor = new Map(
+    summarizeExpenses(expenses).byVendor.map((v) => [v.vendor, v]),
+  );
+  const usedVendors = items.map((i) => i.vendor).filter((v): v is string => !!v);
+  const knownVendors = [...new Set([...DEFAULT_VENDORS, ...usedVendors])];
 
   async function run(action: () => Promise<unknown>) {
     setError(null);
@@ -49,6 +57,12 @@ export function ShoppingListView({ list }: { list: ShoppingList }) {
 
   return (
     <div className="flex flex-col gap-3">
+      <ShoppingImport
+        weekId={list.weekId}
+        userId={userId}
+        knownVendors={usedVendors}
+      />
+
       <form
         onSubmit={handleAdd}
         className="ht-card flex flex-col gap-2 p-4 sm:flex-row"
@@ -98,92 +112,92 @@ export function ShoppingListView({ list }: { list: ShoppingList }) {
           Aucun article pour cette semaine.
         </p>
       ) : (
-        groups.map((group) => (
-          <section key={group.vendor || "__none"} className="ht-card">
-            <div className="flex items-center justify-between gap-3 px-4 pt-3">
-              <h3 className="text-sm font-extrabold text-[var(--ht-text)]">
-                {group.vendor || "Sans point de vente"}
-              </h3>
-              {group.vendor && (
-                <label className="flex items-center gap-1.5 text-xs text-[var(--ht-text-2)]">
-                  Payé
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="any"
-                    aria-label={`Montant payé, ${group.vendor}`}
-                    defaultValue={list.vendorAmounts[group.vendor] ?? ""}
-                    onBlur={(e) => {
-                      const raw = e.target.value.trim();
-                      void run(() =>
-                        setVendorAmount(
-                          list.weekId,
-                          group.vendor,
-                          raw === "" ? null : Number(raw),
-                        ),
-                      );
-                    }}
-                    className="ht-input w-20 py-1 text-right"
-                  />
-                  MAD
-                </label>
-              )}
-            </div>
-            <ul className="divide-y divide-[var(--ht-input-border)]">
-              {group.items.map((item) => (
-                <li key={item.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <input
-                    type="checkbox"
-                    checked={item.checked}
-                    aria-label={`Acheté : ${item.name}`}
-                    onChange={(e) =>
-                      void run(() =>
-                        setShoppingItemChecked(
-                          list.weekId,
-                          item.id,
-                          e.target.checked,
-                        ),
-                      )
-                    }
-                  />
-                  <span
-                    dir="auto"
-                    className={`flex-1 text-sm ${
-                      item.checked
-                        ? "text-[var(--ht-text-2)] line-through"
-                        : "text-[var(--ht-text)]"
-                    }`}
+        groups.map((group) => {
+          const paid = paidByVendor.get(group.vendor);
+          const detail = sumItemPrices(group.items);
+          return (
+            <section key={group.vendor || "__none"} className="ht-card">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3 px-4 pt-3">
+                <h3 className="text-sm font-extrabold text-[var(--ht-text)]">
+                  {group.vendor || "Sans point de vente"}
+                </h3>
+                <p className="text-xs text-[var(--ht-text-2)]">
+                  {paid
+                    ? `Payé ${formatMad(paid.total)}${paid.payments > 1 ? ` (${paid.payments} paiements)` : ""}`
+                    : "Pas encore payé"}
+                  {detail > 0 && ` · détail articles ${formatMad(detail)}`}
+                </p>
+              </div>
+              <ul className="divide-y divide-[var(--ht-input-border)]">
+                {group.items.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center gap-3 px-4 py-2.5"
                   >
-                    {item.name}
-                    {item.quantity && (
-                      <span className="text-[var(--ht-text-2)]">
-                        {" "}
-                        — {item.quantity}
-                      </span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    aria-label={`Supprimer ${item.name}`}
-                    onClick={() =>
-                      void run(() => removeShoppingItem(list.weekId, item.id))
-                    }
-                    className="text-[var(--ht-text-2)]"
-                  >
-                    ×
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))
-      )}
-
-      {total > 0 && (
-        <p className="text-right text-sm font-extrabold text-[var(--ht-text)]">
-          Total payé : {formatMad(total)}
-        </p>
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      aria-label={`Acheté : ${item.name}`}
+                      onChange={(e) =>
+                        void run(() =>
+                          setShoppingItemChecked(
+                            list.weekId,
+                            item.id,
+                            e.target.checked,
+                          ),
+                        )
+                      }
+                    />
+                    <span
+                      dir="auto"
+                      className={`flex-1 text-sm ${
+                        item.checked
+                          ? "text-[var(--ht-text-2)] line-through"
+                          : "text-[var(--ht-text)]"
+                      }`}
+                    >
+                      {item.name}
+                      {item.quantity && (
+                        <span className="text-[var(--ht-text-2)]">
+                          {" "}
+                          — {item.quantity}
+                        </span>
+                      )}
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="any"
+                      placeholder="Prix"
+                      aria-label={`Prix, ${item.name}`}
+                      defaultValue={item.price ?? ""}
+                      onBlur={(e) => {
+                        const raw = e.target.value.trim();
+                        const next = raw === "" ? null : Number(raw);
+                        if (next === (item.price ?? null)) return;
+                        void run(() =>
+                          setShoppingItemPrice(list.weekId, item.id, next),
+                        );
+                      }}
+                      className="ht-input w-16 py-0.5 text-right text-xs"
+                    />
+                    <button
+                      type="button"
+                      aria-label={`Supprimer ${item.name}`}
+                      onClick={() =>
+                        void run(() => removeShoppingItem(list.weekId, item.id))
+                      }
+                      className="text-[var(--ht-text-2)]"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          );
+        })
       )}
     </div>
   );

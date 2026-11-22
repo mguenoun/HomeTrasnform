@@ -205,11 +205,15 @@ des plats/articles pas encore saisissables, seuls les libellés fixes sont bilin
 **US-12.4** (P2) — Référentiel de plats avec ingrédients par variante (2-5 personnes,
 ou par quantité pour un snack), noms darija, glisser-déposer dans le programme. — ⬜ Prévu (étape 2)
 **US-12.5** (P1) — Je colle la liste WhatsApp de la femme de ménage (arabe, sous-totaux
-reconnus) et je recopie la liste précédente. — ⬜ Prévu (étape 1b)
+reconnus) et le programme de la semaine ; je recopie la liste précédente. — 🚧 Partiel
+(collage de la liste et du programme fait ; recopie de la liste précédente à faire)
 **US-12.8** (P1) — Je suis averti quand un plat prévu a des ingrédients absents de la
 liste de courses (contrôle de couverture), et je peux obtenir une proposition de liste
 depuis le programme. — ⬜ Prévu (étape 3)
-**US-12.6** (P2) — Suivi des dépenses de courses et des honoraires (paiements datés). — ⬜ Prévu (étape 4)
+**US-12.6** (P2) — Suivi des dépenses : paiements de courses par point de vente (plusieurs
+paiements possibles chez le même), prix par article facultatif, honoraires à 200 MAD par
+jour travaillé. — 🚧 Partiel (saisie et totaux par semaine faits ; histogramme, vue mensuelle
+et carte tableau de bord à faire)
 **US-12.7** (P3) — Retour 👍/👎 sur chaque repas, note par plat, message de fin de
 semaine à la personne de ménage. — ⬜ Prévu (étape 5)
 
