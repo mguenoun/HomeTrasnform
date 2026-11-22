@@ -215,8 +215,9 @@ depuis le programme. — ⬜ Prévu (étape 3)
 paiements possibles chez le même), prix par article facultatif, honoraires à 200 MAD par
 jour travaillé. — 🚧 Partiel (saisie et totaux par semaine faits ; histogramme, vue mensuelle
 et carte tableau de bord à faire)
-**US-12.7** (P3) — Retour 👍/👎 sur chaque repas, note par plat, message de fin de
-semaine à la personne de ménage. — ⬜ Prévu (étape 5)
+**US-12.7** (P2) — Retour 👍/👎 (avec remarque) sur chaque plat préparé, statistiques par
+plat (servi N fois, 👍/👎, tri « mieux notés »), message de fin de semaine à la personne de
+ménage, bienveillant et modifiable avant envoi. — ✅ Fait
 
 **US-12.9** (P1) — En faisant les courses, je vois la liste d'un point de vente, je coche
 ce qui est servi, je saisis le montant payé à la fin, et je vois à tout instant ce qui a
@@ -253,6 +254,12 @@ sur une ligne et le français dessous. — ✅ Fait
 réalisation réelle, et je filtre le programme (tout / planifié / préparé / non préparé)
 en liste comme en calendrier. Prérequis du retour 👍/👎 (US-12.7), qui ne portera que sur
 les plats réellement préparés. — ✅ Fait
+
+**US-12.20** (P1) — Le statut (préparé / non préparé) est à gauche du plat et la
+suppression à droite, en rouge, avec confirmation avant de supprimer, pour éviter les
+suppressions par erreur. — ✅ Fait
+**US-12.21** (P2) — Je précise la quantité préparée d'un snack (ex. 10 petites pizzas),
+qui choisira la variante d'ingrédients. — ✅ Fait
 
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait

@@ -57,6 +57,27 @@ export function subscribeToMealPlan(
 }
 
 /**
+ * Toutes les semaines (un document chacune, une cinquantaine par an) : sert aux
+ * statistiques par plat de la bibliothèque (servi N fois, 👍/👎).
+ */
+export function subscribeToAllMealPlans(
+  onChange: (plans: MealPlan[]) => void,
+): Unsubscribe {
+  return onSnapshot(collection(db, MEAL_PLANS), (snapshot) => {
+    onChange(
+      snapshot.docs.map((d) => {
+        const data = d.data() as Partial<MealPlan>;
+        return {
+          weekId: d.id,
+          defaultDiners: data.defaultDiners ?? DEFAULT_DINERS,
+          slots: data.slots ?? {},
+        };
+      }),
+    );
+  });
+}
+
+/**
  * Remplace un seul créneau (merge) : deux personnes qui modifient deux
  * créneaux différents au même moment ne s'écrasent pas.
  */
@@ -76,6 +97,19 @@ export async function saveMealSlot(
         : {}),
       ...(item.status === "skipped" && item.skipReason?.trim()
         ? { skipReason: item.skipReason.trim() }
+        : {}),
+      // Un retour n'existe que sur un plat préparé ; sa remarque que s'il y a un retour.
+      ...(item.status === "prepared" &&
+      (item.feedback === "up" || item.feedback === "down")
+        ? { feedback: item.feedback }
+        : {}),
+      ...(item.status === "prepared" &&
+      (item.feedback === "up" || item.feedback === "down") &&
+      item.feedbackNote?.trim()
+        ? { feedbackNote: item.feedbackNote.trim() }
+        : {}),
+      ...(Number.isInteger(item.n) && (item.n as number) > 0
+        ? { n: item.n }
         : {}),
     }))
     .filter((item) => item.label.length > 0);

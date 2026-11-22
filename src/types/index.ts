@@ -198,6 +198,12 @@ export interface MealItem {
   status?: MealStatus;
   /** Pourquoi ce plat n'a pas été préparé (« Pas le temps »…), seulement si non préparé. */
   skipReason?: string;
+  /** Retour sur un plat préparé : 👍 ("up") ou 👎 ("down"). */
+  feedback?: "up" | "down";
+  /** Remarque sur le retour (« trop salé »…), seulement avec un retour. */
+  feedbackNote?: string;
+  /** Quantité préparée d'un snack (ex. 10 petites pizzas) ; choisit la variante d'ingrédients. */
+  n?: number;
   /** Traduction dans l'autre langue, facultative. */
   translation?: string;
 }

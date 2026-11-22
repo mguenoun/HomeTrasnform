@@ -63,10 +63,27 @@ export function withStatus(
   status: ItemStatus,
   reason?: string,
 ): MealItem {
-  const { status: _status, skipReason: _reason, ...rest } = item;
+  // Le retour (👍/👎) n'a de sens que pour un plat préparé : tout autre statut
+  // l'efface, sans quoi un plat repassé à « planifié » garderait une note.
+  const {
+    status: _status,
+    skipReason: _reason,
+    feedback: _feedback,
+    feedbackNote: _feedbackNote,
+    ...rest
+  } = item;
   void _status;
   void _reason;
   if (status === "planned") return rest;
+  if (status === "prepared") {
+    // On conserve le retour déjà donné quand on re-marque « préparé ».
+    return {
+      ...rest,
+      status,
+      ...(_feedback ? { feedback: _feedback } : {}),
+      ...(_feedback && _feedbackNote ? { feedbackNote: _feedbackNote } : {}),
+    };
+  }
   const note = reason?.trim();
   return status === "skipped" && note
     ? { ...rest, status, skipReason: note }

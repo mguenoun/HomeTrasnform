@@ -126,6 +126,12 @@ détail épique par épique ; en résumé :
   sous un filtre la liste affichée est un sous-ensemble — toute modification doit viser
   l'**index d'origine** de l'élément (sinon on retire/édite le mauvais plat), d'où la saisie
   masquée sous filtre et les index conservés dans `SlotEditor`.
+  **Retour 👍/👎, statistiques, message de fin de semaine (2026-11-22)** : `MealItem.feedback`
+  / `feedbackNote` / `n` ; stats calculées côté client sur tous les `mealPlans`
+  (`useAllMealPlans`) plutôt que dénormalisées sur le plat (aucun compteur à maintenir, pas de
+  dérive si on corrige un retour). Piège rencontré : dans un script de remplacement, un
+  `$1` n'est pas développé quand le remplacement est une fonction — il a fini littéral dans
+  le code.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

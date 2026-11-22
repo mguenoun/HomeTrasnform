@@ -729,3 +729,52 @@ describe("saveMealSlot conserve le suivi de réalisation", () => {
     ]);
   });
 });
+
+describe("saveMealSlot conserve le retour et la quantité", () => {
+  it("enregistre le retour d'un plat préparé avec sa remarque", async () => {
+    await saveMealSlot("2026-11-21", "sat_lunch", {
+      items: [
+        { label: "Couscous", status: "prepared", feedback: "up", feedbackNote: "  délicieux " },
+        { label: "Pizza", status: "prepared", feedback: "down" },
+      ],
+    });
+    expect(writesTo("mealPlans")[0][1].slots.sat_lunch.items).toEqual([
+      { label: "Couscous", status: "prepared", feedback: "up", feedbackNote: "délicieux" },
+      { label: "Pizza", status: "prepared", feedback: "down" },
+    ]);
+  });
+
+  it("ignore un retour sur un plat non préparé, un retour invalide, ou une remarque sans retour", async () => {
+    await saveMealSlot("2026-11-21", "sat_lunch", {
+      items: [
+        { label: "A", feedback: "up" },
+        { label: "B", status: "skipped", feedback: "down" },
+        { label: "C", status: "prepared", feedback: "bof" as never },
+        { label: "D", status: "prepared", feedbackNote: "note orpheline" },
+      ],
+    });
+    expect(writesTo("mealPlans")[0][1].slots.sat_lunch.items).toEqual([
+      { label: "A" },
+      { label: "B", status: "skipped" },
+      { label: "C", status: "prepared" },
+      { label: "D", status: "prepared" },
+    ]);
+  });
+
+  it("enregistre la quantité d'un snack si c'est un entier positif", async () => {
+    await saveMealSlot("2026-11-21", "sat_snack", {
+      items: [
+        { label: "Pizza", n: 10 },
+        { label: "Cake", n: 0 },
+        { label: "Tarte", n: 2.5 },
+        { label: "Crêpes", n: -3 },
+      ],
+    });
+    expect(writesTo("mealPlans")[0][1].slots.sat_snack.items).toEqual([
+      { label: "Pizza", n: 10 },
+      { label: "Cake" },
+      { label: "Tarte" },
+      { label: "Crêpes" },
+    ]);
+  });
+});

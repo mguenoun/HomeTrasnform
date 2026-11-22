@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { emptyPlan } from "../domain/mealPlan";
 import {
+  subscribeToAllMealPlans,
   subscribeToDishes,
   subscribeToExpenses,
   subscribeToIngredients,
@@ -73,6 +74,13 @@ export function useExpenses(weekId: string): {
 
   const ready = state?.weekId === weekId;
   return { expenses: ready ? state.expenses : [], loading: !ready };
+}
+
+/** Toutes les semaines enregistrées (statistiques par plat). Vide tant que non chargé. */
+export function useAllMealPlans(): MealPlan[] {
+  const [plans, setPlans] = useState<MealPlan[]>([]);
+  useEffect(() => subscribeToAllMealPlans(setPlans), []);
+  return plans;
 }
 
 /** Plats/snacks déjà saisis (autocomplétion). Vide tant que non chargé. */

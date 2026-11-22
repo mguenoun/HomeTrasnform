@@ -31,6 +31,8 @@ function Items({
               {status === "prepared" && <span aria-label="préparé">✓ </span>}
               {status === "skipped" && <span aria-label="non préparé">✗ </span>}
               {item.label}
+              {item.feedback === "up" && <span aria-label="apprécié"> 👍</span>}
+              {item.feedback === "down" && <span aria-label="à améliorer"> 👎</span>}
             </span>
             {translation && (
               <span

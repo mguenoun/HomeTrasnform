@@ -5,6 +5,7 @@ import { ExpensesView } from "../components/ExpensesView";
 import { MealCalendar } from "../components/MealCalendar";
 import { MealWeekPlan } from "../components/MealWeekPlan";
 import { ProgramImport } from "../components/ProgramImport";
+import { WeeklyFeedback } from "../components/WeeklyFeedback";
 import { ShoppingListView } from "../components/ShoppingListView";
 import { useAuth } from "../context/AuthContext";
 import {
@@ -215,6 +216,9 @@ export function MealsPage() {
                 </button>
               ))}
             </div>
+          )}
+          {counts.prepared + counts.skipped > 0 && (
+            <WeeklyFeedback plan={plan} translations={translations} />
           )}
           <ProgramImport weekId={weekId} />
           {planView === "calendar" ? (

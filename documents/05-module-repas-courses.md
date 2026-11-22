@@ -263,6 +263,22 @@ repèrent ✅ / ❌ (et le motif). Le statut d'un snack reporté est celui de so
 *Suite logique* : le retour 👍/👎 ne s'affichera que sur les plats **préparés** ; un plat
 non préparé faute d'ingrédient alimentera le contrôle de couverture (étape 3).
 
+### 3.6 bis Retours livrés (✅ 2026-11-22)
+- **Disposition** : statut ✓ / ✗ à **gauche** du plat, suppression × à **droite**, en
+  rouge, avec **confirmation** (« Supprimer « X » du programme ? ») — la confirmation et le
+  choix du motif ne s'ouvrent jamais ensemble.
+- **Retour** 👍 / 👎 (+ remarque facultative, enregistrée en quittant le champ) uniquement sur un
+  plat **préparé** ; un second appui sur le même pouce l'efface ; repasser le plat à
+  « planifié » ou « non préparé » efface son retour.
+- **Statistiques par plat** (bibliothèque) : servi N fois, 👍/👎, tri « mieux notés » / « plus
+  servis ». Calculées à la lecture sur **toutes les semaines** (un document par semaine),
+  donc rien à maintenir ni à dénormaliser ; seuls les plats *préparés* comptent.
+- **Message de fin de semaine** : pré-rempli (remerciements, « très appréciés », « à
+  améliorer » avec remarque, « pas préparés » avec motif), **sans note chiffrée**, modifiable
+  avant l'envoi WhatsApp. Les titres arabes sont à faire relire.
+- **Quantité d'un snack** (ex. 10 petites pizzas) saisie dans l'édition de la pastille :
+  elle choisira la variante d'ingrédients au contrôle des oublis.
+
 ### 3.6 Retours sur les repas
 - Après un repas, un membre de la famille indique s'il a été **apprécié** : 👍 / 👎
   (décision 2026-11-21, pas d'étoiles), avec un commentaire facultatif (« trop salé », « les enfants ont adoré »). Un tap sur le repas du programme.

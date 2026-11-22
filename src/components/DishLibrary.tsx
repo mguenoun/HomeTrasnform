@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { catalogKey } from "../domain/catalog";
 import { describeVariants } from "../domain/dishes";
+import { computeDishStats, sortDishes, type DishSort } from "../domain/feedback";
+import { useAllMealPlans } from "../hooks/useMeals";
 import type { TranslationIndex } from "../domain/translations";
 import type { CatalogIngredient, Dish } from "../types";
 import { DishEditor } from "./DishEditor";
@@ -23,9 +25,14 @@ export function DishLibrary({
 }) {
   const [editing, setEditing] = useState<Editing>(null);
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<DishSort>("name");
+  // Statistiques sur toutes les semaines : servi N fois, 👍/👎. Calculées à la
+  // lecture (rien à maintenir) à partir des plats marqués « préparés ».
+  const allPlans = useAllMealPlans();
+  const stats = useMemo(() => computeDishStats(allPlans), [allPlans]);
 
   const needle = catalogKey(search);
-  const visible = dishes.filter(
+  const visible = sortDishes(dishes, stats, sort).filter(
     (d) =>
       !needle ||
       catalogKey(d.name).includes(needle) ||
@@ -66,14 +73,26 @@ export function DishLibrary({
       </div>
 
       {dishes.length > 0 && (
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Rechercher un plat…"
-          aria-label="Rechercher un plat"
-          dir="auto"
-          className="ht-input"
-        />
+        <div className="flex gap-2">
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher un plat…"
+            aria-label="Rechercher un plat"
+            dir="auto"
+            className="ht-input min-w-0 flex-1"
+          />
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as DishSort)}
+            aria-label="Trier les plats"
+            className="ht-input w-auto"
+          >
+            <option value="name">Nom</option>
+            <option value="approval">Mieux notés</option>
+            <option value="served">Plus servis</option>
+          </select>
+        </div>
       )}
 
       {dishes.length === 0 ? (
@@ -117,6 +136,15 @@ export function DishLibrary({
                   >
                     {describeVariants(dish)}
                   </span>
+                  {(() => {
+                    const s = stats.get(catalogKey(dish.name));
+                    return s ? (
+                      <span className="text-xs text-[var(--ht-text-2)]">
+                        servi {s.served}×
+                        {s.up + s.down > 0 && ` · 👍 ${s.up} · 👎 ${s.down}`}
+                      </span>
+                    ) : null;
+                  })()}
                 </button>
               </li>
             );

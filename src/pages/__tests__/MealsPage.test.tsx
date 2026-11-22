@@ -20,6 +20,7 @@ vi.mock("../../hooks/useMeals", () => ({
   useExpenses: vi.fn(),
   useDishes: vi.fn(),
   useIngredients: vi.fn(),
+  useAllMealPlans: vi.fn(),
 }));
 
 vi.mock("../../services/meals", () => ({
@@ -46,6 +47,7 @@ vi.mock("../../services/translate", () => ({
 
 import {
   useDishes,
+  useAllMealPlans,
   useExpenses,
   useIngredients,
   useMealPlan,
@@ -70,6 +72,9 @@ const mockedUseMealPlan = vi.mocked(useMealPlan);
 const mockedUseShoppingList = vi.mocked(useShoppingList);
 const mockedUseExpenses = vi.mocked(useExpenses);
 const mockedUseDishes = vi.mocked(useDishes);
+const mockedUseAllMealPlans = vi.mocked(useAllMealPlans);
+// Toutes les semaines (statistiques de la bibliothèque) : à renseigner avant setup().
+let allPlansForTest: MealPlan[] = [];
 const mockedUseIngredients = vi.mocked(useIngredients);
 
 function setup(
@@ -80,6 +85,7 @@ function setup(
   dishes: Dish[] = [],
 ) {
   mockedUseDishes.mockReturnValue(dishes);
+  mockedUseAllMealPlans.mockReturnValue(allPlansForTest);
   mockedUseIngredients.mockReturnValue(ingredients);
   mockedUseMealPlan.mockReturnValue({
     plan: { weekId: "2026-11-21", defaultDiners: 4, slots: {}, ...plan },
@@ -110,6 +116,7 @@ const expense = (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  allPlansForTest = [];
 });
 
 describe("MealsPage — programme", () => {
@@ -872,7 +879,7 @@ describe("MealsPage — texte long et défilement", () => {
     setup({ slots: { tue_dinner: { items: [{ label: long }] } } });
     const chip = screen.getByRole("button", { name: `Modifier ${long}` }).closest("li")!;
     expect(chip).toHaveStyle({ whiteSpace: "normal" });
-    expect(chip.className).toContain("max-w-full");
+    expect(chip.className).toContain("w-full");
   });
 
   it("une ligne de courses longue passe à la ligne", async () => {
@@ -1139,6 +1146,7 @@ describe("MealsPage — vue filtrée par statut", () => {
     setup({ slots: { sat_lunch: { items: [{ label: "A" }, { label: "B", status: "prepared" as const }] } } });
     await userEvent.click(screen.getByRole("button", { name: "Préparé (1)" }));
     await userEvent.click(screen.getByRole("button", { name: "Retirer B" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer la suppression de B" }));
     expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
       items: [{ label: "A" }],
     });
@@ -1164,5 +1172,269 @@ describe("MealsPage — vue filtrée par statut", () => {
     const filtered = screen.getByTestId("cell-sat-lunch");
     expect(within(filtered).getByText("Couscous")).toBeInTheDocument();
     expect(within(filtered).queryByText("Tarte")).not.toBeInTheDocument();
+  });
+});
+
+describe("MealsPage — disposition et suppression sécurisée", () => {
+  const slots = { sat_lunch: { items: [{ label: "Couscous" }] } };
+
+  it("les boutons de statut sont à gauche du nom, la suppression à droite", () => {
+    setup({ slots });
+    const row = screen.getByRole("button", { name: "Modifier Couscous" }).parentElement!;
+    const order = [...row.querySelectorAll("button")].map((b) => b.getAttribute("aria-label"));
+    expect(order).toEqual([
+      "Marquer Couscous comme préparé",
+      "Marquer Couscous comme non préparé",
+      "Modifier Couscous",
+      "Retirer Couscous",
+    ]);
+  });
+
+  it("le bouton de suppression est rouge", () => {
+    setup({ slots });
+    expect(screen.getByRole("button", { name: "Retirer Couscous" }).className).toContain(
+      "text-[var(--ht-danger)]",
+    );
+  });
+
+  it("un premier appui sur × ne supprime rien : il demande confirmation", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Retirer Couscous" }));
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    expect(screen.getByText("Supprimer « Couscous » du programme ?")).toBeInTheDocument();
+  });
+
+  it("confirmer supprime le plat", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }, { label: "Salade" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Retirer Couscous" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer la suppression de Couscous" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Salade" }],
+    });
+  });
+
+  it("annuler n'écrit rien et referme la confirmation", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Retirer Couscous" }));
+    await userEvent.click(
+      within(screen.getByRole("group", { name: "Confirmer la suppression, Couscous" })).getByRole("button", { name: "Annuler" }),
+    );
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    expect(screen.queryByText("Supprimer « Couscous » du programme ?")).not.toBeInTheDocument();
+  });
+
+  it("ouvrir le choix du motif ferme la confirmation de suppression (jamais les deux)", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Retirer Couscous" }));
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme non préparé" }));
+    expect(screen.queryByText("Supprimer « Couscous » du programme ?")).not.toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Motif, Couscous" })).toBeInTheDocument();
+  });
+
+  it("confirme la suppression du bon plat quand il y en a plusieurs", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "A" }, { label: "B" }, { label: "C" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Retirer B" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer la suppression de B" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "A" }, { label: "C" }],
+    });
+  });
+});
+
+describe("MealsPage — retour 👍/👎 sur les plats préparés", () => {
+  const prepared = (extra = {}) => ({
+    sat_lunch: { items: [{ label: "Couscous", status: "prepared" as const, ...extra }] },
+  });
+
+  it("n'offre le retour que sur un plat préparé", () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }, { label: "Tarte", status: "skipped" as const }] } } });
+    expect(screen.queryByRole("button", { name: /Retour positif/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Retour négatif/ })).not.toBeInTheDocument();
+  });
+
+  it("enregistre un 👍 sur un plat préparé", async () => {
+    setup({ slots: prepared() });
+    await userEvent.click(screen.getByRole("button", { name: "Retour positif sur Couscous" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous", status: "prepared", feedback: "up" }],
+    });
+  });
+
+  it("enregistre un 👎, et un second appui l'efface", async () => {
+    setup({ slots: prepared() });
+    await userEvent.click(screen.getByRole("button", { name: "Retour négatif sur Couscous" }));
+    expect(saveMealSlot).toHaveBeenLastCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous", status: "prepared", feedback: "down" }],
+    });
+  });
+
+  it("un second appui sur le même pouce efface le retour et sa remarque", async () => {
+    setup({ slots: prepared({ feedback: "up", feedbackNote: "délicieux" }) });
+    await userEvent.click(screen.getByRole("button", { name: "Retour positif sur Couscous" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous", status: "prepared" }],
+    });
+  });
+
+  it("passer de 👍 à 👎 conserve la remarque", async () => {
+    setup({ slots: prepared({ feedback: "up", feedbackNote: "à revoir" }) });
+    await userEvent.click(screen.getByRole("button", { name: "Retour négatif sur Couscous" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous", status: "prepared", feedback: "down", feedbackNote: "à revoir" }],
+    });
+  });
+
+  it("la remarque n'apparaît qu'une fois un retour donné, et s'enregistre en quittant le champ", async () => {
+    setup({ slots: prepared({ feedback: "down" }) });
+    const note = screen.getByLabelText("Remarque sur Couscous");
+    await userEvent.type(note, "trop salé");
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    await userEvent.tab();
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous", status: "prepared", feedback: "down", feedbackNote: "trop salé" }],
+    });
+  });
+
+  it("pas de champ de remarque sans retour, et rien n'est écrit si la remarque ne change pas", async () => {
+    setup({ slots: prepared() });
+    expect(screen.queryByLabelText("Remarque sur Couscous")).not.toBeInTheDocument();
+  });
+
+  it("quitter un champ de remarque inchangé n'écrit rien", async () => {
+    setup({ slots: prepared({ feedback: "up", feedbackNote: "ok" }) });
+    await userEvent.click(screen.getByLabelText("Remarque sur Couscous"));
+    await userEvent.tab();
+    expect(saveMealSlot).not.toHaveBeenCalled();
+  });
+
+  it("repasser un plat à « planifié » efface son retour", async () => {
+    setup({ slots: prepared({ feedback: "up", feedbackNote: "ok" }) });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme préparé" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous" }],
+    });
+  });
+
+  it("le calendrier affiche le retour", async () => {
+    setup({ slots: prepared({ feedback: "up" }) });
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+    expect(within(screen.getByTestId("cell-sat-lunch")).getByLabelText("apprécié")).toBeInTheDocument();
+  });
+});
+
+describe("MealsPage — message de fin de semaine", () => {
+  const week = {
+    sat_lunch: {
+      items: [
+        { label: "Couscous", status: "prepared" as const, feedback: "up" as const, feedbackNote: "délicieux" },
+        { label: "Tarte", status: "skipped" as const, skipReason: "Pas le temps" },
+      ],
+    },
+  };
+
+  it("n'est proposé qu'une fois des plats marqués préparés ou non préparés", () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }] } } });
+    expect(screen.queryByRole("button", { name: "Retour de fin de semaine" })).not.toBeInTheDocument();
+  });
+
+  it("s'ouvre pré-rempli avec les retours de la semaine", async () => {
+    setup({ slots: week });
+    await userEvent.click(screen.getByRole("button", { name: "Retour de fin de semaine" }));
+    const text = (screen.getByLabelText("Message de fin de semaine") as HTMLTextAreaElement).value;
+    expect(text).toContain("👍 Couscous (samedi) : délicieux");
+    expect(text).toContain("❌ Tarte (samedi) : Pas le temps");
+  });
+
+  it("reste modifiable, et le lien WhatsApp envoie le texte modifié", async () => {
+    setup({ slots: week });
+    await userEvent.click(screen.getByRole("button", { name: "Retour de fin de semaine" }));
+    const area = screen.getByLabelText("Message de fin de semaine");
+    await userEvent.clear(area);
+    await userEvent.type(area, "Merci beaucoup");
+    const href = screen.getByRole("link", { name: "Envoyer le retour sur WhatsApp" }).getAttribute("href")!;
+    expect(decodeURIComponent(href.split("text=")[1])).toBe("Merci beaucoup");
+  });
+
+  it("« Régénérer » restaure le message généré", async () => {
+    setup({ slots: week });
+    await userEvent.click(screen.getByRole("button", { name: "Retour de fin de semaine" }));
+    const area = screen.getByLabelText("Message de fin de semaine") as HTMLTextAreaElement;
+    await userEvent.clear(area);
+    await userEvent.click(screen.getByRole("button", { name: "Régénérer" }));
+    expect(area.value).toContain("Couscous");
+  });
+});
+
+describe("MealsPage — statistiques par plat dans la bibliothèque", () => {
+  const dishes: Dish[] = [
+    { id: "couscous", name: "Couscous", asMeal: true },
+    { id: "tajine", name: "Tajine", asMeal: true },
+    { id: "soupe", name: "Soupe", asMeal: true },
+  ];
+  const plans: MealPlan[] = [
+    {
+      weekId: "2026-11-14",
+      defaultDiners: 4,
+      slots: {
+        sat_lunch: { items: [{ label: "Couscous", status: "prepared", feedback: "up" }, { label: "Tajine", status: "prepared", feedback: "down" }] },
+      },
+    },
+    {
+      weekId: "2026-11-21",
+      defaultDiners: 4,
+      slots: {
+        sat_lunch: { items: [{ label: "Couscous", status: "prepared", feedback: "up" }, { label: "Tajine", status: "skipped" }] },
+      },
+    },
+  ];
+
+  it("affiche combien de fois le plat a été servi et ses retours, toutes semaines confondues", async () => {
+    allPlansForTest = plans;
+    setup({}, {}, [], [], dishes);
+    await userEvent.click(screen.getByRole("tab", { name: "Bibliothèque" }));
+    expect(screen.getByText(/servi 2× · 👍 2 · 👎 0/)).toBeInTheDocument();
+    expect(screen.getByText(/servi 1× · 👍 0 · 👎 1/)).toBeInTheDocument();
+  });
+
+  it("n'affiche rien pour un plat jamais préparé", async () => {
+    allPlansForTest = plans;
+    setup({}, {}, [], [], dishes);
+    await userEvent.click(screen.getByRole("tab", { name: "Bibliothèque" }));
+    const soupe = screen.getByRole("button", { name: /Soupe/ });
+    expect(soupe).not.toHaveTextContent("servi");
+  });
+
+  it("trie par « mieux notés »", async () => {
+    allPlansForTest = plans;
+    setup({}, {}, [], [], dishes);
+    await userEvent.click(screen.getByRole("tab", { name: "Bibliothèque" }));
+    await userEvent.selectOptions(screen.getByLabelText("Trier les plats"), "approval");
+    const names = screen.getAllByRole("button", { name: /Couscous|Tajine|Soupe/ }).map((b) => b.textContent ?? "");
+    expect(names[0]).toContain("Couscous");
+    expect(names[1]).toContain("Tajine");
+    expect(names[2]).toContain("Soupe");
+  });
+});
+
+describe("MealsPage — quantité d'un snack", () => {
+  it("permet de préciser la quantité préparée d'un snack", async () => {
+    setup({ slots: { sat_snack: { items: [{ label: "Pizza" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier Pizza" }));
+    await userEvent.type(screen.getByLabelText("Quantité du snack"), "10");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_snack", {
+      items: [{ label: "Pizza", n: 10 }],
+    });
+  });
+
+  it("n'offre pas ce champ pour un déjeuner ou un dîner", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier Couscous" }));
+    expect(screen.queryByLabelText("Quantité du snack")).not.toBeInTheDocument();
+  });
+
+  it("affiche la quantité sur la pastille", () => {
+    setup({ slots: { sat_snack: { items: [{ label: "Pizza", n: 10 }] } } });
+    expect(screen.getByText("Pizza ×10")).toBeInTheDocument();
   });
 });

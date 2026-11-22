@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { withFeedback, type Feedback } from "../domain/feedback";
 import {
   MEALS,
   daysOfWeek,
@@ -31,6 +32,9 @@ const STATUS_PILL: Record<string, string> = {
   prepared: "ht-pill-ok",
   skipped: "ht-pill-warn",
 };
+
+const ICON_BUTTON =
+  "flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-current text-sm leading-none";
 
 function SlotEditor({
   plan,
@@ -70,9 +74,12 @@ function SlotEditor({
     index: number;
     label: string;
     translation: string;
+    n: string;
   } | null>(null);
   // Plat pour lequel on choisit le motif de non-préparation.
   const [skipPicker, setSkipPicker] = useState<number | null>(null);
+  // Plat dont la suppression attend confirmation.
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   // On garde l'index d'origine : modifier ou retirer un plat sous un filtre ne
   // doit jamais viser un autre plat que celui qu'on voit.
@@ -91,14 +98,24 @@ function SlotEditor({
     }
   }
 
-  function setStatus(index: number, status: "planned" | "prepared" | "skipped", reason?: string) {
-    setSkipPicker(null);
+  function updateItem(index: number, change: (item: MealItem) => MealItem) {
     void save({
       ...slot,
-      items: slot.items.map((item, i) =>
-        i === index ? withStatus(item, status, reason) : item,
-      ),
+      items: slot.items.map((item, i) => (i === index ? change(item) : item)),
     });
+  }
+
+  function setStatus(
+    index: number,
+    status: "planned" | "prepared" | "skipped",
+    reason?: string,
+  ) {
+    setSkipPicker(null);
+    updateItem(index, (item) => withStatus(item, status, reason));
+  }
+
+  function setFeedback(index: number, feedback: Feedback | null, note?: string) {
+    updateItem(index, (item) => withFeedback(item, feedback, note));
   }
 
   function handleAdd(event: FormEvent) {
@@ -122,17 +139,16 @@ function SlotEditor({
       return;
     }
     const translation = editing.translation;
-    // Le libellé corrigé va sur l'élément (statut et motif conservés) ; la
-    // traduction, elle, est enregistrée dans le référentiel : elle vaut alors
-    // pour toutes les occurrences de ce nom sans être retapée.
-    void save({
-      ...slot,
-      items: slot.items.map((item, i) => {
-        if (i !== editing.index) return item;
-        const next: MealItem = { ...item, label };
-        delete next.translation;
-        return next;
-      }),
+    const quantity = Number(editing.n);
+    // Le libellé corrigé va sur l'élément (statut, motif et retour conservés) ; la
+    // traduction, elle, est enregistrée dans le référentiel : elle vaut alors pour
+    // toutes les occurrences de ce nom sans être retapée.
+    updateItem(editing.index, (item) => {
+      const next: MealItem = { ...item, label };
+      delete next.translation;
+      if (isSnack && Number.isInteger(quantity) && quantity > 0) next.n = quantity;
+      else delete next.n;
+      return next;
     });
     setDishTranslation(label, translation).catch(() =>
       setError("Échec de l'enregistrement de la traduction. Réessayez."),
@@ -141,6 +157,8 @@ function SlotEditor({
   }
 
   const hasPlanned = slot.items.some((item) => itemStatus(item) === "planned");
+  const pendingDelete =
+    confirmDelete !== null ? slot.items[confirmDelete] : undefined;
 
   return (
     <div className="flex flex-col gap-1.5 border-t border-[var(--ht-input-border)] py-2.5 first:border-t-0">
@@ -191,83 +209,133 @@ function SlotEditor({
       </div>
 
       {visible.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5">
+        <ul className="flex flex-col gap-1.5">
           {visible.map(({ item, index }) => {
             const status = itemStatus(item);
             const translation = itemTranslation(item, translations);
             return (
               <li
                 key={`${item.label}-${index}`}
-                className={`ht-pill ${STATUS_PILL[status]} flex max-w-full items-center gap-1`}
+                className={`ht-pill ${STATUS_PILL[status]} flex w-full flex-col items-stretch gap-1`}
                 style={WRAP_STYLE}
                 data-status={status}
               >
-                <button
-                  type="button"
-                  aria-label={`Modifier ${item.label}`}
-                  onClick={() =>
-                    setEditing({
-                      index,
-                      label: item.label,
-                      translation: translation ?? "",
-                    })
-                  }
-                  dir="auto"
-                  className="min-w-0 break-words text-left"
-                >
-                  {/* Le nom sur une ligne, sa traduction (si elle existe) dessous. */}
-                  <span
-                    className={`block ${status === "skipped" ? "line-through" : ""}`}
-                  >
-                    {item.label}
+                <div className="flex items-start gap-2">
+                  {/* Statut à gauche : loin de la suppression, à droite. */}
+                  <span className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label={`Marquer ${item.label} comme préparé`}
+                      aria-pressed={status === "prepared"}
+                      onClick={() =>
+                        setStatus(index, status === "prepared" ? "planned" : "prepared")
+                      }
+                      className={`${ICON_BUTTON} ${status === "prepared" ? "font-extrabold" : "opacity-50"}`}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Marquer ${item.label} comme non préparé`}
+                      aria-pressed={status === "skipped"}
+                      onClick={() => {
+                        setConfirmDelete(null);
+                        if (status === "skipped") setStatus(index, "planned");
+                        else setSkipPicker(skipPicker === index ? null : index);
+                      }}
+                      className={`${ICON_BUTTON} ${status === "skipped" ? "font-extrabold" : "opacity-50"}`}
+                    >
+                      ✗
+                    </button>
                   </span>
-                  {translation && (
-                    <span className="block font-normal text-[var(--ht-text-2)]">
-                      {translation}
+                  <button
+                    type="button"
+                    aria-label={`Modifier ${item.label}`}
+                    onClick={() =>
+                      setEditing({
+                        index,
+                        label: item.label,
+                        translation: translation ?? "",
+                        n: item.n ? String(item.n) : "",
+                      })
+                    }
+                    dir="auto"
+                    className="min-w-0 flex-1 break-words text-left"
+                  >
+                    {/* Le nom sur une ligne, sa traduction (si elle existe) dessous. */}
+                    <span
+                      className={`block ${status === "skipped" ? "line-through" : ""}`}
+                    >
+                      {item.label}
+                      {item.n ? ` ×${item.n}` : ""}
                     </span>
-                  )}
-                  {status === "skipped" && (
-                    <span className="block font-normal">
-                      Non préparé{item.skipReason ? ` · ${item.skipReason}` : ""}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Marquer ${item.label} comme préparé`}
-                  aria-pressed={status === "prepared"}
-                  onClick={() =>
-                    setStatus(index, status === "prepared" ? "planned" : "prepared")
-                  }
-                  className={`leading-none ${status === "prepared" ? "" : "opacity-50"}`}
-                >
-                  ✓
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Marquer ${item.label} comme non préparé`}
-                  aria-pressed={status === "skipped"}
-                  onClick={() => {
-                    if (status === "skipped") setStatus(index, "planned");
-                    else setSkipPicker(skipPicker === index ? null : index);
-                  }}
-                  className={`leading-none ${status === "skipped" ? "" : "opacity-50"}`}
-                >
-                  ✗
-                </button>
-                <button
-                  type="button"
-                  aria-label={`Retirer ${item.label}`}
-                  onClick={() =>
-                    void save({
-                      ...slot,
-                      items: slot.items.filter((_, i) => i !== index),
-                    })
-                  }
-                  className="leading-none text-[var(--ht-text-2)]"
-                >
-                  ×
-                </button>
+                    {translation && (
+                      <span className="block font-normal text-[var(--ht-text-2)]">
+                        {translation}
+                      </span>
+                    )}
+                    {status === "skipped" && (
+                      <span className="block font-normal">
+                        Non préparé{item.skipReason ? ` · ${item.skipReason}` : ""}
+                      </span>
+                    )}
+                  </button>
+                  {/* Suppression : à droite, en rouge, avec confirmation. */}
+                  <button
+                    type="button"
+                    aria-label={`Retirer ${item.label}`}
+                    onClick={() => {
+                      setSkipPicker(null);
+                      setConfirmDelete(confirmDelete === index ? null : index);
+                    }}
+                    className={`${ICON_BUTTON} ml-2 border-[var(--ht-danger)] text-[var(--ht-danger)]`}
+                  >
+                    ×
+                  </button>
+                </div>
+
+                {status === "prepared" && (
+                  <div className="flex flex-wrap items-center gap-1.5 pl-1 text-xs font-normal">
+                    <span className="text-[var(--ht-text-2)]">Retour :</span>
+                    <button
+                      type="button"
+                      aria-label={`Retour positif sur ${item.label}`}
+                      aria-pressed={item.feedback === "up"}
+                      onClick={() =>
+                        setFeedback(index, item.feedback === "up" ? null : "up", item.feedbackNote)
+                      }
+                      className={`rounded-md border border-current px-1.5 py-0.5 ${item.feedback === "up" ? "" : "opacity-50"}`}
+                    >
+                      👍
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Retour négatif sur ${item.label}`}
+                      aria-pressed={item.feedback === "down"}
+                      onClick={() =>
+                        setFeedback(index, item.feedback === "down" ? null : "down", item.feedbackNote)
+                      }
+                      className={`rounded-md border border-current px-1.5 py-0.5 ${item.feedback === "down" ? "" : "opacity-50"}`}
+                    >
+                      👎
+                    </button>
+                    {item.feedback && (
+                      <input
+                        key={`${index}-${item.feedback}-${item.feedbackNote ?? ""}`}
+                        defaultValue={item.feedbackNote ?? ""}
+                        onBlur={(e) => {
+                          const value = e.target.value.trim();
+                          if (value === (item.feedbackNote ?? "")) return;
+                          setFeedback(index, item.feedback ?? null, value);
+                        }}
+                        placeholder="Remarque (facultatif)"
+                        aria-label={`Remarque sur ${item.label}`}
+                        dir="auto"
+                        className="ht-input min-w-0 flex-1 py-0.5 text-xs"
+                      />
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -310,6 +378,40 @@ function SlotEditor({
         </div>
       )}
 
+      {pendingDelete && confirmDelete !== null && (
+        <div
+          role="group"
+          aria-label={`Confirmer la suppression, ${pendingDelete.label}`}
+          className="flex flex-wrap items-center gap-2 text-xs"
+        >
+          <span className="text-[var(--ht-text)]">
+            Supprimer « {pendingDelete.label} » du programme ?
+          </span>
+          <button
+            type="button"
+            aria-label={`Confirmer la suppression de ${pendingDelete.label}`}
+            onClick={() => {
+              const index = confirmDelete;
+              setConfirmDelete(null);
+              void save({
+                ...slot,
+                items: slot.items.filter((_, i) => i !== index),
+              });
+            }}
+            className="rounded-md border border-[var(--ht-danger)] bg-[var(--ht-danger)] px-2 py-0.5 font-semibold text-white"
+          >
+            Supprimer
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDelete(null)}
+            className="ht-btn px-2 py-0.5"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
+
       {editing && (
         <form
           onSubmit={handleEditSave}
@@ -328,6 +430,18 @@ function SlotEditor({
             source={editing.label}
             known={translationFor(translations, editing.label)}
           />
+          {isSnack && (
+            <input
+              type="number"
+              inputMode="numeric"
+              min="1"
+              value={editing.n}
+              onChange={(e) => setEditing({ ...editing, n: e.target.value })}
+              placeholder="Quantité préparée (ex. 10 petites pizzas)"
+              aria-label="Quantité du snack"
+              className="ht-input"
+            />
+          )}
           <div className="flex gap-2">
             <button type="submit" className="ht-btn-cta-sm">
               Enregistrer
