@@ -1,3 +1,4 @@
+import { statusMarker } from "./mealStatus";
 import { translationFor, type TranslationIndex } from "./translations";
 import type {
   MealItem,
@@ -166,6 +167,17 @@ export function itemTranslation(
   return translationFor(translations, item.label) ?? item.translation;
 }
 
+/** Plat pour un message : repère de statut, nom, traduction, motif éventuel. */
+function describeItem(
+  item: MealItem,
+  translations?: TranslationIndex,
+): string {
+  const text = withTranslation(item.label, itemTranslation(item, translations));
+  const reason =
+    item.status === "skipped" && item.skipReason ? ` (${item.skipReason})` : "";
+  return `${statusMarker(item)}${text}${reason}`;
+}
+
 /** "Nom — traduction", ou le nom seul sans traduction. */
 function withTranslation(name: string, translation?: string): string {
   return translation ? `${name} — ${translation}` : name;
@@ -187,7 +199,7 @@ export function buildPlanMessage(
         const snacks = snacksForDay(plan, day.key);
         if (snacks.items.length === 0) continue;
         const items = snacks.items
-          .map((it) => withTranslation(it.label, itemTranslation(it, translations)))
+          .map((it) => describeItem(it, translations))
           .join(", ");
         dayLines.push(
           `${meal.fr} / ${meal.ar} : ${items}${snacks.inheritedFrom ? " (suite)" : ""}`,
@@ -197,7 +209,7 @@ export function buildPlanMessage(
       const slot = plan.slots[slotKey(day.key, meal.key)];
       if (!slot || slot.items.length === 0) continue;
       const items = slot.items
-        .map((it) => withTranslation(it.label, itemTranslation(it, translations)))
+        .map((it) => describeItem(it, translations))
         .join(", ");
       dayLines.push(
         `${meal.fr} / ${meal.ar} (${dinersOf(plan, slot)}) : ${items}`,

@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { MEALS, daysOfWeek, dinersOf, itemTranslation, slotKey, snacksForDay } from "../domain/mealPlan";
+import { itemStatus } from "../domain/mealStatus";
 import type { TranslationIndex } from "../domain/translations";
 import type { MealItem, MealPlan } from "../types";
 
@@ -19,10 +20,16 @@ function Items({
     <ul className={`flex flex-col gap-1 ${muted ? "italic opacity-70" : ""}`}>
       {items.map((item, index) => {
         const translation = itemTranslation(item, translations);
+        const status = itemStatus(item);
         return (
           <li key={`${item.label}-${index}`} className="leading-snug">
             {/* L'arabe sur sa ligne, le français (quand il existe) dessous. */}
-            <span dir="auto" className="block break-words">
+            <span
+              dir="auto"
+              className={`block break-words ${status === "skipped" ? "line-through" : ""}`}
+            >
+              {status === "prepared" && <span aria-label="préparé">✓ </span>}
+              {status === "skipped" && <span aria-label="non préparé">✗ </span>}
               {item.label}
             </span>
             {translation && (
@@ -31,6 +38,11 @@ function Items({
                 className="block break-words text-[10px] text-[var(--ht-text-2)]"
               >
                 {translation}
+              </span>
+            )}
+            {status === "skipped" && item.skipReason && (
+              <span className="block break-words text-[10px] text-[var(--ht-text-2)]">
+                {item.skipReason}
               </span>
             )}
           </li>

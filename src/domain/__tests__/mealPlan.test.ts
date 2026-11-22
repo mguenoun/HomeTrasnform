@@ -324,3 +324,26 @@ describe("buildVendorMessage (commande à un commerçant)", () => {
     );
   });
 });
+
+describe("statut des plats dans le message WhatsApp", () => {
+  it("repère ✅ préparé et ❌ non préparé (avec motif), rien pour un plat planifié", () => {
+    const plan = emptyPlan("2026-11-21");
+    plan.slots.sat_lunch = {
+      items: [
+        { label: "Couscous", status: "prepared" },
+        { label: "Salade" },
+        { label: "Tarte", status: "skipped", skipReason: "Pas le temps" },
+        { label: "Soupe", status: "skipped" },
+      ],
+    };
+    expect(buildPlanMessage(plan)).toContain(
+      "Déjeuner / الغداء (4) : ✅ Couscous, Salade, ❌ Tarte (Pas le temps), ❌ Soupe",
+    );
+  });
+
+  it("le repère s'applique aussi aux snacks reportés", () => {
+    const plan = emptyPlan("2026-11-21");
+    plan.slots.tue_snack = { items: [{ label: "Cake", status: "prepared" }] };
+    expect(buildPlanMessage(plan)).toContain("✅ Cake (suite)");
+  });
+});

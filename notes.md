@@ -121,6 +121,11 @@ détail épique par épique ; en résumé :
   `dishes`/`ingredients` et résolue via un index (`buildTranslationIndex`) : référentiel
   d'abord, puis éléments saisis. Calendrier : colonne des jours figée
   (`--ht-card-solid`, fond opaque requis dans les deux thèmes).
+  **Suivi préparé/non préparé (2026-11-22)** : `MealItem.status` (absent = planifié) et
+  `skipReason`, `domain/mealStatus.ts` (filtre, compteurs, marqueurs ✅/❌). Piège évité :
+  sous un filtre la liste affichée est un sous-ensemble — toute modification doit viser
+  l'**index d'origine** de l'élément (sinon on retire/édite le mauvais plat), d'où la saisie
+  masquée sous filtre et les index conservés dans `SlotEditor`.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

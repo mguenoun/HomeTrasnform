@@ -971,3 +971,198 @@ describe("MealsPage — une traduction vaut pour tous les noms identiques", () =
     expect(screen.getByText("حليب")).toBeInTheDocument();
   });
 });
+
+describe("MealsPage — suivi préparé / non préparé", () => {
+  const slots = {
+    sat_lunch: {
+      items: [
+        { label: "Couscous" },
+        { label: "Tarte" },
+      ],
+    },
+  };
+
+  it("marque un plat comme préparé", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme préparé" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous", status: "prepared" }, { label: "Tarte" }],
+    });
+  });
+
+  it("un second appui sur ✓ revient à planifié", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous", status: "prepared" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme préparé" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous" }],
+    });
+  });
+
+  it("marque un plat non préparé avec un motif choisi", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Tarte comme non préparé" }));
+    // rien n'est écrit tant qu'on n'a pas choisi : le motif est demandé d'abord
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Pas le temps" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous" }, { label: "Tarte", status: "skipped", skipReason: "Pas le temps" }],
+    });
+  });
+
+  it("le motif « Ingrédient manquant » est proposé aussi, et « Sans motif » reste possible", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Tarte comme non préparé" }));
+    expect(screen.getByRole("button", { name: "Ingrédient manquant" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Sans motif" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous" }, { label: "Tarte", status: "skipped" }],
+    });
+  });
+
+  it("annuler le choix du motif n'écrit rien", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Tarte comme non préparé" }));
+    await userEvent.click(within(screen.getByRole("group", { name: "Motif, Tarte" })).getByRole("button", { name: "Annuler" }));
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    expect(screen.queryByRole("group", { name: "Motif, Tarte" })).not.toBeInTheDocument();
+  });
+
+  it("un plat non préparé affiche son motif, et ✗ le remet à planifié sans rien demander", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Tarte", status: "skipped", skipReason: "Pas le temps" }] } } });
+    expect(screen.getByText("Non préparé · Pas le temps")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Tarte comme non préparé" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Tarte" }],
+    });
+  });
+
+  it("« Tout préparé » ne marque que les plats encore planifiés", async () => {
+    setup({
+      slots: {
+        sat_lunch: {
+          items: [
+            { label: "A" },
+            { label: "B", status: "skipped", skipReason: "Pas le temps" },
+            { label: "C", status: "prepared" },
+          ],
+        },
+      },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Tout marquer préparé, Déjeuner" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [
+        { label: "A", status: "prepared" },
+        { label: "B", status: "skipped", skipReason: "Pas le temps" },
+        { label: "C", status: "prepared" },
+      ],
+    });
+  });
+
+  it("« Tout préparé » disparaît quand plus rien n'est planifié", () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "A", status: "prepared" }] } } });
+    expect(screen.queryByRole("button", { name: "Tout marquer préparé, Déjeuner" })).not.toBeInTheDocument();
+  });
+
+  it("corriger le nom d'un plat conserve son statut et son motif", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Tarte", status: "skipped", skipReason: "Pas le temps" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier Tarte" }));
+    const name = screen.getByLabelText("Nom, Déjeuner");
+    await userEvent.clear(name);
+    await userEvent.type(name, "Tarte aux pommes");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Tarte aux pommes", status: "skipped", skipReason: "Pas le temps" }],
+    });
+  });
+});
+
+describe("MealsPage — vue filtrée par statut", () => {
+  const slots = {
+    sat_lunch: {
+      items: [
+        { label: "Couscous", status: "prepared" as const },
+        { label: "Salade" },
+        { label: "Tarte", status: "skipped" as const, skipReason: "Pas le temps" },
+      ],
+    },
+    sun_dinner: { items: [{ label: "Shaaria", status: "skipped" as const }] },
+  };
+
+  it("affiche le nombre de plats par statut", () => {
+    setup({ slots });
+    expect(screen.getByRole("button", { name: "Tout (4)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Planifié (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Préparé (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Non préparé (2)" })).toBeInTheDocument();
+  });
+
+  it("n'affiche pas de filtre quand le programme est vide", () => {
+    setup();
+    expect(screen.queryByRole("group", { name: "Filtrer le programme par statut" })).not.toBeInTheDocument();
+  });
+
+  it("ne montre que ce qui a été réellement préparé", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Préparé (1)" }));
+    expect(screen.getByText("Couscous")).toBeInTheDocument();
+    expect(screen.queryByText("Salade")).not.toBeInTheDocument();
+    expect(screen.queryByText("Tarte")).not.toBeInTheDocument();
+    // les jours sans plat préparé disparaissent
+    expect(screen.queryByText(/^Dimanche/)).not.toBeInTheDocument();
+  });
+
+  it("ne montre que les plats non préparés, avec leur motif, sur tous les jours", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Non préparé (2)" }));
+    expect(screen.getByText("Tarte")).toBeInTheDocument();
+    expect(screen.getByText("Shaaria")).toBeInTheDocument();
+    expect(screen.getByText("Non préparé · Pas le temps")).toBeInTheDocument();
+    expect(screen.queryByText("Couscous")).not.toBeInTheDocument();
+  });
+
+  it("la vue « Planifié » ne garde que ce qui n'est pas encore marqué", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Planifié (1)" }));
+    expect(screen.getByText("Salade")).toBeInTheDocument();
+    expect(screen.queryByText("Couscous")).not.toBeInTheDocument();
+  });
+
+  it("sous un filtre, la saisie est masquée (on consulte)", async () => {
+    setup({ slots });
+    expect(screen.getAllByLabelText(/Ajouter un plat/).length).toBeGreaterThan(0);
+    await userEvent.click(screen.getByRole("button", { name: "Préparé (1)" }));
+    expect(screen.queryByLabelText(/Ajouter un plat/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Moins de convives/)).not.toBeInTheDocument();
+  });
+
+  it("retirer un plat sous un filtre vise bien ce plat, pas un autre (index d'origine)", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "A" }, { label: "B", status: "prepared" as const }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Préparé (1)" }));
+    await userEvent.click(screen.getByRole("button", { name: "Retirer B" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "A" }],
+    });
+  });
+
+  it("signale quand aucun plat ne correspond, et « Tout » ramène la vue complète", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "A" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Préparé (0)" }));
+    expect(screen.getByText("Aucun plat ne correspond à ce filtre.")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Tout (1)" }));
+    expect(screen.getByText("A")).toBeInTheDocument();
+  });
+
+  it("le calendrier suit le filtre et marque préparé ✓ / non préparé ✗", async () => {
+    setup({ slots });
+    await userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+    const lunch = screen.getByTestId("cell-sat-lunch");
+    expect(within(lunch).getByLabelText("préparé")).toBeInTheDocument();
+    expect(within(lunch).getByLabelText("non préparé")).toBeInTheDocument();
+    expect(within(lunch).getByText("Pas le temps")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Préparé (1)" }));
+    const filtered = screen.getByTestId("cell-sat-lunch");
+    expect(within(filtered).getByText("Couscous")).toBeInTheDocument();
+    expect(within(filtered).queryByText("Tarte")).not.toBeInTheDocument();
+  });
+});

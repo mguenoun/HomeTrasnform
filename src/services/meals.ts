@@ -71,6 +71,12 @@ export async function saveMealSlot(
       ...(item.translation?.trim()
         ? { translation: item.translation.trim() }
         : {}),
+      ...(item.status === "prepared" || item.status === "skipped"
+        ? { status: item.status }
+        : {}),
+      ...(item.status === "skipped" && item.skipReason?.trim()
+        ? { skipReason: item.skipReason.trim() }
+        : {}),
     }))
     .filter((item) => item.label.length > 0);
   await setDoc(

@@ -250,6 +250,19 @@ facultative) :
   dans le message généré.
 - L'interface de l'app reste en français (les utilisateurs sont la famille).
 
+### 3.5 bis Suivi de réalisation (✅ livré 2026-11-22)
+La personne de ménage peut ne pas avoir le temps (tarte aux pommes) ou les ingrédients
+(cha3ria) : chaque plat/snack du programme a un **statut** — *planifié* (par défaut),
+*préparé* ou *non préparé* (avec un **motif** : « Pas le temps », « Ingrédient manquant »,
+ou sans motif). Marquage au tap (✓ / ✗ sur la pastille), « Tout préparé » par créneau. Une
+**vue filtrée** (Tout / Planifié / Préparé / Non préparé, avec compteurs) s'applique à la
+liste et au calendrier ; sous un filtre la saisie est masquée (on consulte) et les index
+d'origine sont conservés pour ne jamais modifier un autre plat. Les messages WhatsApp
+repèrent ✅ / ❌ (et le motif). Le statut d'un snack reporté est celui de son jour d'origine
+(un seul élément, saisi une fois). Le report se recalcule sur le programme filtré.
+*Suite logique* : le retour 👍/👎 ne s'affichera que sur les plats **préparés** ; un plat
+non préparé faute d'ingrédient alimentera le contrôle de couverture (étape 3).
+
 ### 3.6 Retours sur les repas
 - Après un repas, un membre de la famille indique s'il a été **apprécié** : 👍 / 👎
   (décision 2026-11-21, pas d'étoiles), avec un commentaire facultatif (« trop salé », « les enfants ont adoré »). Un tap sur le repas du programme.

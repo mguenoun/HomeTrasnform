@@ -15,6 +15,12 @@ import {
   weekIdOf,
   whatsappUrl,
 } from "../domain/mealPlan";
+import {
+  STATUS_FILTERS,
+  countByStatus,
+  filterPlan,
+  type StatusFilter,
+} from "../domain/mealStatus";
 import { buildTranslationIndex } from "../domain/translations";
 import {
   useDishes,
@@ -40,6 +46,8 @@ export function MealsPage() {
   const [tab, setTab] = useState<Tab>("plan");
   // Programme : vue d'ensemble en calendrier, ou détail jour par jour (saisie).
   const [planView, setPlanView] = useState<"detail" | "calendar">("detail");
+  // Vue filtrée sur ce qui est préparé, planifié ou non préparé.
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const { plan, loading: planLoading } = useMealPlan(weekId);
   const { list, loading: listLoading } = useShoppingList(weekId);
   const { expenses, loading: expensesLoading } = useExpenses(weekId);
@@ -75,6 +83,8 @@ export function MealsPage() {
         ?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     }, 0);
   }
+
+  const counts = countByStatus(plan);
 
   const shareable = tab === "plan" || tab === "shopping";
   const shareMessage =
@@ -187,15 +197,39 @@ export function MealsPage() {
               ))}
             </div>
           </div>
+          {counts.all > 0 && (
+            <div
+              role="group"
+              aria-label="Filtrer le programme par statut"
+              className="mb-3 flex flex-wrap gap-1.5"
+            >
+              {STATUS_FILTERS.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  aria-pressed={statusFilter === key}
+                  onClick={() => setStatusFilter(key)}
+                  className={`ht-btn px-2.5 py-1 text-xs ${statusFilter === key ? "font-extrabold" : ""}`}
+                >
+                  {label} ({counts[key]})
+                </button>
+              ))}
+            </div>
+          )}
           <ProgramImport weekId={weekId} />
           {planView === "calendar" ? (
             <MealCalendar
-              plan={plan}
+              plan={filterPlan(plan, statusFilter)}
               onSelectDay={openDay}
               translations={translations}
             />
           ) : (
-            <MealWeekPlan plan={plan} dishes={dishes} translations={translations} />
+            <MealWeekPlan
+              plan={plan}
+              dishes={dishes}
+              translations={translations}
+              filter={statusFilter}
+            />
           )}
         </div>
       )}

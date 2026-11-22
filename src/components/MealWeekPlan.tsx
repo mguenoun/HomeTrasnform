@@ -9,21 +9,42 @@ import {
   splitMealText,
   type WeekDay,
 } from "../domain/mealPlan";
+import {
+  SKIP_REASONS,
+  filterPlan,
+  itemStatus,
+  markPlannedAsPrepared,
+  matchesFilter,
+  withStatus,
+  type StatusFilter,
+} from "../domain/mealStatus";
 import { translationFor, type TranslationIndex } from "../domain/translations";
 import { saveMealSlot, setDishTranslation } from "../services/meals";
-import type { Dish, MealPlan, MealSlot } from "../types";
+import type { Dish, MealItem, MealPlan, MealSlot } from "../types";
 import { TranslationInput } from "./TranslationInput";
 
 const EMPTY_SLOT: MealSlot = { items: [] };
+const WRAP_STYLE = { whiteSpace: "normal", borderRadius: 12 } as const;
+
+const STATUS_PILL: Record<string, string> = {
+  planned: "ht-pill-neutral",
+  prepared: "ht-pill-ok",
+  skipped: "ht-pill-warn",
+};
 
 function SlotEditor({
   plan,
+  filteredPlan,
+  filter,
   day,
   mealKey,
   mealLabel,
   translations,
 }: {
   plan: MealPlan;
+  /** Programme réduit au filtre actif (identique à `plan` si « Tout »). */
+  filteredPlan: MealPlan;
+  filter: StatusFilter;
   day: WeekDay;
   mealKey: string;
   mealLabel: string;
@@ -32,11 +53,15 @@ function SlotEditor({
   const key = slotKey(day.key, mealKey);
   const slot = plan.slots[key] ?? EMPTY_SLOT;
   const isSnack = mealKey === "snack";
+  const filtered = filter !== "all";
   const diners = dinersOf(plan, slot);
-  // Snacks d'un jour vide : ceux du dernier jour non vide (reportés, non copiés).
-  const inheritedFrom = isSnack ? snacksForDay(plan, day.key).inheritedFrom : undefined;
+  // Snacks d'un jour vide : ceux du dernier jour non vide (reportés, non copiés),
+  // recalculés sur le programme filtré.
+  const inheritedFrom = isSnack
+    ? snacksForDay(filteredPlan, day.key).inheritedFrom
+    : undefined;
   const inheritedItems = inheritedFrom
-    ? (plan.slots[slotKey(inheritedFrom.key, "snack")]?.items ?? [])
+    ? (filteredPlan.slots[slotKey(inheritedFrom.key, "snack")]?.items ?? [])
     : [];
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +71,16 @@ function SlotEditor({
     label: string;
     translation: string;
   } | null>(null);
+  // Plat pour lequel on choisit le motif de non-préparation.
+  const [skipPicker, setSkipPicker] = useState<number | null>(null);
+
+  // On garde l'index d'origine : modifier ou retirer un plat sous un filtre ne
+  // doit jamais viser un autre plat que celui qu'on voit.
+  const visible = slot.items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => matchesFilter(item, filter));
+
+  if (filtered && visible.length === 0 && !inheritedFrom) return null;
 
   async function save(next: MealSlot) {
     setError(null);
@@ -54,6 +89,16 @@ function SlotEditor({
     } catch {
       setError("Échec de l'enregistrement. Réessayez.");
     }
+  }
+
+  function setStatus(index: number, status: "planned" | "prepared" | "skipped", reason?: string) {
+    setSkipPicker(null);
+    void save({
+      ...slot,
+      items: slot.items.map((item, i) =>
+        i === index ? withStatus(item, status, reason) : item,
+      ),
+    });
   }
 
   function handleAdd(event: FormEvent) {
@@ -77,14 +122,17 @@ function SlotEditor({
       return;
     }
     const translation = editing.translation;
-    // Le libellé corrigé va sur l'élément ; la traduction, elle, est enregistrée
-    // dans le référentiel : elle vaut alors pour toutes les occurrences de ce nom
-    // (jours répétés, autres semaines, bibliothèque) sans être retapée.
+    // Le libellé corrigé va sur l'élément (statut et motif conservés) ; la
+    // traduction, elle, est enregistrée dans le référentiel : elle vaut alors
+    // pour toutes les occurrences de ce nom sans être retapée.
     void save({
       ...slot,
-      items: slot.items.map((item, i) =>
-        i === editing.index ? { label } : item,
-      ),
+      items: slot.items.map((item, i) => {
+        if (i !== editing.index) return item;
+        const next: MealItem = { ...item, label };
+        delete next.translation;
+        return next;
+      }),
     });
     setDishTranslation(label, translation).catch(() =>
       setError("Échec de l'enregistrement de la traduction. Réessayez."),
@@ -92,87 +140,174 @@ function SlotEditor({
     setEditing(null);
   }
 
+  const hasPlanned = slot.items.some((item) => itemStatus(item) === "planned");
+
   return (
     <div className="flex flex-col gap-1.5 border-t border-[var(--ht-input-border)] py-2.5 first:border-t-0">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="text-sm font-semibold text-[var(--ht-text)]">
           {mealLabel}
         </span>
-        {/* Un snack se prépare par quantité, pas par nombre de convives. */}
-        {!isSnack && (
-          <span className="flex items-center gap-1 text-xs text-[var(--ht-text-2)]">
+        <span className="flex items-center gap-2">
+          {!filtered && hasPlanned && (
             <button
               type="button"
-              aria-label={`Moins de convives, ${mealLabel}`}
-              disabled={diners <= 1}
-              onClick={() => void save({ ...slot, diners: diners - 1 })}
-              className="ht-btn h-6 w-6 p-0"
+              aria-label={`Tout marquer préparé, ${mealLabel}`}
+              onClick={() => void save(markPlannedAsPrepared(slot))}
+              className="ht-btn px-2 py-0.5 text-xs"
             >
-              −
+              Tout préparé
             </button>
-            <span
-              aria-label={`Convives, ${mealLabel}`}
-              className="min-w-[2.5ch] text-center"
-            >
-              {diners} p.
+          )}
+          {/* Un snack se prépare par quantité, pas par nombre de convives. */}
+          {!isSnack && !filtered && (
+            <span className="flex items-center gap-1 text-xs text-[var(--ht-text-2)]">
+              <button
+                type="button"
+                aria-label={`Moins de convives, ${mealLabel}`}
+                disabled={diners <= 1}
+                onClick={() => void save({ ...slot, diners: diners - 1 })}
+                className="ht-btn h-6 w-6 p-0"
+              >
+                −
+              </button>
+              <span
+                aria-label={`Convives, ${mealLabel}`}
+                className="min-w-[2.5ch] text-center"
+              >
+                {diners} p.
+              </span>
+              <button
+                type="button"
+                aria-label={`Plus de convives, ${mealLabel}`}
+                onClick={() => void save({ ...slot, diners: diners + 1 })}
+                className="ht-btn h-6 w-6 p-0"
+              >
+                +
+              </button>
             </span>
-            <button
-              type="button"
-              aria-label={`Plus de convives, ${mealLabel}`}
-              onClick={() => void save({ ...slot, diners: diners + 1 })}
-              className="ht-btn h-6 w-6 p-0"
-            >
-              +
-            </button>
-          </span>
-        )}
+          )}
+        </span>
       </div>
 
-      {slot.items.length > 0 && (
+      {visible.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
-          {slot.items.map((item, index) => (
-            <li
-              key={`${item.label}-${index}`}
-              className="ht-pill ht-pill-neutral flex max-w-full items-center gap-1"
-              style={{ whiteSpace: "normal", borderRadius: 12 }}
-            >
-              <button
-                type="button"
-                aria-label={`Modifier ${item.label}`}
-                onClick={() =>
-                  setEditing({
-                    index,
-                    label: item.label,
-                    translation: itemTranslation(item, translations) ?? "",
-                  })
-                }
-                dir="auto"
-                className="min-w-0 break-words text-left"
+          {visible.map(({ item, index }) => {
+            const status = itemStatus(item);
+            const translation = itemTranslation(item, translations);
+            return (
+              <li
+                key={`${item.label}-${index}`}
+                className={`ht-pill ${STATUS_PILL[status]} flex max-w-full items-center gap-1`}
+                style={WRAP_STYLE}
+                data-status={status}
               >
-                {/* Le nom sur une ligne, sa traduction (si elle existe) dessous. */}
-                <span className="block">{item.label}</span>
-                {itemTranslation(item, translations) && (
-                  <span className="block font-normal text-[var(--ht-text-2)]">
-                    {itemTranslation(item, translations)}
+                <button
+                  type="button"
+                  aria-label={`Modifier ${item.label}`}
+                  onClick={() =>
+                    setEditing({
+                      index,
+                      label: item.label,
+                      translation: translation ?? "",
+                    })
+                  }
+                  dir="auto"
+                  className="min-w-0 break-words text-left"
+                >
+                  {/* Le nom sur une ligne, sa traduction (si elle existe) dessous. */}
+                  <span
+                    className={`block ${status === "skipped" ? "line-through" : ""}`}
+                  >
+                    {item.label}
                   </span>
-                )}
-              </button>
-              <button
-                type="button"
-                aria-label={`Retirer ${item.label}`}
-                onClick={() =>
-                  void save({
-                    ...slot,
-                    items: slot.items.filter((_, i) => i !== index),
-                  })
-                }
-                className="leading-none text-[var(--ht-text-2)]"
-              >
-                ×
-              </button>
-            </li>
-          ))}
+                  {translation && (
+                    <span className="block font-normal text-[var(--ht-text-2)]">
+                      {translation}
+                    </span>
+                  )}
+                  {status === "skipped" && (
+                    <span className="block font-normal">
+                      Non préparé{item.skipReason ? ` · ${item.skipReason}` : ""}
+                    </span>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Marquer ${item.label} comme préparé`}
+                  aria-pressed={status === "prepared"}
+                  onClick={() =>
+                    setStatus(index, status === "prepared" ? "planned" : "prepared")
+                  }
+                  className={`leading-none ${status === "prepared" ? "" : "opacity-50"}`}
+                >
+                  ✓
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Marquer ${item.label} comme non préparé`}
+                  aria-pressed={status === "skipped"}
+                  onClick={() => {
+                    if (status === "skipped") setStatus(index, "planned");
+                    else setSkipPicker(skipPicker === index ? null : index);
+                  }}
+                  className={`leading-none ${status === "skipped" ? "" : "opacity-50"}`}
+                >
+                  ✗
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Retirer ${item.label}`}
+                  onClick={() =>
+                    void save({
+                      ...slot,
+                      items: slot.items.filter((_, i) => i !== index),
+                    })
+                  }
+                  className="leading-none text-[var(--ht-text-2)]"
+                >
+                  ×
+                </button>
+              </li>
+            );
+          })}
         </ul>
+      )}
+
+      {skipPicker !== null && slot.items[skipPicker] && (
+        <div
+          role="group"
+          aria-label={`Motif, ${slot.items[skipPicker].label}`}
+          className="flex flex-wrap items-center gap-1.5 text-xs"
+        >
+          <span className="text-[var(--ht-text-2)]">
+            Pourquoi « {slot.items[skipPicker].label} » n&apos;a pas été préparé ?
+          </span>
+          {SKIP_REASONS.map((reason) => (
+            <button
+              key={reason}
+              type="button"
+              onClick={() => setStatus(skipPicker, "skipped", reason)}
+              className="ht-btn px-2 py-0.5"
+            >
+              {reason}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setStatus(skipPicker, "skipped")}
+            className="ht-btn px-2 py-0.5"
+          >
+            Sans motif
+          </button>
+          <button
+            type="button"
+            onClick={() => setSkipPicker(null)}
+            className="text-[var(--ht-text-2)]"
+          >
+            Annuler
+          </button>
+        </div>
       )}
 
       {editing && (
@@ -219,17 +354,21 @@ function SlotEditor({
         </p>
       )}
 
-      <form onSubmit={handleAdd} className="flex gap-1.5">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Ajouter (ex. couscous + salade)…"
-          aria-label={`Ajouter un plat, ${mealLabel}`}
-          list={isSnack ? "dishes-snack" : "dishes-meal"}
-          dir="auto"
-          className="ht-input flex-1"
-        />
-      </form>
+      {/* Sous un filtre, on consulte : pas de saisie (un plat ajouté serait
+          « planifié » et disparaîtrait aussitôt du filtre actif). */}
+      {!filtered && (
+        <form onSubmit={handleAdd} className="flex gap-1.5">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Ajouter (ex. couscous + salade)…"
+            aria-label={`Ajouter un plat, ${mealLabel}`}
+            list={isSnack ? "dishes-snack" : "dishes-meal"}
+            dir="auto"
+            className="ht-input flex-1"
+          />
+        </form>
+      )}
       {error && (
         <p role="alert" className="text-xs text-[var(--ht-danger)]">
           {error}
@@ -243,11 +382,24 @@ export function MealWeekPlan({
   plan,
   dishes = [],
   translations,
+  filter = "all",
 }: {
   plan: MealPlan;
   dishes?: Dish[];
   translations?: TranslationIndex;
+  filter?: StatusFilter;
 }) {
+  const filteredPlan = filterPlan(plan, filter);
+  const days = daysOfWeek(plan.weekId).filter(
+    (day) =>
+      filter === "all" ||
+      MEALS.some(
+        (meal) =>
+          (filteredPlan.slots[slotKey(day.key, meal.key)]?.items.length ?? 0) > 0 ||
+          (meal.key === "snack" && snacksForDay(filteredPlan, day.key).items.length > 0),
+      ),
+  );
+
   return (
     <div className="flex flex-col gap-3">
       <datalist id="dishes-snack">
@@ -264,7 +416,12 @@ export function MealWeekPlan({
             <option key={d.id} value={d.name} />
           ))}
       </datalist>
-      {daysOfWeek(plan.weekId).map((day) => (
+      {days.length === 0 && (
+        <p className="text-[var(--ht-text-2)]">
+          Aucun plat ne correspond à ce filtre.
+        </p>
+      )}
+      {days.map((day) => (
         <section key={day.key} id={`day-${day.key}`} className="ht-card p-4">
           <h3 className="mb-1 text-sm font-extrabold text-[var(--ht-text)]">
             {day.fr} {day.date.getDate()}
@@ -273,6 +430,8 @@ export function MealWeekPlan({
             <SlotEditor
               key={meal.key}
               plan={plan}
+              filteredPlan={filteredPlan}
+              filter={filter}
               day={day}
               mealKey={meal.key}
               mealLabel={meal.fr}

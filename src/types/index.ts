@@ -188,9 +188,16 @@ export interface BudgetItemAttachment {
 /** Clé d'un créneau dans `MealPlan.slots`, ex. "mon_lunch" (jour_repas). */
 export type MealSlotKey = string;
 
+/** Suivi de réalisation : absent = planifié, pas encore marqué. */
+export type MealStatus = "prepared" | "skipped";
+
 export interface MealItem {
   /** Texte libre, dans la langue de saisie (arabe ou français). */
   label: string;
+  /** Préparé ou non préparé ; absent = planifié. */
+  status?: MealStatus;
+  /** Pourquoi ce plat n'a pas été préparé (« Pas le temps »…), seulement si non préparé. */
+  skipReason?: string;
   /** Traduction dans l'autre langue, facultative. */
   translation?: string;
 }

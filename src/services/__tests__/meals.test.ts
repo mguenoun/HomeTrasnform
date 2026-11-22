@@ -697,3 +697,35 @@ describe("traductions partagées (écrites une fois dans le référentiel)", () 
     expect(setDocMock).not.toHaveBeenCalled();
   });
 });
+
+describe("saveMealSlot conserve le suivi de réalisation", () => {
+  it("enregistre le statut et le motif des plats", async () => {
+    await saveMealSlot("2026-11-21", "sat_lunch", {
+      items: [
+        { label: "Couscous", status: "prepared" },
+        { label: "Tarte", status: "skipped", skipReason: "  Pas le temps " },
+        { label: "Salade" },
+      ],
+    });
+    expect(writesTo("mealPlans")[0][1].slots.sat_lunch.items).toEqual([
+      { label: "Couscous", status: "prepared" },
+      { label: "Tarte", status: "skipped", skipReason: "Pas le temps" },
+      { label: "Salade" },
+    ]);
+  });
+
+  it("ignore un statut invalide et un motif sur un plat qui n'est pas « non préparé »", async () => {
+    await saveMealSlot("2026-11-21", "sat_lunch", {
+      items: [
+        { label: "A", status: "bizarre" as never },
+        { label: "B", status: "prepared", skipReason: "Pas le temps" },
+        { label: "C", status: "skipped", skipReason: "   " },
+      ],
+    });
+    expect(writesTo("mealPlans")[0][1].slots.sat_lunch.items).toEqual([
+      { label: "A" },
+      { label: "B", status: "prepared" },
+      { label: "C", status: "skipped" },
+    ]);
+  });
+});

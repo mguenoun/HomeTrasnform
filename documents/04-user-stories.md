@@ -248,6 +248,12 @@ traduction déjà connue est proposée en premier. — ✅ Fait
 de déborder ; le calendrier défile horizontalement avec des flèches, jours figés, l'arabe
 sur une ligne et le français dessous. — ✅ Fait
 
+**US-12.19** (P1) — Je marque chaque plat/snack du programme comme préparé ou non préparé
+(avec un motif : pas le temps, ingrédient manquant, ou sans motif), pour suivre la
+réalisation réelle, et je filtre le programme (tout / planifié / préparé / non préparé)
+en liste comme en calendrier. Prérequis du retour 👍/👎 (US-12.7), qui ne portera que sur
+les plats réellement préparés. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait
