@@ -1,11 +1,19 @@
 import { useEffect, useState } from "react";
 import { emptyPlan } from "../domain/mealPlan";
 import {
+  subscribeToDishes,
   subscribeToExpenses,
+  subscribeToIngredients,
   subscribeToMealPlan,
   subscribeToShoppingList,
 } from "../services/meals";
-import type { HouseholdExpense, MealPlan, ShoppingList } from "../types";
+import type {
+  CatalogIngredient,
+  Dish,
+  HouseholdExpense,
+  MealPlan,
+  ShoppingList,
+} from "../types";
 
 /** Programme de la semaine ; un plan vide (non encore enregistré) si absent. */
 export function useMealPlan(weekId: string): {
@@ -65,4 +73,18 @@ export function useExpenses(weekId: string): {
 
   const ready = state?.weekId === weekId;
   return { expenses: ready ? state.expenses : [], loading: !ready };
+}
+
+/** Plats/snacks déjà saisis (autocomplétion). Vide tant que non chargé. */
+export function useDishes(): Dish[] {
+  const [dishes, setDishes] = useState<Dish[]>([]);
+  useEffect(() => subscribeToDishes(setDishes), []);
+  return dishes;
+}
+
+/** Articles de courses déjà saisis, avec leur dernier point de vente/quantité. */
+export function useIngredients(): CatalogIngredient[] {
+  const [ingredients, setIngredients] = useState<CatalogIngredient[]>([]);
+  useEffect(() => subscribeToIngredients(setIngredients), []);
+  return ingredients;
 }

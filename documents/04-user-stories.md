@@ -217,6 +217,15 @@ et carte tableau de bord à faire)
 **US-12.7** (P3) — Retour 👍/👎 sur chaque repas, note par plat, message de fin de
 semaine à la personne de ménage. — ⬜ Prévu (étape 5)
 
+**US-12.9** (P1) — En faisant les courses, je vois la liste d'un point de vente, je coche
+ce qui est servi, je saisis le montant payé à la fin, et je vois à tout instant ce qui a
+été acheté et ce qui reste. — ✅ Fait
+**US-12.10** (P2) — Quand un jour n'a pas de snack, il reprend ceux du dernier jour non
+vide, sans duplication des données. — ✅ Fait
+**US-12.11** (P2) — Les plats et articles déjà saisis alimentent un référentiel
+(autocomplétion, point de vente et quantité habituels). — 🚧 Partiel (appris
+automatiquement ; pas d'écran de gestion ni d'ingrédients par plat)
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

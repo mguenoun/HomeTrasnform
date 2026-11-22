@@ -47,6 +47,9 @@ beforeEach(async () => {
       weekId: "2026-W47",
       items: {},
     });
+    for (const name of ["dishes", "ingredients"]) {
+      await setDoc(doc(context.firestore(), `${name}/2026-W47`), { name: "x" });
+    }
     await setDoc(doc(context.firestore(), "householdExpenses/2026-W47"), {
       weekId: "2026-W47",
       type: "groceries",
@@ -67,7 +70,13 @@ function asOutsider() {
   });
 }
 
-describe.each(["mealPlans", "shoppingLists", "householdExpenses"])("règles %s", (name) => {
+describe.each([
+  "mealPlans",
+  "shoppingLists",
+  "householdExpenses",
+  "dishes",
+  "ingredients",
+])("règles %s", (name) => {
   it("autorise un membre à lire, lister et écrire", async () => {
     const db = asMember().firestore();
     await assertSucceeds(getDoc(doc(db, `${name}/2026-W47`)));

@@ -89,6 +89,15 @@ détail épique par épique ; en résumé :
   prix par article facultatif, honoraires 200 MAD/jour (sam/mar/jeu). Limite connue
   du parseur : un article commençant par « و » non suivi d'une quantité (ex.
   « وليشو ») garde le « و » — corrigeable à la main dans la liste.
+  **Mode courses, snacks reportés, référentiel appris (2026-11-22)** : mode
+  courses par point de vente (cocher, « Payer {point de vente} », avancement global) ;
+  snacks d'un jour vide **calculés** depuis le dernier jour non vide (jamais copiés,
+  pour ne compter qu'une fois leurs futurs ingrédients) ; collections `dishes` et
+  `ingredients` alimentées automatiquement à chaque saisie/import (écritures « au
+  mieux » : une panne du référentiel ne bloque pas la saisie). Précisions de
+  l'utilisateur sur l'import : « و » = « et » (ôté en tête de ligne sauf devant
+  ورق/ورد/وزن/وجبة/وسط/وقت), « حك » = boîte (ex. « حك ماييص » = 1 boîte de maïs),
+  « ليشو » = un chou.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

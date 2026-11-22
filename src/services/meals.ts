@@ -13,8 +13,11 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { stripUndefined } from "../firebase/sanitize";
+import { catalogKey } from "../domain/catalog";
 import { DEFAULT_DINERS } from "../domain/mealPlan";
 import type {
+  CatalogIngredient,
+  Dish,
   ExpenseType,
   HouseholdExpense,
   MealItem,
@@ -77,6 +80,7 @@ export async function saveMealSlot(
     },
     { merge: true },
   );
+  await rememberDishes(cleanItems.map((item) => ({ label: item.label, snack: isSnackKey(key) })));
 }
 
 /**
@@ -102,6 +106,11 @@ export async function saveMealSlots(
     doc(db, MEAL_PLANS, weekId),
     { weekId, slots: Object.fromEntries(entries) },
     { merge: true },
+  );
+  await rememberDishes(
+    Object.entries(slots).flatMap(([key, items]) =>
+      items.map((item) => ({ label: item.label, snack: isSnackKey(key) })),
+    ),
   );
 }
 
@@ -204,6 +213,7 @@ export async function addShoppingItems(
     { weekId, items: Object.fromEntries(items.map((item) => [item.id, item])) },
     { merge: true },
   );
+  await rememberIngredients(items);
   return items.map((item) => item.id);
 }
 
@@ -314,4 +324,96 @@ export async function addExpense(input: NewExpenseInput): Promise<void> {
 
 export async function removeExpense(expenseId: string): Promise<void> {
   await deleteDoc(doc(db, EXPENSES, expenseId));
+}
+
+// ---------------------------------------------------------------------------
+// Référentiel appris : plats/snacks et articles de courses déjà saisis.
+// ---------------------------------------------------------------------------
+
+const DISHES = "dishes";
+const INGREDIENTS = "ingredients";
+
+function isSnackKey(slot: MealSlotKey): boolean {
+  return slot.endsWith("_snack");
+}
+
+/**
+ * Apprentissage au fil des saisies, "au mieux" : le programme ou la liste sont
+ * déjà enregistrés quand on arrive ici, une panne du référentiel (qui ne sert
+ * qu'à l'autocomplétion) ne doit donc pas faire échouer la saisie.
+ */
+async function bestEffort(write: Promise<unknown>): Promise<void> {
+  try {
+    await write;
+  } catch {
+    /* référentiel non essentiel */
+  }
+}
+
+export async function rememberDishes(
+  entries: Array<{ label: string; snack: boolean }>,
+): Promise<void> {
+  const byKey = new Map<string, { name: string; asSnack?: true; asMeal?: true }>();
+  for (const { label, snack } of entries) {
+    const name = label.trim();
+    const key = catalogKey(name);
+    if (!key) continue;
+    const entry = byKey.get(key) ?? { name };
+    if (snack) entry.asSnack = true;
+    else entry.asMeal = true;
+    byKey.set(key, entry);
+  }
+  await bestEffort(
+    Promise.all(
+      [...byKey.entries()].map(([key, entry]) =>
+        setDoc(doc(db, DISHES, key), entry, { merge: true }),
+      ),
+    ),
+  );
+}
+
+export async function rememberIngredients(
+  items: Array<{ name: string; vendor?: string; quantity?: string }>,
+): Promise<void> {
+  const byKey = new Map<string, Record<string, string>>();
+  for (const item of items) {
+    const key = catalogKey(item.name);
+    if (!key) continue;
+    byKey.set(key, {
+      name: item.name.trim(),
+      ...(item.vendor ? { vendor: item.vendor } : {}),
+      ...(item.quantity ? { quantity: item.quantity } : {}),
+    });
+  }
+  await bestEffort(
+    Promise.all(
+      [...byKey.entries()].map(([key, data]) =>
+        setDoc(doc(db, INGREDIENTS, key), data, { merge: true }),
+      ),
+    ),
+  );
+}
+
+export function subscribeToDishes(
+  onChange: (dishes: Dish[]) => void,
+): Unsubscribe {
+  return onSnapshot(collection(db, DISHES), (snapshot) => {
+    onChange(
+      snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }) as Dish)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  });
+}
+
+export function subscribeToIngredients(
+  onChange: (ingredients: CatalogIngredient[]) => void,
+): Unsubscribe {
+  return onSnapshot(collection(db, INGREDIENTS), (snapshot) => {
+    onChange(
+      snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }) as CatalogIngredient)
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    );
+  });
 }

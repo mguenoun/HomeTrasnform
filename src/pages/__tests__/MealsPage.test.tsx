@@ -2,7 +2,12 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { HouseholdExpense, MealPlan, ShoppingList } from "../../types";
+import type {
+  CatalogIngredient,
+  HouseholdExpense,
+  MealPlan,
+  ShoppingList,
+} from "../../types";
 
 vi.mock("../../context/AuthContext", () => ({
   useAuth: () => ({ user: { uid: "u1" } }),
@@ -12,6 +17,8 @@ vi.mock("../../hooks/useMeals", () => ({
   useMealPlan: vi.fn(),
   useShoppingList: vi.fn(),
   useExpenses: vi.fn(),
+  useDishes: vi.fn(),
+  useIngredients: vi.fn(),
 }));
 
 vi.mock("../../services/meals", () => ({
@@ -27,7 +34,13 @@ vi.mock("../../services/meals", () => ({
   removeExpense: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { useExpenses, useMealPlan, useShoppingList } from "../../hooks/useMeals";
+import {
+  useDishes,
+  useExpenses,
+  useIngredients,
+  useMealPlan,
+  useShoppingList,
+} from "../../hooks/useMeals";
 import {
   addExpense,
   addShoppingItem,
@@ -40,12 +53,17 @@ import { MealsPage } from "../MealsPage";
 const mockedUseMealPlan = vi.mocked(useMealPlan);
 const mockedUseShoppingList = vi.mocked(useShoppingList);
 const mockedUseExpenses = vi.mocked(useExpenses);
+const mockedUseDishes = vi.mocked(useDishes);
+const mockedUseIngredients = vi.mocked(useIngredients);
 
 function setup(
   plan: Partial<MealPlan> = {},
   list: Partial<ShoppingList> = {},
   expenses: HouseholdExpense[] = [],
+  ingredients: CatalogIngredient[] = [],
 ) {
+  mockedUseDishes.mockReturnValue([]);
+  mockedUseIngredients.mockReturnValue(ingredients);
   mockedUseMealPlan.mockReturnValue({
     plan: { weekId: "2026-11-21", defaultDiners: 4, slots: {}, ...plan },
     loading: false,
@@ -181,9 +199,9 @@ describe("MealsPage — courses", () => {
     );
     await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
 
-    const epicier = screen.getByRole("heading", { name: "Épicier" }).closest("section")!;
+    const epicier = screen.getByRole("heading", { name: /Épicier/ }).closest("section")!;
     expect(within(epicier).getByText(/Payé 387,00 MAD \(2 paiements\)/)).toBeInTheDocument();
-    const boucher = screen.getByRole("heading", { name: "Boucher" }).closest("section")!;
+    const boucher = screen.getByRole("heading", { name: /Boucher/ }).closest("section")!;
     expect(within(boucher).getByText(/Payé 300,00 MAD/)).toBeInTheDocument();
     expect(within(boucher).getByText(/détail articles 120,00 MAD/)).toBeInTheDocument();
   });
@@ -275,5 +293,122 @@ describe("MealsPage — dépenses", () => {
     expect(addExpense).toHaveBeenCalledWith(
       expect.objectContaining({ type: "helper", amount: 200, weekId: "2026-11-21", createdBy: "u1" }),
     );
+  });
+});
+
+describe("MealsPage — snacks reportés", () => {
+  it("affiche en grisé les snacks du dernier jour non vide sur les jours vides", () => {
+    setup({ slots: { tue_snack: { items: [{ label: "Cake citron" }] } } });
+    const blocks = screen.getAllByTestId("inherited-snacks");
+    // mercredi, jeudi, vendredi reprennent le cake du mardi (samedi→lundi : rien avant)
+    expect(blocks).toHaveLength(3);
+    expect(blocks[0]).toHaveTextContent("Suite de mardi : Cake citron");
+  });
+
+  it("ne reporte rien sur un jour qui a ses propres snacks", () => {
+    setup({
+      slots: {
+        tue_snack: { items: [{ label: "Cake" }] },
+        wed_snack: { items: [{ label: "Crêpes" }] },
+      },
+    });
+    const blocks = screen.getAllByTestId("inherited-snacks");
+    // jeudi et vendredi reprennent mercredi
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0]).toHaveTextContent("Suite de mercredi : Crêpes");
+  });
+});
+
+describe("MealsPage — mode courses par point de vente", () => {
+  const shoppingItems = {
+    a: { id: "a", name: "Poulet", vendor: "Boucher", checked: true, createdAt: 1 },
+    b: { id: "b", name: "Kefta", vendor: "Boucher", checked: false, price: 60, createdAt: 2 },
+    c: { id: "c", name: "Lait", vendor: "Épicier", checked: false, createdAt: 3 },
+  };
+
+  async function openShopping() {
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+  }
+
+  it("affiche à tout instant ce qui est acheté et ce qui reste, global et par point de vente", async () => {
+    setup({}, { items: shoppingItems });
+    await openShopping();
+
+    expect(screen.getByText("1 acheté · 2 restants")).toBeInTheDocument();
+    expect(screen.getByRole("progressbar")).toHaveAttribute("aria-valuenow", "1");
+    const boucher = screen.getByRole("heading", { name: /Boucher/ });
+    expect(boucher).toHaveTextContent("1/2 pris");
+    expect(screen.getByRole("heading", { name: /Épicier/ })).toHaveTextContent("0/1 pris");
+  });
+
+  it("masque ce qui est déjà pris sur demande", async () => {
+    setup({}, { items: shoppingItems });
+    await openShopping();
+    expect(screen.getByText("Poulet")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText("Masquer ce qui est pris"));
+    expect(screen.queryByText("Poulet")).not.toBeInTheDocument();
+    expect(screen.getByText("Kefta")).toBeInTheDocument();
+  });
+
+  it("enregistre le montant payé à la fin d'un point de vente, même s'il reste des articles", async () => {
+    setup({}, { items: shoppingItems });
+    await openShopping();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: "Payer Boucher (il reste 1)" }),
+    );
+    // Le détail des prix saisis (60) pré-remplit le montant, modifiable.
+    const amount = screen.getByLabelText("Montant payé chez Boucher");
+    expect(amount).toHaveValue(60);
+    await userEvent.clear(amount);
+    await userEvent.type(amount, "300");
+    await userEvent.click(screen.getByRole("button", { name: "Valider" }));
+
+    expect(addExpense).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: "groceries",
+        amount: 300,
+        vendor: "Boucher",
+        weekId: "2026-11-21",
+        createdBy: "u1",
+      }),
+    );
+    expect(screen.getByRole("status")).toHaveTextContent("Paiement enregistré chez Boucher");
+  });
+
+  it("refuse un paiement sans montant et n'écrit rien", async () => {
+    vi.mocked(addExpense).mockRejectedValueOnce(
+      new Error("Le montant doit être un nombre positif."),
+    );
+    setup({}, { items: shoppingItems });
+    await openShopping();
+    await userEvent.click(screen.getByRole("button", { name: /Payer Épicier/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Valider" }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("montant");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("reprend le dernier point de vente et la dernière quantité d'un article déjà connu", async () => {
+    setup({}, {}, [], [
+      { id: "lait", name: "Lait", vendor: "Épicier", quantity: "2 L" },
+    ]);
+    await openShopping();
+    await userEvent.type(screen.getByLabelText("Article"), "lait");
+
+    expect(screen.getByLabelText("Point de vente")).toHaveValue("Épicier");
+    expect(screen.getByLabelText("Quantité")).toHaveValue("2 L");
+  });
+
+  it("n'écrase pas ce qui est déjà saisi quand l'article est connu", async () => {
+    setup({}, {}, [], [
+      { id: "lait", name: "Lait", vendor: "Épicier", quantity: "2 L" },
+    ]);
+    await openShopping();
+    await userEvent.type(screen.getByLabelText("Point de vente"), "Supermarché");
+    await userEvent.type(screen.getByLabelText("Article"), "Lait");
+
+    expect(screen.getByLabelText("Point de vente")).toHaveValue("Supermarché");
   });
 });

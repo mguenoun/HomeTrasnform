@@ -56,6 +56,14 @@ Dépenses (ticket de courses, honoraires)  →  suivi hebdo / mensuel
 - Création **à la volée** : depuis le programme, taper un nom inconnu crée un plat
   « sans recette » (saisie simple) qu'on pourra détailler plus tard. Le référentiel
   n'est donc jamais un prérequis bloquant.
+- **Référentiel initialisé par l'usage** (🚧 livré 2026-11-22, sans écran de gestion) :
+  chaque plat saisi ou importé dans le programme est mémorisé (`dishes`, avec les
+  drapeaux « déjà planifié comme snack / comme repas »), chaque article ajouté ou importé
+  dans la liste l'est aussi (`ingredients`, avec son dernier point de vente et sa
+  dernière quantité). Ils alimentent l'**autocomplétion** et, pour un article connu,
+  pré-remplissent point de vente et quantité. Clé = libellé normalisé (casse, accents,
+  hamza, voyelles brèves), donc « الأحد » et « الاحد » ne font qu'un. *Reste à faire* :
+  écran de gestion, ingrédients par plat (variantes), traduction.
 
 ### 3.2 Programme hebdomadaire
 - Grille **7 jours × 3 créneaux**, comme le cahier de la famille (révisé 2026-11-22) :
@@ -72,6 +80,12 @@ Dépenses (ticket de courses, honoraires)  →  suivi hebdo / mensuel
   un snack est **préparé une fois** pour plusieurs créneaux. À modéliser avec le
   référentiel (étape 2) : un élément couvre une plage de jours et ses ingrédients ne sont
   comptés qu'**une fois**.
+- **Snacks d'un jour vide reportés** (✅ livré 2026-11-22) : un jour sans snack reprend
+  ceux du premier jour non vide qui le précède dans la semaine (le cake du mardi sert
+  encore le mercredi). Le report est **calculé à l'affichage et dans le message**
+  (« suite »), jamais copié dans les données : le snack n'est saisi qu'une fois, ses
+  futurs ingrédients ne seront comptés qu'une fois, et saisir un snack le jour même
+  remplace le report. Ne remonte pas avant le début de la semaine.
 - Un créneau contient **0..n éléments** (ex. déjeuner = plat + salade), chacun avec un
   même **nombre de convives (`diners`) défini par repas** (défaut = valeur de la
   semaine, modifiable créneau par créneau : « dîner à 8 samedi »). Pour un **snack**,
@@ -108,6 +122,14 @@ Deux façons d'obtenir la liste, qui **coexistent** :
   programme + référentiel (B) et signaler les plats dont des ingrédients n'apparaissent
   pas dans la liste (« Dîner de samedi : شعرية manquante »). Un plat sans ingrédients
   définis est signalé « à vérifier » plutôt que d'être ignoré en silence.
+
+**Mode courses par point de vente** (✅ livré 2026-11-22) : on fait ses achats point de
+vente par point de vente. Chaque groupe affiche « n/m pris », on coche les articles
+servis, et un bouton « Payer {point de vente} » saisit le **montant payé** à la fin
+(pré-rempli avec la somme des prix d'articles saisis, modifiable). Un en-tête donne à
+tout instant « X achetés · Y restants » avec une barre d'avancement, et « Masquer ce qui
+est pris » ne laisse voir que le reste. Un article non trouvé reste « à acheter » même
+après le paiement du point de vente (cas du lait et du yaourt, payés plus tard ailleurs).
 
 **Points de vente** : chaque article porte un point de vente (liste par défaut éditable,
 saisie libre) ; la liste s'affiche et s'envoie **groupée par point de vente**, avec le

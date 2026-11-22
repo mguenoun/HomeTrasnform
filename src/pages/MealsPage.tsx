@@ -14,7 +14,9 @@ import {
   whatsappUrl,
 } from "../domain/mealPlan";
 import {
+  useDishes,
   useExpenses,
+  useIngredients,
   useMealPlan,
   useShoppingList,
 } from "../hooks/useMeals";
@@ -35,6 +37,8 @@ export function MealsPage() {
   const { plan, loading: planLoading } = useMealPlan(weekId);
   const { list, loading: listLoading } = useShoppingList(weekId);
   const { expenses, loading: expensesLoading } = useExpenses(weekId);
+  const dishes = useDishes();
+  const ingredients = useIngredients();
 
   const shareable = tab !== "expenses";
   const shareMessage =
@@ -123,11 +127,16 @@ export function MealsPage() {
       {!loading && tab === "plan" && (
         <div className="flex flex-col">
           <ProgramImport weekId={weekId} />
-          <MealWeekPlan plan={plan} />
+          <MealWeekPlan plan={plan} dishes={dishes} />
         </div>
       )}
       {!loading && tab === "shopping" && (
-        <ShoppingListView list={list} expenses={expenses} userId={userId} />
+        <ShoppingListView
+          list={list}
+          expenses={expenses}
+          userId={userId}
+          ingredients={ingredients}
+        />
       )}
       {!loading && tab === "expenses" && (
         <ExpensesView weekId={weekId} userId={userId} expenses={expenses} />

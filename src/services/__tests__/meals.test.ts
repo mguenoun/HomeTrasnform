@@ -24,6 +24,10 @@ vi.mock("firebase/firestore", () => ({
 }));
 
 const {
+  rememberDishes,
+  rememberIngredients,
+  subscribeToDishes,
+  subscribeToIngredients,
   addExpense,
   addShoppingItem,
   addShoppingItems,
@@ -44,6 +48,13 @@ const {
 beforeEach(() => {
   vi.clearAllMocks();
 });
+
+/** Écritures vers une collection donnée (les écritures d'apprentissage du
+ *  référentiel, dishes/ingredients, s'ajoutent après l'écriture principale). */
+const writesTo = (collectionName: string) =>
+  setDocMock.mock.calls.filter(([ref]) =>
+    (ref as { __doc: string }).__doc.startsWith(collectionName + "/"),
+  );
 
 describe("saveMealSlot", () => {
   it("écrit un seul créneau en merge, sans les libellés vides", async () => {
@@ -83,7 +94,7 @@ describe("liste de courses", () => {
       quantity: "2 kg",
     });
 
-    const [ref, payload, options] = setDocMock.mock.calls[0];
+    const [ref, payload, options] = writesTo("shoppingLists")[0];
     expect(ref.__doc).toBe("shoppingLists/2026-W47");
     expect(options).toEqual({ merge: true });
     expect(payload.items[id]).toMatchObject({
@@ -106,10 +117,10 @@ describe("liste de courses", () => {
       name: "Poulet",
       vendor: "  Boucher  ",
     });
-    expect(setDocMock.mock.calls[0][1].items[withVendor].vendor).toBe("Boucher");
+    expect(writesTo("shoppingLists")[0][1].items[withVendor].vendor).toBe("Boucher");
 
     const noVendor = await addShoppingItem("2026-11-21", { name: "Sel" });
-    expect("vendor" in setDocMock.mock.calls[1][1].items[noVendor]).toBe(false);
+    expect("vendor" in writesTo("shoppingLists")[1][1].items[noVendor]).toBe(false);
   });
 
   it("enregistre le prix d'un article, ou l'efface", async () => {
@@ -142,8 +153,8 @@ describe("liste de courses", () => {
       { name: "B", quantity: "2 kg" },
       { name: "C" },
     ]);
-    expect(setDocMock).toHaveBeenCalledTimes(1);
-    const { items } = setDocMock.mock.calls[0][1];
+    expect(writesTo("shoppingLists")).toHaveLength(1);
+    const { items } = writesTo("shoppingLists")[0][1];
     expect(Object.keys(items)).toEqual(ids);
     const order = ids.map((id) => items[id].createdAt);
     expect([...order].sort((a, b) => a - b)).toEqual(order);
@@ -217,8 +228,8 @@ describe("saveMealSlots (import du programme)", () => {
       sun_dinner: [{ label: "باط" }],
       mon_lunch: [{ label: "  " }],
     });
-    expect(setDocMock).toHaveBeenCalledTimes(1);
-    const [ref, payload, options] = setDocMock.mock.calls[0];
+    expect(writesTo("mealPlans")).toHaveLength(1);
+    const [ref, payload, options] = writesTo("mealPlans")[0];
     expect(ref.__doc).toBe("mealPlans/2026-11-21");
     expect(options).toEqual({ merge: true });
     expect(payload.slots).toEqual({
@@ -304,5 +315,86 @@ describe("dépenses", () => {
     });
     subscribeToExpenses("2026-11-21", onChange);
     expect(onChange.mock.calls[0][0].map((e: { id: string }) => e.id)).toEqual(["a", "b"]);
+  });
+});
+
+describe("référentiel appris", () => {
+  it("un snack saisi est mémorisé comme snack, un repas comme repas", async () => {
+    await saveMealSlot("2026-11-21", "sat_snack", { items: [{ label: "Cheesecake" }] });
+    await saveMealSlot("2026-11-21", "sat_lunch", { items: [{ label: "Couscous" }] });
+
+    const dishes = writesTo("dishes");
+    expect(dishes[0][0].__doc).toBe("dishes/cheesecake");
+    expect(dishes[0][1]).toEqual({ name: "Cheesecake", asSnack: true });
+    expect(dishes[1][1]).toEqual({ name: "Couscous", asMeal: true });
+    expect(dishes[0][2]).toEqual({ merge: true });
+  });
+
+  it("dédoublonne par clé normalisée et cumule snack + repas pour un même plat", async () => {
+    await rememberDishes([
+      { label: "Soupe", snack: false },
+      { label: "  soupe ", snack: true },
+    ]);
+    expect(writesTo("dishes")).toHaveLength(1);
+    expect(writesTo("dishes")[0][1]).toMatchObject({ asSnack: true, asMeal: true });
+  });
+
+  it("l'import d'un programme mémorise chaque plat", async () => {
+    await saveMealSlots("2026-11-21", {
+      sat_snack: [{ label: "شينز كيك" }],
+      sat_lunch: [{ label: "كسكسو" }, { label: "سلاض" }],
+    });
+    expect(writesTo("dishes").map(([ref]) => ref.__doc)).toEqual([
+      "dishes/شينز كيك",
+      "dishes/كسكسو",
+      "dishes/سلاض",
+    ]);
+  });
+
+  it("une panne du référentiel ne fait pas échouer la saisie du programme", async () => {
+    setDocMock
+      .mockResolvedValueOnce(undefined) // écriture principale
+      .mockRejectedValueOnce(new Error("hors ligne")); // apprentissage
+    await expect(
+      saveMealSlot("2026-11-21", "sat_lunch", { items: [{ label: "Riz" }] }),
+    ).resolves.toBeUndefined();
+  });
+
+  it("les articles ajoutés alimentent le catalogue avec point de vente et quantité", async () => {
+    await addShoppingItems("2026-11-21", [
+      { name: "Tomates", vendor: "Fruits et légumes", quantity: "2 kg" },
+      { name: "Sel" },
+    ]);
+    const catalog = writesTo("ingredients");
+    expect(catalog[0][0].__doc).toBe("ingredients/tomates");
+    expect(catalog[0][1]).toEqual({
+      name: "Tomates",
+      vendor: "Fruits et légumes",
+      quantity: "2 kg",
+    });
+    expect(catalog[1][1]).toEqual({ name: "Sel" });
+  });
+
+  it("rememberIngredients ignore les noms vides", async () => {
+    await rememberIngredients([{ name: "  " }]);
+    expect(setDocMock).not.toHaveBeenCalled();
+  });
+
+  it("s'abonne aux plats et aux articles, triés par nom", () => {
+    const dishes = vi.fn();
+    const ingredients = vi.fn();
+    onSnapshotMock.mockImplementation((_ref, callback) => {
+      callback({
+        docs: [
+          { id: "b", data: () => ({ name: "Zaalouk" }) },
+          { id: "a", data: () => ({ name: "Arroz" }) },
+        ],
+      });
+      return () => {};
+    });
+    subscribeToDishes(dishes);
+    subscribeToIngredients(ingredients);
+    expect(dishes.mock.calls[0][0].map((d: { id: string }) => d.id)).toEqual(["a", "b"]);
+    expect(ingredients.mock.calls[0][0].map((d: { id: string }) => d.id)).toEqual(["a", "b"]);
   });
 });

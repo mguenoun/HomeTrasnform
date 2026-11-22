@@ -1,4 +1,10 @@
-import type { MealPlan, MealSlot, MealSlotKey, ShoppingItem } from "../types";
+import type {
+  MealItem,
+  MealPlan,
+  MealSlot,
+  MealSlotKey,
+  ShoppingItem,
+} from "../types";
 
 /** Index `Date.getDay()` : 0 = dimanche. */
 const DAY_BY_JS_INDEX = [
@@ -113,6 +119,33 @@ export function dinersOf(plan: MealPlan, slot: MealSlot | undefined): number {
   return slot?.diners ?? plan.defaultDiners;
 }
 
+export interface EffectiveSnacks {
+  items: MealItem[];
+  /** Jour dont les snacks sont reportés ; absent si le jour a les siens. */
+  inheritedFrom?: WeekDay;
+}
+
+/**
+ * Snacks d'un jour : les siens s'il en a, sinon ceux du premier jour non vide
+ * qui précède dans la semaine (le cake du mardi sert encore le mercredi). Calculé
+ * à la lecture, jamais copié : un snack préparé une fois reste saisi une fois
+ * (ses ingrédients ne seront comptés qu'une fois), et saisir quelque chose le
+ * jour même remplace le report.
+ */
+export function snacksForDay(plan: MealPlan, dayKey: string): EffectiveSnacks {
+  const days = daysOfWeek(plan.weekId);
+  const index = days.findIndex((d) => d.key === dayKey);
+  for (let i = index; i >= 0; i--) {
+    const slot = plan.slots[slotKey(days[i].key, "snack")];
+    if (slot && slot.items.length > 0) {
+      return i === index
+        ? { items: slot.items }
+        : { items: slot.items, inheritedFrom: days[i] };
+    }
+  }
+  return { items: [] };
+}
+
 /**
  * Découpe une saisie "A + B" en plusieurs éléments (la plupart des repas du
  * cahier sont composés : "couscous + salade").
@@ -138,6 +171,17 @@ export function buildPlanMessage(plan: MealPlan): string {
   for (const day of daysOfWeek(plan.weekId)) {
     const dayLines: string[] = [];
     for (const meal of MEALS) {
+      if (meal.key === "snack") {
+        const snacks = snacksForDay(plan, day.key);
+        if (snacks.items.length === 0) continue;
+        const items = snacks.items
+          .map((it) => withTranslation(it.label, it.translation))
+          .join(", ");
+        dayLines.push(
+          `${meal.fr} / ${meal.ar} : ${items}${snacks.inheritedFrom ? " (suite)" : ""}`,
+        );
+        continue;
+      }
       const slot = plan.slots[slotKey(day.key, meal.key)];
       if (!slot || slot.items.length === 0) continue;
       const items = slot.items

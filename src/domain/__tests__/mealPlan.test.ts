@@ -7,6 +7,7 @@ import {
   emptyPlan,
   groupByVendor,
   shiftWeek,
+  snacksForDay,
   splitMealText,
   startOfWeekId,
   weekIdOf,
@@ -169,5 +170,57 @@ describe("buildShoppingMessage", () => {
 describe("whatsappUrl", () => {
   it("encode le message", () => {
     expect(whatsappUrl("a b\nc")).toBe("https://wa.me/?text=a%20b%0Ac");
+  });
+});
+
+describe("snacksForDay (report des snacks sur les jours vides)", () => {
+  const plan = () => {
+    const p = emptyPlan("2026-11-21");
+    p.slots.sat_snack = { items: [{ label: "Cheesecake" }] };
+    p.slots.tue_snack = { items: [{ label: "Cake citron" }, { label: "Cake salé" }] };
+    p.slots.thu_snack = { items: [{ label: "Baghrir" }] };
+    return p;
+  };
+
+  it("un jour qui a ses snacks garde les siens", () => {
+    const result = snacksForDay(plan(), "tue");
+    expect(result.items.map((i) => i.label)).toEqual(["Cake citron", "Cake salé"]);
+    expect(result.inheritedFrom).toBeUndefined();
+  });
+
+  it("un jour vide reprend le premier jour non vide qui précède (mer. ← mar.)", () => {
+    const result = snacksForDay(plan(), "wed");
+    expect(result.items.map((i) => i.label)).toEqual(["Cake citron", "Cake salé"]);
+    expect(result.inheritedFrom?.key).toBe("tue");
+  });
+
+  it("dimanche et lundi reprennent samedi ; vendredi reprend jeudi", () => {
+    expect(snacksForDay(plan(), "sun").inheritedFrom?.key).toBe("sat");
+    expect(snacksForDay(plan(), "mon").inheritedFrom?.key).toBe("sat");
+    expect(snacksForDay(plan(), "fri").items[0].label).toBe("Baghrir");
+    expect(snacksForDay(plan(), "fri").inheritedFrom?.key).toBe("thu");
+  });
+
+  it("ne remonte jamais avant le début de la semaine (samedi vide reste vide)", () => {
+    const p = emptyPlan("2026-11-21");
+    p.slots.tue_snack = { items: [{ label: "Cake" }] };
+    expect(snacksForDay(p, "sat").items).toEqual([]);
+    expect(snacksForDay(p, "mon").items).toEqual([]);
+  });
+
+  it("saisir un snack le jour même remplace le report", () => {
+    const p = plan();
+    p.slots.wed_snack = { items: [{ label: "Crêpes" }] };
+    expect(snacksForDay(p, "wed").items[0].label).toBe("Crêpes");
+    expect(snacksForDay(p, "wed").inheritedFrom).toBeUndefined();
+  });
+
+  it("le message indique « (suite) » pour un snack reporté, sans le dupliquer dans les données", () => {
+    const p = plan();
+    const message = buildPlanMessage(p);
+    expect(message).toContain(
+      "Petit-déj & goûter / فطور / كوتي : Cake citron, Cake salé (suite)",
+    );
+    expect(p.slots.wed_snack).toBeUndefined();
   });
 });

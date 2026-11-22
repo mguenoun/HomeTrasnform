@@ -26,16 +26,24 @@ const AMOUNT_LINE =
   /^[\s—–\-•*]*(\d+(?:[.,]\d+)?)\s*(?:dhs?|mad|درهم|دراهم|د\.?\s?م)\s*$/i;
 
 const NUM = String.raw`(?:\d+(?:[.,/]\d+)?|جوج|نصف|ربعة|ربع|ثلاثة|تلاتة)`;
-const UNIT = String.raw`(?:كيلو|كغ|غرام|لتر|دراهم|درهم|باكية|باكيات|دنون|طون|علبة|kg|g|l|dhs?|paquets?|boîtes?|bottes?)`;
+// "حك" = boîte (de conserve), confirmé par l'utilisateur ("حك ماييص" = 1 boîte de maïs).
+const UNIT = String.raw`(?:كيلو|كغ|غرام|لتر|دراهم|درهم|باكية|باكيات|دنون|طون|علبة|حك|kg|g|l|dhs?|paquets?|boîtes?|bottes?)`;
 // nombre et/ou unité en tête, éventuellement suivi de "و نصف"/"ونصف" ("كيلو و نصف")
 const QUANTITY = new RegExp(
   `^(?=[^\\s])(${NUM})?\\s*(${UNIT})?(?:\\s*و\\s*(${NUM}))?(?=\\s|$)`,
   "i",
 );
 
-// "و" = "et" collé au mot suivant ("وكيلو", "ونصف", "و5دراهم"). On ne l'ôte que
-// devant une quantité, pour ne pas abîmer un nom qui commence par و.
-const LEADING_AND = new RegExp(`^و\\s*(?=${NUM}|${UNIT})`, "i");
+// "و" = "et" collé au mot suivant ("وكيلو", "ونصف", "و5دراهم", "وليشو" = et un
+// chou). Dans ce style de liste il ouvre la plupart des lignes ; on l'ôte donc
+// toujours, sauf devant quelques vrais mots commençant par و.
+const WORDS_STARTING_WITH_WAW = ["ورق", "ورد", "وزن", "وجبة", "وسط", "وقت"];
+
+function stripLeadingAnd(text: string): string {
+  if (!text.startsWith("و") || text.length < 3) return text;
+  if (WORDS_STARTING_WITH_WAW.some((word) => text.startsWith(word))) return text;
+  return text.slice(1).trimStart();
+}
 
 function tidyQuantity(raw: string): string {
   return raw
@@ -50,7 +58,7 @@ export function parseShoppingLine(line: string): ParsedShoppingItem | null {
     .replace(/^[\s—–\-•*]+/, "")
     .trim();
   if (!text) return null;
-  text = text.replace(LEADING_AND, "");
+  text = stripLeadingAnd(text);
 
   const match = QUANTITY.exec(text);
   let quantity: string | undefined;

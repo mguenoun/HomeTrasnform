@@ -141,6 +141,18 @@ describe("parseShoppingLine", () => {
     expect(parseShoppingLine("—باكية ديال نصف سباكيتي")?.name).toBe("نصف سباكيتي");
   });
 
+  it("lit « وليشو » comme « et un chou » et « وحك ماييص » comme « et une boîte de maïs »", () => {
+    expect(parseShoppingLine("—وليشو")).toEqual({ name: "ليشو" });
+    expect(parseShoppingLine("—وحك ماييص")).toEqual({
+      name: "ماييص",
+      quantity: "حك",
+    });
+  });
+
+  it("ne coupe pas un vrai mot commençant par و (ورق, وزن)", () => {
+    expect(parseShoppingLine("—ورق الغار")?.name).toBe("ورق الغار");
+  });
+
   it("garde la ligne entière comme nom quand aucune quantité n'est reconnue", () => {
     expect(parseShoppingLine("—دجاجة بلدية")).toEqual({ name: "دجاجة بلدية" });
     expect(parseShoppingLine("—مقلات طيفال للبغرير")).toEqual({

@@ -251,3 +251,25 @@ export interface HouseholdExpense {
   createdBy: string;
   createdAt: number;
 }
+
+/**
+ * Référentiel appris au fil des saisies (programme et courses) : sert à
+ * l'autocomplétion et, plus tard, de support aux ingrédients par plat.
+ */
+export interface Dish {
+  /** Clé normalisée (voir `catalogKey`). */
+  id: string;
+  name: string;
+  /** A déjà été planifié comme snack / comme repas : filtre les suggestions. */
+  asSnack?: boolean;
+  asMeal?: boolean;
+}
+
+export interface CatalogIngredient {
+  id: string;
+  name: string;
+  /** Dernier point de vente utilisé pour cet article. */
+  vendor?: string;
+  /** Dernière quantité saisie. */
+  quantity?: string;
+}

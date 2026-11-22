@@ -160,6 +160,14 @@ service cloud.firestore {
       allow read, write: if isFamilyMember();
     }
 
+    match /dishes/{dishId} {
+      allow read, write: if isFamilyMember();
+    }
+
+    match /ingredients/{ingredientId} {
+      allow read, write: if isFamilyMember();
+    }
+
     match /tasks/{taskId} {
       allow read: if isFamilyMember() &&
         (resource.data.get('visibility', 'shared') != 'private' ||
