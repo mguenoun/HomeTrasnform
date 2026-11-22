@@ -58,8 +58,20 @@ Dépenses (ticket de courses, honoraires)  →  suivi hebdo / mensuel
   n'est donc jamais un prérequis bloquant.
 
 ### 3.2 Programme hebdomadaire
-- Grille **7 jours × 4 créneaux** : petit-déjeuner, déjeuner, goûter, dîner
-  (petit-déjeuner et goûter = « snacks » du besoin exprimé).
+- Grille **7 jours × 3 créneaux**, comme le cahier de la famille (révisé 2026-11-22) :
+  **snacks (petit-déj & goûter)**, déjeuner, dîner. Les snacks sont préparés en
+  quantité pour quelques jours et servent indifféremment au petit-déjeuner ou au goûter,
+  d'où une seule colonne.
+- **La semaine commence le samedi** (`WEEK_STARTS_ON`). Une semaine est identifiée par
+  la **date de son premier jour** (`2026-11-21`), pas par un numéro de semaine ISO.
+- **Saisie en arabe ou en français** : le nom est saisi dans la langue de l'utilisateur,
+  avec une traduction facultative dans l'autre (voir 3.5). Un repas composé se saisit
+  « couscous + salade » et est découpé en éléments sur le « + ».
+- **Plat réparti sur plusieurs jours** (cake mardi-mercredi, baghrir jeudi-vendredi,
+  grande pizza/quiche/tarte pour plusieurs jours, ou petites portions individuelles) :
+  un snack est **préparé une fois** pour plusieurs créneaux. À modéliser avec le
+  référentiel (étape 2) : un élément couvre une plage de jours et ses ingrédients ne sont
+  comptés qu'**une fois**.
 - Un créneau contient **0..n éléments** (ex. déjeuner = plat + salade), chacun avec un
   même **nombre de convives (`diners`) défini par repas** (défaut = valeur de la
   semaine, modifiable créneau par créneau : « dîner à 8 samedi »). Pour un **snack**,
@@ -76,6 +88,36 @@ Dépenses (ticket de courses, honoraires)  →  suivi hebdo / mensuel
   aucun backend). Le texte est **bilingue** (voir 3.5).
 
 ### 3.3 Liste de courses
+
+**Contexte réel (2026-11-22)** : la personne de ménage établit la liste d'ingrédients à
+partir du programme et l'envoie sur WhatsApp, en vrac. Le propriétaire la **retrie par
+point de vente** (boucher, épicier, volailler, fruits et légumes, herbes, œufs…) pour
+optimiser sa tournée, et chaque point de vente est **payé séparément**. Le défaut
+principal est **l'oubli** : un ingrédient manquant (ex. le cha3ria) et le plat prévu
+n'est pas préparé. La valeur n°1 du module est donc **ne rien oublier**, plus que
+calculer des quantités.
+
+Deux façons d'obtenir la liste, qui **coexistent** :
+- **A. Saisie / collage d'une liste globale** (celle de WhatsApp, en arabe, avec quantités
+  libres : « 5 دراهم كمون », « ربعة زبدة », « باكية », « كيلو و نصف ») : import par
+  collage, une ligne = un article, les sous-totaux (« 361dh ») reconnus comme montant du
+  groupe qui précède.
+- **B. Proposition inférée** depuis les ingrédients de chaque plat/snack (référentiel,
+  variantes — voir 3.1), pour fiabiliser.
+- **C. Contrôle de couverture (le cœur de la fiabilisation)** : comparer la liste (A) au
+  programme + référentiel (B) et signaler les plats dont des ingrédients n'apparaissent
+  pas dans la liste (« Dîner de samedi : شعرية manquante »). Un plat sans ingrédients
+  définis est signalé « à vérifier » plutôt que d'être ignoré en silence.
+
+**Points de vente** : chaque article porte un point de vente (liste par défaut éditable,
+saisie libre) ; la liste s'affiche et s'envoie **groupée par point de vente**, avec le
+**montant payé** par point de vente (alimente les dépenses, étape 4). L'application
+retient le point de vente habituel d'un article pour le proposer la fois suivante.
+
+**Recopier la liste de la semaine précédente** (articles non cochés ou habituels) pour
+éviter de tout ressaisir — le réassort du placard (huile, farine, levure, épices)
+revient chaque semaine.
+
 - **Génération automatique** : somme des ingrédients de la variante retenue pour chaque
   élément du programme (voir 4.4), regroupés par ingrédient + unité, classés par rayon.
   Les lignes issues d'une taille **approchée** (aucune variante exacte) sont signalées
@@ -221,13 +263,18 @@ Rappel hebdomadaire optionnel : « Le programme de la semaine n'est pas planifi�
 
 ## 5. Phasage proposé (livrable indépendamment)
 
-1. **Fondations + saisie simple** — règles Firestore, `weekId`, programme hebdo en
-   saisie libre + choix tactile, liste de courses 100 % manuelle cochable.
-   *Utile dès cette étape par la personne en charge des courses.*
+1. **Fondations + saisie simple** — ✅ livré en code. Règles Firestore, semaine du samedi,
+   programme hebdo en saisie libre (3 créneaux, « A + B »), liste de courses manuelle
+   cochable **groupée par point de vente avec montant payé**, envoi WhatsApp.
+1b. **Import et reprise de liste** — collage d'une liste WhatsApp (arabe, sous-totaux
+   reconnus), recopie de la liste précédente, points de vente habituels mémorisés.
 2. **Référentiel + glisser-déposer** — plats, ingrédients, drop dans la grille,
-   copie de semaine.
-3. **Courses automatiques** — génération depuis programme + fusion non destructive,
-   rayons, impression/partage.
+   copie de semaine, plat réparti sur plusieurs jours, noms arabe/français.
+3. **Proposition de courses et contrôle de couverture** — liste proposée depuis le
+   programme (variantes), et **détection des ingrédients oubliés** par comparaison avec
+   la liste saisie. Prioritaire sur la génération « automatique » complète : la liste
+   réelle mélange besoins des repas et réassort, elle ne se déduit pas entièrement du
+   programme.
 4. **Dépenses** — courses et honoraires, totaux et histogramme, carte tableau de bord.
 5. **Retours sur les repas** — 👍/👎 par repas, note moyenne par plat, message de
    retour de fin de semaine.
@@ -240,7 +287,10 @@ Rappel hebdomadaire optionnel : « Le programme de la semaine n'est pas planifi�
 - Je saisis un repas en texte libre sans passer par le référentiel.
 - Je constitue un référentiel de plats avec leurs ingrédients élémentaires.
 - Je copie la semaine précédente comme point de départ.
-- Je génère la liste de courses depuis le programme, puis j'y ajoute des lignes à la main.
+- Je colle la liste WhatsApp de la femme de ménage et je la retrouve classée par point de vente.
+- Je suis averti si un plat prévu a des ingrédients absents de la liste (ex. cha3ria oublié).
+- Je recopie la liste de la semaine précédente.
+- Je génère une proposition de liste depuis le programme, puis j'y ajoute des lignes à la main.
 - Je coche les articles achetés depuis mon téléphone, la famille le voit en direct.
 - Je saisis le montant d'un ticket de courses et le paiement de la personne de ménage.
 - Je vois le total dépensé par semaine et par mois, courses vs honoraires.
@@ -264,8 +314,9 @@ Rappel hebdomadaire optionnel : « Le programme de la semaine n'est pas planifi�
 4. ~~Dépenses vs budgets existants~~ — **tranché : séparées** des budgets, qui restent
    dédiés aux chantiers/projets.
 5. ~~Convives~~ — **tranché : par repas** (par créneau), car cela pilote les quantités.
-6. ~~Créneaux~~ — **tranché : 4 créneaux fixes** (petit-déj, déjeuner, goûter, dîner) ;
-   les snacks sont des plats du référentiel (catégorie « snack », quantités par unité).
+6. ~~Créneaux~~ — **tranché (révisé 2026-11-22) : 3 créneaux** (snacks petit-déj & goûter,
+   déjeuner, dîner), comme le cahier ; semaine du samedi au vendredi. Les snacks sont des
+   plats du référentiel (catégorie « snack », quantités par unité ou par format).
    ~~Retours~~ — **tranché : 👍/👎** (+ commentaire facultatif).
 7. **Service de traduction** : choisir après un essai sur ~20 plats/ingrédients réels
    (voir 3.5, qualité darija non garantie).

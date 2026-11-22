@@ -6,7 +6,7 @@ exhaustif reste dans [`documents/`](documents/) (avec statut par item) ; ce
 fichier donne la vue synthétique et le contexte des décisions qui n'ont pas
 forcément leur place dans un document de spec.
 
-Dernière mise à jour : 2026-11-21.
+Dernière mise à jour : 2026-11-22.
 
 ## État d'avancement
 
@@ -74,6 +74,12 @@ détail épique par épique ; en résumé :
   semaine, créneaux/articles en maps). Piège évité : les chemins de champ Firestore utilisent le point comme séparateur, donc pas
   de point dans une clé de champ (d’où les clés de créneau `mon_lunch`). Les
   libellés darija fixes (jours, repas) sont à faire relire par l'utilisateur.
+  **Révisé le 2026-11-22 après lecture du cahier et de la liste réelle de la
+  famille** : semaine du **samedi** (id de semaine = date du premier jour, pas ISO),
+  3 colonnes (snacks/déjeuner/dîner), noms saisis en arabe ou français, courses
+  **groupées par point de vente avec montant payé**. Le vrai besoin est d'éviter les
+  **oublis** d'ingrédients (cha3ria oublié = plat non préparé) : priorité à un contrôle
+  de couverture programme/liste plutôt qu'à une génération automatique complète.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.
@@ -128,8 +134,9 @@ détail épique par épique ; en résumé :
 
 ## Prochaines étapes (proposées, non priorisées par l'utilisateur)
 
-- Module Repas & Courses : déployer l'étape 1 (hosting + règles), puis étape 2
-  (référentiel de plats + glisser-déposer, à prototyper sur iPhone en PWA).
+- Module Repas & Courses : déployer l'étape 1 (hosting + règles), puis étape 1b
+  (import d'une liste WhatsApp, recopie de la liste), étape 2 (référentiel +
+  glisser-déposer, à prototyper sur iPhone en PWA), étape 3 (contrôle de couverture).
 
 - CI/CD : automatiser au moins `npm run build && npm run test && npm run lint`
   sur push (GitHub Actions), le déploiement peut rester manuel dans un

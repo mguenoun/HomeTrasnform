@@ -196,16 +196,19 @@ Module indépendant des objectifs/tâches/budgets ; brief et décisions dans
 
 **US-12.1** (P1) — En tant que membre, je veux planifier la semaine en posant des repas
 (texte libre) dans des créneaux jour × (petit-déj, déjeuner, goûter, dîner), avec un
-nombre de convives par repas. — ✅ Fait (étape 1)
+nombre de convives par repas, semaine du samedi au vendredi, 3 colonnes (snacks, déjeuner, dîner), saisie en arabe ou en français. — ✅ Fait (étape 1)
 **US-12.2** (P1) — En tant que membre, je veux une liste de courses hebdomadaire
-saisie à la main, que la famille coche en temps réel. — ✅ Fait (étape 1)
+saisie à la main, groupée par point de vente avec le montant payé, que la famille coche en temps réel. — ✅ Fait (étape 1)
 **US-12.3** (P1) — En tant que membre, je veux envoyer le programme et la liste de
 courses sur WhatsApp, en français + darija. — 🚧 Partiel (envoi fait ; noms darija
 des plats/articles pas encore saisissables, seuls les libellés fixes sont bilingues)
 **US-12.4** (P2) — Référentiel de plats avec ingrédients par variante (2-5 personnes,
 ou par quantité pour un snack), noms darija, glisser-déposer dans le programme. — ⬜ Prévu (étape 2)
-**US-12.5** (P2) — Liste de courses générée depuis le programme, fusion non destructive
-avec les lignes manuelles. — ⬜ Prévu (étape 3)
+**US-12.5** (P1) — Je colle la liste WhatsApp de la femme de ménage (arabe, sous-totaux
+reconnus) et je recopie la liste précédente. — ⬜ Prévu (étape 1b)
+**US-12.8** (P1) — Je suis averti quand un plat prévu a des ingrédients absents de la
+liste de courses (contrôle de couverture), et je peux obtenir une proposition de liste
+depuis le programme. — ⬜ Prévu (étape 3)
 **US-12.6** (P2) — Suivi des dépenses de courses et des honoraires (paiements datés). — ⬜ Prévu (étape 4)
 **US-12.7** (P3) — Retour 👍/👎 sur chaque repas, note par plat, message de fin de
 semaine à la personne de ménage. — ⬜ Prévu (étape 5)
