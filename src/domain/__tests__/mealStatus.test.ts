@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { MealPlan } from "../../types";
 import {
+  canEditStatus,
   countByStatus,
   filterPlan,
   itemStatus,
@@ -136,5 +137,23 @@ describe("statusMarker", () => {
     expect(statusMarker({ label: "x", status: "prepared" })).toBe("✅ ");
     expect(statusMarker({ label: "x", status: "skipped" })).toBe("❌ ");
     expect(statusMarker({ label: "x" })).toBe("");
+  });
+});
+
+describe("canEditStatus", () => {
+  it("autorise tout le monde quand aucune liste n'est définie", () => {
+    expect(canEditStatus("a@x.com", undefined)).toBe(true);
+    expect(canEditStatus(null, "")).toBe(true);
+    expect(canEditStatus("a@x.com", " , ")).toBe(true);
+  });
+
+  it("limite aux e-mails listés, sans tenir compte de la casse ni des espaces", () => {
+    expect(canEditStatus("Chef@X.com", "autre@x.com, chef@x.com")).toBe(true);
+    expect(canEditStatus("fille@x.com", "chef@x.com")).toBe(false);
+  });
+
+  it("refuse un compte sans e-mail quand une liste existe", () => {
+    expect(canEditStatus(undefined, "chef@x.com")).toBe(false);
+    expect(canEditStatus(null, "chef@x.com")).toBe(false);
   });
 });

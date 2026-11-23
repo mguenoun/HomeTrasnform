@@ -281,6 +281,11 @@ est actif. — ✅ Fait (à valider sur iPhone)
 me propose d'enregistrer d'un tap le tarif des jours habituels de la personne de ménage
 (samedi, mardi, jeudi) déjà passés sans paiement. — ✅ Fait
 
+**US-12.27** (P1) — Seul le gestionnaire du programme (liste d'e-mails, `VITE_MEAL_STATUS_EDITORS`)
+change le statut préparé / non préparé : les autres voient les boutons grisés mais peuvent
+voter. Changer le statut d'un plat déjà préparé ou non préparé demande confirmation (et
+prévient que les votes seront effacés). — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

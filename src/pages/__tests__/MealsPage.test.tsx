@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type {
   CatalogIngredient,
   Dish,
@@ -1032,9 +1032,12 @@ describe("MealsPage — suivi préparé / non préparé", () => {
     });
   });
 
-  it("un second appui sur ✓ revient à planifié", async () => {
+  it("un second appui sur ✓ demande confirmation avant de revenir à planifié", async () => {
     setup({ slots: { sat_lunch: { items: [{ label: "Couscous", status: "prepared" }] } } });
     await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme préparé" }));
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    expect(screen.getByText(/« Couscous » est déjà préparé\. Le remettre à planifié \?/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer le changement de statut de Couscous" }));
     expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
       items: [{ label: "Couscous" }],
     });
@@ -1069,10 +1072,12 @@ describe("MealsPage — suivi préparé / non préparé", () => {
     expect(screen.queryByRole("group", { name: "Motif, Tarte" })).not.toBeInTheDocument();
   });
 
-  it("un plat non préparé affiche son motif, et ✗ le remet à planifié sans rien demander", async () => {
+  it("un plat non préparé affiche son motif, et ✗ le remet à planifié après confirmation", async () => {
     setup({ slots: { sat_lunch: { items: [{ label: "Tarte", status: "skipped", skipReason: "Pas le temps" }] } } });
     expect(screen.getByText("Non préparé · Pas le temps")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "Marquer Tarte comme non préparé" }));
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer le changement de statut de Tarte" }));
     expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
       items: [{ label: "Tarte" }],
     });
@@ -1350,9 +1355,12 @@ describe("MealsPage — retour 👍/👎 sur les plats préparés", () => {
     expect(saveMealSlot).not.toHaveBeenCalled();
   });
 
-  it("repasser un plat à « planifié » efface son retour", async () => {
+  it("repasser un plat à « planifié » efface son retour, après avoir prévenu et demandé confirmation", async () => {
     setup({ slots: prepared({ feedback: "up", feedbackNote: "ok" }) });
     await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme préparé" }));
+    expect(screen.getByText(/Les votes seront effacés/)).toBeInTheDocument();
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer le changement de statut de Couscous" }));
     expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
       items: [{ label: "Couscous" }],
     });
@@ -1840,5 +1848,52 @@ describe("MealsPage — vue d'ouverture et glisser-déposer", () => {
     await openCalendar();
     drag("Couscous", "cell-sun-dinner");
     expect(await screen.findByRole("alert")).toHaveTextContent("déplacement");
+  });
+});
+
+describe("MealsPage — confirmation et réserve du statut", () => {
+  const prepared = { sat_lunch: { items: [{ label: "Couscous", status: "prepared" as const, votes: { u2: "up" as const } }] } };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it("annuler la confirmation ne change rien, votes compris", async () => {
+    setup({ slots: prepared });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme non préparé" }));
+    expect(screen.getByText(/est déjà préparé\. Le marquer non préparé \?/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    expect(screen.queryByRole("group", { name: /Confirmer le changement de statut/ })).not.toBeInTheDocument();
+  });
+
+  it("passer de préparé à non préparé confirme, puis demande le motif", async () => {
+    setup({ slots: prepared });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme non préparé" }));
+    await userEvent.click(screen.getByRole("button", { name: "Confirmer le changement de statut de Couscous" }));
+    expect(saveMealSlot).not.toHaveBeenCalled();
+    expect(screen.getByRole("group", { name: "Motif, Couscous" })).toBeInTheDocument();
+  });
+
+  it("un plat encore planifié change tout de suite, sans confirmation", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Marquer Couscous comme préparé" }));
+    expect(saveMealSlot).toHaveBeenCalledTimes(1);
+  });
+
+  it("les comptes non autorisés ont les boutons de statut grisés, mais peuvent encore voter", async () => {
+    vi.stubEnv("VITE_MEAL_STATUS_EDITORS", "gestionnaire@example.com");
+    setup({ slots: prepared });
+    expect(screen.getByRole("button", { name: "Marquer Couscous comme préparé" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Marquer Couscous comme non préparé" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Retour positif sur Couscous" })).toBeEnabled();
+    await userEvent.click(screen.getByRole("button", { name: "Retour négatif sur Couscous" }));
+    expect(saveMealSlot).toHaveBeenCalledTimes(1);
+  });
+
+  it("« Tout préparé » est aussi réservé", () => {
+    vi.stubEnv("VITE_MEAL_STATUS_EDITORS", "gestionnaire@example.com");
+    setup({ slots: { sat_lunch: { items: [{ label: "A" }] } } });
+    expect(screen.getByRole("button", { name: /Tout marquer préparé/ })).toBeDisabled();
   });
 });

@@ -15,6 +15,24 @@ export const STATUS_FILTERS: Array<{ key: StatusFilter; label: string }> = [
   { key: "skipped", label: "Non préparé" },
 ];
 
+/**
+ * Qui peut changer le statut préparé / non préparé d'un plat : les e-mails listés
+ * (séparés par des virgules), ou tout le monde si la liste est vide. Garde-fou
+ * d'interface contre les fausses manipulations, pas une sécurité : les règles Firestore
+ * ne distinguent pas les champs d'un plat.
+ */
+export function canEditStatus(
+  email: string | null | undefined,
+  editors: string | undefined,
+): boolean {
+  const allowed = (editors ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (allowed.length === 0) return true;
+  return !!email && allowed.includes(email.toLowerCase());
+}
+
 export function itemStatus(item: MealItem): ItemStatus {
   return item.status ?? "planned";
 }

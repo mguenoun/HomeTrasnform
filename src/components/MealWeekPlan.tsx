@@ -21,6 +21,7 @@ import {
   SKIP_REASONS,
   filterPlan,
   itemStatus,
+  canEditStatus,
   markPlannedAsPrepared,
   matchesFilter,
   withStatus,
@@ -76,7 +77,16 @@ function SlotEditor({
     : [];
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const uid = useAuth().user?.uid;
+  const { user } = useAuth();
+  const uid = user?.uid;
+  // Seuls les comptes autorisés changent le statut (les autres votent et commentent).
+  const canStatus = canEditStatus(user?.email, import.meta.env.VITE_MEAL_STATUS_EDITORS);
+  const lockedTitle = canStatus ? undefined : "Réservé au gestionnaire du programme";
+  // Changement de statut d'un plat déjà préparé ou non préparé : demande confirmation.
+  const [confirmStatus, setConfirmStatus] = useState<{
+    index: number;
+    target: "planned" | "prepared" | "skipped";
+  } | null>(null);
   // Plat en cours de correction/traduction (index dans le créneau).
   const [editing, setEditing] = useState<{
     index: number;
@@ -122,6 +132,25 @@ function SlotEditor({
   ) {
     setSkipPicker(null);
     updateItem(index, (item) => withStatus(item, status, reason));
+  }
+
+  function applyStatus(index: number, target: "planned" | "prepared" | "skipped") {
+    setConfirmStatus(null);
+    setConfirmDelete(null);
+    if (target === "skipped") setSkipPicker(skipPicker === index ? null : index);
+    else setStatus(index, target);
+  }
+
+  /** Un plat encore planifié change directement ; sinon on demande d'abord confirmation. */
+  function requestStatus(index: number, target: "planned" | "prepared" | "skipped") {
+    if (!canStatus) return;
+    setSkipPicker(null);
+    if (itemStatus(slot.items[index]) === "planned") {
+      applyStatus(index, target);
+      return;
+    }
+    setConfirmDelete(null);
+    setConfirmStatus({ index, target });
   }
 
   function vote(index: number, value: Feedback) {
@@ -201,6 +230,8 @@ function SlotEditor({
             <button
               type="button"
               aria-label={`Tout marquer préparé, ${mealLabel}`}
+              disabled={!canStatus}
+              title={lockedTitle}
               onClick={() => void save(markPlannedAsPrepared(slot))}
               className="ht-btn px-2 py-0.5 text-xs"
             >
@@ -257,10 +288,12 @@ function SlotEditor({
                       type="button"
                       aria-label={`Marquer ${item.label} comme préparé`}
                       aria-pressed={status === "prepared"}
+                      disabled={!canStatus}
+                      title={lockedTitle}
                       onClick={() =>
-                        setStatus(index, status === "prepared" ? "planned" : "prepared")
+                        requestStatus(index, status === "prepared" ? "planned" : "prepared")
                       }
-                      className={`${ICON_BUTTON} ${status === "prepared" ? "font-extrabold" : "opacity-50"}`}
+                      className={`${ICON_BUTTON} ${status === "prepared" ? "font-extrabold" : "opacity-50"} ${canStatus ? "" : "cursor-not-allowed opacity-30"}`}
                     >
                       ✓
                     </button>
@@ -268,12 +301,12 @@ function SlotEditor({
                       type="button"
                       aria-label={`Marquer ${item.label} comme non préparé`}
                       aria-pressed={status === "skipped"}
-                      onClick={() => {
-                        setConfirmDelete(null);
-                        if (status === "skipped") setStatus(index, "planned");
-                        else setSkipPicker(skipPicker === index ? null : index);
-                      }}
-                      className={`${ICON_BUTTON} ${status === "skipped" ? "font-extrabold" : "opacity-50"}`}
+                      disabled={!canStatus}
+                      title={lockedTitle}
+                      onClick={() =>
+                        requestStatus(index, status === "skipped" ? "planned" : "skipped")
+                      }
+                      className={`${ICON_BUTTON} ${status === "skipped" ? "font-extrabold" : "opacity-50"} ${canStatus ? "" : "cursor-not-allowed opacity-30"}`}
                     >
                       ✗
                     </button>
@@ -405,6 +438,44 @@ function SlotEditor({
             type="button"
             onClick={() => setSkipPicker(null)}
             className="text-[var(--ht-text-2)]"
+          >
+            Annuler
+          </button>
+        </div>
+      )}
+
+      {confirmStatus && slot.items[confirmStatus.index] && (
+        <div
+          role="group"
+          aria-label={`Confirmer le changement de statut, ${slot.items[confirmStatus.index].label}`}
+          className="flex flex-wrap items-center gap-2 text-xs"
+        >
+          <span className="text-[var(--ht-text)]">
+            « {slot.items[confirmStatus.index].label} » est déjà{" "}
+            {itemStatus(slot.items[confirmStatus.index]) === "prepared" ? "préparé" : "non préparé"}.{" "}
+            {confirmStatus.target === "planned"
+              ? "Le remettre à planifié ?"
+              : confirmStatus.target === "prepared"
+                ? "Le marquer préparé ?"
+                : "Le marquer non préparé ?"}
+            {itemStatus(slot.items[confirmStatus.index]) === "prepared" &&
+              (() => {
+                const counts = voteCounts(slot.items[confirmStatus.index]);
+                return counts.up + counts.down > 0 ? " Les votes seront effacés." : "";
+              })()}
+          </span>
+          <button
+            type="button"
+            aria-label={`Confirmer le changement de statut de ${slot.items[confirmStatus.index].label}`}
+            onClick={() => applyStatus(confirmStatus.index, confirmStatus.target)}
+            className="rounded-md border border-[var(--ht-danger)] bg-[var(--ht-danger)] px-2 py-0.5 font-semibold text-white"
+          >
+            Confirmer
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmStatus(null)}
+            className="ht-btn px-2 py-0.5"
           >
             Annuler
           </button>

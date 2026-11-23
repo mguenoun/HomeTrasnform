@@ -151,6 +151,11 @@ détail épique par épique ; en résumé :
   **Dépenses par mois + rappel ménage (2026-11-23)** : `expensesByMonth`, `missingHelperDays`,
   `ExpensesHistogram`, abonnement à toutes les dépenses seulement quand l'onglet Dépenses est
   ouvert. Plat sur plusieurs jours : écarté, le report des snacks suffit (décision utilisateur).
+  **Statut réservé + confirmation (2026-11-23)** : `canEditStatus` (variable de build
+  `VITE_MEAL_STATUS_EDITORS` dans `.env.local`, vide = tout le monde). **Garde-fou
+  d'interface seulement** : les règles Firestore ne distinguent pas les champs d'un plat, un
+  membre qui contourne l'interface pourrait encore écrire. Changer cette liste exige un
+  nouveau `npm run build` + déploiement.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.
