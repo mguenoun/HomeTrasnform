@@ -16,6 +16,7 @@ vi.mock("../../services/users", () => ({
 
 vi.mock("firebase/auth", () => ({
   GoogleAuthProvider: vi.fn(),
+  browserPopupRedirectResolver: {},
   onAuthStateChanged: (
     _auth: unknown,
     callback: (
@@ -84,6 +85,7 @@ describe("AuthProvider", () => {
     // directement (sans passer par le garde `loading` de Probe), puisque le
     // chargement reste bloqué tant que getDoc() ne se résout pas.
     getDocMock.mockReturnValue(new Promise(() => {}));
+    localStorage.setItem("ht-redirect-pending", "1");
     getRedirectResultMock.mockRejectedValueOnce(
       new Error("auth/redirect-cancelled-by-user"),
     );
@@ -187,5 +189,45 @@ describe("AuthProvider", () => {
     );
     await screen.findByText(/isAuthorized: true/);
     expect(localStorage.getItem("ht-member:member@example.com")).toBe("1");
+  });
+
+  it("ne charge pas le résultat de redirection à l'ouverture ordinaire (démarrage plus rapide)", async () => {
+    getDocMock.mockResolvedValue({ exists: () => true });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await screen.findByText(/isAuthorized: true/);
+    expect(getRedirectResultMock).not.toHaveBeenCalled();
+  });
+
+  it("lit le résultat au retour d'une redirection lancée par l'app, une seule fois", async () => {
+    getDocMock.mockResolvedValue({ exists: () => true });
+    localStorage.setItem("ht-redirect-pending", "1");
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await screen.findByText(/isAuthorized: true/);
+    expect(getRedirectResultMock).toHaveBeenCalledTimes(1);
+    expect(localStorage.getItem("ht-redirect-pending")).toBeNull();
+  });
+
+  it("note qu'une redirection est en cours quand on se connecte", async () => {
+    getDocMock.mockResolvedValue({ exists: () => true });
+    function TriggerSignIn() {
+      const { signInWithGoogle } = useAuth();
+      return <button onClick={() => void signInWithGoogle()}>go</button>;
+    }
+    render(
+      <AuthProvider>
+        <TriggerSignIn />
+      </AuthProvider>,
+    );
+    screen.getByRole("button", { name: "go" }).click();
+    await waitFor(() => expect(signInWithRedirectMock).toHaveBeenCalled());
+    expect(localStorage.getItem("ht-redirect-pending")).toBe("1");
   });
 });

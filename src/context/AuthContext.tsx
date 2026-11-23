@@ -1,5 +1,6 @@
 import {
   GoogleAuthProvider,
+  browserPopupRedirectResolver,
   getRedirectResult,
   onAuthStateChanged,
   signInWithRedirect,
@@ -41,11 +42,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // classique et évite ce faux positif. getRedirectResult() récupère le résultat
     // au retour de redirection ; onAuthStateChanged ci-dessous capte ensuite l'état
     // connecté, mais lui seul ne remonte pas les erreurs de connexion.
-    getRedirectResult(auth).catch((err) => {
-      setError(
-        `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}). Réessayez.`,
-      );
-    });
+    // Seulement au retour d'une redirection que nous avons lancée : sinon on évite de
+    // charger le cadre d'authentification Google à chaque ouverture (lent sur mobile).
+    if (redirectPending()) {
+      setRedirectPending(false);
+      getRedirectResult(auth, browserPopupRedirectResolver).catch((err) => {
+        setError(
+          `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}). Réessayez.`,
+        );
+      });
+    }
 
     return onAuthStateChanged(auth, async (nextUser) => {
       // Accès déjà vérifié sur cet appareil : on affiche l'app tout de suite et on
@@ -119,7 +125,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function signInWithGoogle() {
     setError(null);
     try {
-      await signInWithRedirect(auth, new GoogleAuthProvider());
+      setRedirectPending(true);
+      await signInWithRedirect(
+        auth,
+        new GoogleAuthProvider(),
+        browserPopupRedirectResolver,
+      );
     } catch (err) {
       setError(
         `La connexion a échoué (${err instanceof Error ? err.message : "erreur inconnue"}). Réessayez.`,
@@ -138,6 +149,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+const REDIRECT_KEY = "ht-redirect-pending";
+
+function redirectPending(): boolean {
+  try {
+    return localStorage.getItem(REDIRECT_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function setRedirectPending(pending: boolean) {
+  try {
+    if (pending) localStorage.setItem(REDIRECT_KEY, "1");
+    else localStorage.removeItem(REDIRECT_KEY);
+  } catch {
+    // stockage indisponible : la redirection fonctionnera au prochain essai
+  }
 }
 
 const MEMBER_KEY = "ht-member:";

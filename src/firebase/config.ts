@@ -1,5 +1,10 @@
 import { initializeApp, type FirebaseOptions } from "firebase/app";
-import { connectAuthEmulator, getAuth } from "firebase/auth";
+import {
+  browserLocalPersistence,
+  connectAuthEmulator,
+  indexedDBLocalPersistence,
+  initializeAuth,
+} from "firebase/auth";
 import {
   connectFirestoreEmulator,
   initializeFirestore,
@@ -26,7 +31,12 @@ const firebaseConfig: FirebaseOptions = {
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
-export const auth = getAuth(firebaseApp);
+// Pas de « popupRedirectResolver » ici : par défaut, Firebase charge au démarrage un
+// script Google, un cadre caché et 93 kB de code d'authentification, en série (~2 s sur
+// mobile). Ce résolveur n'est fourni que lors d'une vraie connexion (voir AuthContext).
+export const auth = initializeAuth(firebaseApp, {
+  persistence: [indexedDBLocalPersistence, browserLocalPersistence],
+});
 // Cache local persistant : à la réouverture, les listes s'affichent aussitôt depuis
 // l'appareil, puis se mettent à jour dès que le réseau répond.
 export const db = initializeFirestore(firebaseApp, {
