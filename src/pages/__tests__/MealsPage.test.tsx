@@ -1706,3 +1706,32 @@ describe("MealsPage — partage en tableau", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Pas de canvas");
   });
 });
+
+describe("MealsPage — paiement d'un point de vente", () => {
+  const items = {
+    a: { id: "a", name: "Lait", vendor: "Épicier", checked: true, createdAt: 1 },
+    b: { id: "b", name: "Sel", vendor: "Épicier", checked: true, createdAt: 2 },
+  };
+
+  it("propose de payer quand tout est pris mais pas encore payé", async () => {
+    setup({}, { items });
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(screen.getByRole("button", { name: "Payer Épicier" })).toBeInTheDocument();
+  });
+
+  it("ne propose plus rien quand tout est pris et déjà payé", async () => {
+    setup({}, { items }, [
+      { id: "e1", weekId: "2026-11-21", type: "groceries", amount: 120, vendor: "Épicier", date: "2026-11-21", createdBy: "u1", createdAt: 1 },
+    ]);
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(screen.queryByRole("button", { name: /Payer Épicier|paiement chez Épicier/ })).not.toBeInTheDocument();
+  });
+
+  it("propose d'ajouter un paiement si un article repasse à « non pris » après paiement", async () => {
+    setup({}, { items: { ...items, b: { ...items.b, checked: false } } }, [
+      { id: "e1", weekId: "2026-11-21", type: "groceries", amount: 120, vendor: "Épicier", date: "2026-11-21", createdBy: "u1", createdAt: 1 },
+    ]);
+    await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
+    expect(screen.getByRole("button", { name: /Ajouter un paiement chez Épicier/ })).toBeInTheDocument();
+  });
+});

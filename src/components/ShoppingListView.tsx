@@ -288,6 +288,8 @@ export function ShoppingListView({
           const paid = paidFor(expenses, group.vendor, group.round);
           const detail = sumItemPrices(group.items);
           const groupBought = group.items.filter((i) => i.checked).length;
+          // Tout est pris et déjà payé : rien à proposer (un paiement de plus serait une erreur).
+          const settled = paid.payments > 0 && groupBought === group.items.length;
           const visible = hideChecked
             ? group.items.filter((i) => !i.checked)
             : group.items;
@@ -508,7 +510,7 @@ export function ShoppingListView({
                 </ul>
               )}
 
-              {group.vendor && (
+              {group.vendor && !settled && (
                 <div className="border-t border-[var(--ht-input-border)] px-4 py-2.5">
                   {paying === key ? (
                     <div className="flex flex-col gap-2">
@@ -561,9 +563,11 @@ export function ShoppingListView({
                       onClick={() => startPayment(group)}
                       className="ht-btn px-3 py-1.5 text-sm"
                     >
-                      {groupBought < group.items.length
-                        ? `Payer ${title} (il reste ${group.items.length - groupBought})`
-                        : `Payer ${title}`}
+                      {paid.payments > 0
+                        ? `Ajouter un paiement chez ${title}`
+                        : groupBought < group.items.length
+                          ? `Payer ${title} (il reste ${group.items.length - groupBought})`
+                          : `Payer ${title}`}
                     </button>
                   )}
                 </div>
