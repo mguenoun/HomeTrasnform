@@ -4,6 +4,7 @@ import { CoveragePanel } from "../components/CoveragePanel";
 import { DishLibrary } from "../components/DishLibrary";
 import { ExpensesView } from "../components/ExpensesView";
 import { MealCalendar } from "../components/MealCalendar";
+import { ProgramGenerator } from "../components/ProgramGenerator";
 import { WeekCopy } from "../components/WeekCopy";
 import { MealWeekPlan } from "../components/MealWeekPlan";
 import { ProgramImport } from "../components/ProgramImport";
@@ -290,6 +291,7 @@ export function MealsPage({
             <WeeklyFeedback plan={plan} translations={translations} />
           )}
           <WeekCopy key={`copy-${weekId}`} previous={previousPlan} current={plan} />
+          <ProgramGenerator key={`generate-${weekId}`} weekId={weekId} plan={plan} dishes={dishes} />
           <ProgramImport key={`import-${weekId}`} weekId={weekId} plan={plan} />
           {moveError && (
             <p role="alert" className="mb-2 text-sm text-[var(--ht-danger)]">

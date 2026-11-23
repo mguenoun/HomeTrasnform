@@ -167,6 +167,11 @@ détail épique par épique ; en résumé :
   à la création d'un plat, pas à la modification d'un ancien plat sans étiquette. Un plat
   jamais servi et sans étiquette reste à compléter à la main. Prochaine brique : sélection de
   plats + génération d'une V0 du programme, puis les envies des membres.
+  **Composer le programme (2026-11-23)** : `domain/programGenerator.ts` (graine reproductible,
+  plats au bon repas, « les deux » comblent le reste, plats sans place signalés, snacks
+  espacés), `ProgramGenerator` (le panneau n'écoute tous les programmes que quand il est
+  ouvert). Écrit via `saveWholeSlots`, créneaux libres uniquement. Reste : les envies des
+  membres (vote) qui alimenteront la sélection.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

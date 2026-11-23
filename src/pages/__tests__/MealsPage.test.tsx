@@ -2081,3 +2081,114 @@ describe("MealsPage — import sans perte et recopie de la semaine", () => {
     });
   });
 });
+
+describe("MealsPage — composer le programme", () => {
+  const catalog: Dish[] = [
+    { id: "couscous", name: "Couscous", translation: "كسكسو", asMeal: true, basis: "persons", mealType: "lunch" },
+    { id: "soupe", name: "Soupe", asMeal: true, basis: "persons", mealType: "dinner" },
+    { id: "tajine", name: "Tajine", asMeal: true, basis: "persons" },
+    { id: "cake", name: "Cake", asSnack: true, basis: "units" },
+  ];
+
+  async function openGenerator() {
+    await userEvent.click(screen.getByRole("button", { name: "Composer le programme" }));
+  }
+
+  it("liste les plats et les snacks du référentiel avec leur repas habituel", async () => {
+    setup({}, {}, [], [], catalog);
+    await openGenerator();
+    expect(screen.getByLabelText("Choisir Couscous")).toBeInTheDocument();
+    expect(screen.getByLabelText("Choisir Cake")).toBeInTheDocument();
+    const panel = screen.getByRole("region", { name: "Composer le programme" });
+    expect(within(panel).getByText("Déjeuner")).toBeInTheDocument();
+    expect(within(panel).getByText("Dîner")).toBeInTheDocument();
+    expect(screen.getByText(/14 déjeuners et dîners libres/)).toBeInTheDocument();
+  });
+
+  it("ne génère rien tant qu'aucun plat n'est choisi", async () => {
+    setup({}, {}, [], [], catalog);
+    await openGenerator();
+    expect(screen.getByRole("button", { name: "Générer le programme" })).toBeDisabled();
+  });
+
+  it("génère un aperçu, sans rien écrire, puis l'applique", async () => {
+    setup({}, {}, [], [], catalog);
+    await openGenerator();
+    await userEvent.click(screen.getByLabelText("Choisir Couscous"));
+    await userEvent.click(screen.getByLabelText("Choisir Soupe"));
+    await userEvent.click(screen.getByLabelText("Choisir Cake"));
+    await userEvent.click(screen.getByRole("button", { name: "Générer le programme" }));
+
+    const preview = screen.getByRole("region", { name: "Aperçu du programme généré" });
+    expect(preview).toHaveTextContent("Couscous");
+    expect(preview).toHaveTextContent("Soupe");
+    expect(saveWholeSlots).not.toHaveBeenCalled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Appliquer au programme" }));
+    const [weekId, slots] = vi.mocked(saveWholeSlots).mock.calls.at(-1)!;
+    expect(weekId).toBe("2026-11-21");
+    const written = Object.entries(slots).map(([key, slot]) => [key, slot.items[0].label]);
+    expect(written.find(([, label]) => label === "Couscous")![0]).toMatch(/_lunch$/);
+    expect(written.find(([, label]) => label === "Soupe")![0]).toMatch(/_dinner$/);
+    expect(written.find(([, label]) => label === "Cake")![0]).toMatch(/_snack$/);
+    expect(screen.getByRole("status")).toHaveTextContent("3 créneaux ajoutés");
+  });
+
+  it("« Autre répartition » propose un autre aperçu", async () => {
+    const many: Dish[] = Array.from({ length: 10 }, (_, i) => ({
+      id: `p${i}`,
+      name: `Plat ${i + 1}`,
+      asMeal: true,
+      basis: "persons" as const,
+      mealType: "both" as const,
+    }));
+    setup({}, {}, [], [], many);
+    await openGenerator();
+    for (const dish of many) await userEvent.click(screen.getByLabelText(`Choisir ${dish.name}`));
+    await userEvent.click(screen.getByRole("button", { name: "Générer le programme" }));
+    const first = screen.getByRole("region", { name: "Aperçu du programme généré" }).textContent;
+    await userEvent.click(screen.getByRole("button", { name: "Autre répartition" }));
+    const second = screen.getByRole("region", { name: "Aperçu du programme généré" }).textContent;
+    expect(second).not.toBe(first);
+  });
+
+  it("n'utilise pas un créneau déjà rempli et le montre dans l'aperçu", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Pâtes" }] } } }, {}, [], [], catalog);
+    await openGenerator();
+    expect(screen.getByText(/13 déjeuners et dîners libres/)).toBeInTheDocument();
+    await userEvent.click(screen.getByLabelText("Choisir Couscous"));
+    await userEvent.click(screen.getByRole("button", { name: "Générer le programme" }));
+    const preview = screen.getByRole("region", { name: "Aperçu du programme généré" });
+    expect(preview).toHaveTextContent("Déjeuner : Pâtes");
+    await userEvent.click(screen.getByRole("button", { name: "Appliquer au programme" }));
+    const slots = vi.mocked(saveWholeSlots).mock.calls.at(-1)![1];
+    expect(slots.sat_lunch).toBeUndefined();
+  });
+
+  it("un plat sans étiquette peut aller à l'un ou l'autre repas", async () => {
+    setup({}, {}, [], [], catalog);
+    await openGenerator();
+    await userEvent.click(screen.getByLabelText("Choisir Tajine"));
+    await userEvent.click(screen.getByRole("button", { name: "Générer le programme" }));
+    await userEvent.click(screen.getByRole("button", { name: "Appliquer au programme" }));
+    expect(Object.keys(vi.mocked(saveWholeSlots).mock.calls.at(-1)![1])).toHaveLength(1);
+  });
+
+  it("affiche l'erreur si l'enregistrement échoue", async () => {
+    vi.mocked(saveWholeSlots).mockRejectedValueOnce(new Error("Hors ligne"));
+    setup({}, {}, [], [], catalog);
+    await openGenerator();
+    await userEvent.click(screen.getByLabelText("Choisir Couscous"));
+    await userEvent.click(screen.getByRole("button", { name: "Générer le programme" }));
+    await userEvent.click(screen.getByRole("button", { name: "Appliquer au programme" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Hors ligne");
+  });
+
+  it("filtre les plats par la recherche", async () => {
+    setup({}, {}, [], [], catalog);
+    await openGenerator();
+    await userEvent.type(screen.getByLabelText("Rechercher dans les plats à choisir"), "sou");
+    expect(screen.getByLabelText("Choisir Soupe")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Choisir Couscous")).not.toBeInTheDocument();
+  });
+});

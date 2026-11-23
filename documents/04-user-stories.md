@@ -299,6 +299,12 @@ les deux » (hors snacks). Elle est déduite des programmes déjà saisis (affic
 et enregistrée d'un clic pour tous les plats ; elle est obligatoire pour tout nouveau plat.
 Prérequis de la génération d'une première version du programme. — ✅ Fait
 
+**US-12.31** (P1) — Je compose une première version du programme : je coche dans le
+référentiel les plats de la semaine et quelques snacks ; l'app les répartit sur les
+déjeuners et dîners libres selon leur repas habituel (étiquette), espace les snacks, me montre
+un aperçu, propose une autre répartition, puis je l'applique. Jamais un créneau déjà rempli
+n'est touché. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait
