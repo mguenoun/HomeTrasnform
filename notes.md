@@ -143,6 +143,11 @@ détail épique par épique ; en résumé :
   `services/tableImage.ts` (canvas, `navigator.share` avec fichier, sinon téléchargement) ;
   non testé sur iPhone (le rendu canvas n'est pas exercé par jsdom). Édition d'un plat :
   le formulaire attend l'écriture et reste ouvert avec l'erreur.
+  **Calendrier par défaut + glisser-déposer (2026-11-23)** : `MealCalendar` (événements
+  pointeur : appui long 350 ms au doigt, glisser à la souris, défilement automatique aux
+  bords, `touchmove` non passif pendant la saisie), `domain/mealMove.ts`, `moveMealItem`
+  (une écriture pour les deux créneaux). Un snack reporté se déplace depuis son jour
+  d'origine. **À valider sur iPhone PWA** : jsdom ne teste pas le geste réel.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

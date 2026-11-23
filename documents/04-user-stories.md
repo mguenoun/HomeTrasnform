@@ -272,6 +272,11 @@ son vote, et pour changer d'avis il doit d'abord annuler. — ✅ Fait
 (image PNG : jours × repas pour le programme, un bloc par point de vente pour la liste),
 via la feuille de partage du téléphone (WhatsApp) ou en téléchargement. — ✅ Fait
 
+**US-12.25** (P2) — Le programme s'ouvre sur le calendrier, et je déplace un plat d'une case
+à une autre par glisser-déposer (appui long au doigt, glisser à la souris), en une seule
+écriture ; le plat garde statut, votes et traduction. Désactivé quand un filtre de statut
+est actif. — ✅ Fait (à valider sur iPhone)
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

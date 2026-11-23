@@ -92,12 +92,9 @@ function cleanVotes(
   return entries.length > 0 ? Object.fromEntries(entries) : undefined;
 }
 
-export async function saveMealSlot(
-  weekId: string,
-  key: MealSlotKey,
-  slot: MealSlot,
-): Promise<void> {
-  const cleanItems = slot.items
+/** Éléments prêts à écrire : champs valides seulement, libellés non vides. */
+function cleanSlotItems(items: MealItem[]) {
+  return items
     .map((item) => ({
       label: item.label.trim(),
       ...(item.translation?.trim()
@@ -127,6 +124,14 @@ export async function saveMealSlot(
         : {}),
     }))
     .filter((item) => item.label.length > 0);
+}
+
+export async function saveMealSlot(
+  weekId: string,
+  key: MealSlotKey,
+  slot: MealSlot,
+): Promise<void> {
+  const cleanItems = cleanSlotItems(slot.items);
   await setDoc(
     doc(db, MEAL_PLANS, weekId),
     {
@@ -144,6 +149,33 @@ export async function saveMealSlot(
  * Importe plusieurs créneaux d'un coup (programme collé). Les créneaux absents
  * de `slots` ne sont pas touchés ; ceux fournis remplacent l'existant.
  */
+/**
+ * Déplace un plat d'un créneau à un autre en une seule écriture (jamais un plat
+ * perdu ou dupliqué si la seconde moitié échouait).
+ */
+export async function moveMealItem(
+  weekId: string,
+  from: { key: MealSlotKey; slot: MealSlot },
+  to: { key: MealSlotKey; slot: MealSlot },
+): Promise<void> {
+  const slotData = (slot: MealSlot) =>
+    stripUndefined({ diners: slot.diners, items: cleanSlotItems(slot.items) });
+  await setDoc(
+    doc(db, MEAL_PLANS, weekId),
+    {
+      weekId,
+      slots: { [from.key]: slotData(from.slot), [to.key]: slotData(to.slot) },
+    },
+    { merge: true },
+  );
+  await rememberDishes(
+    cleanSlotItems(to.slot.items).map((item) => ({
+      label: item.label,
+      snack: isSnackKey(to.key),
+    })),
+  );
+}
+
 export async function saveMealSlots(
   weekId: string,
   slots: Record<MealSlotKey, MealItem[]>,

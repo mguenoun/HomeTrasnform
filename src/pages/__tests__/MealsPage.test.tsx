@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,6 +45,7 @@ vi.mock("../../services/meals", () => ({
   removeExpense: vi.fn().mockResolvedValue(undefined),
   saveDish: vi.fn().mockResolvedValue("id"),
   deleteDish: vi.fn().mockResolvedValue(undefined),
+  moveMealItem: vi.fn().mockResolvedValue(undefined),
   setInPantry: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -69,6 +70,7 @@ import {
   updateShoppingItem,
   saveMealSlot,
   saveMealSlots,
+  moveMealItem,
   setInPantry,
   setDishTranslation,
   saveDish,
@@ -111,7 +113,7 @@ function setup(
   mockedUseExpenses.mockReturnValue({ expenses, loading: false });
   render(
     <MemoryRouter>
-      <MealsPage />
+      <MealsPage initialPlanView="detail" />
     </MemoryRouter>,
   );
 }
@@ -1733,5 +1735,109 @@ describe("MealsPage — paiement d'un point de vente", () => {
     ]);
     await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
     expect(screen.getByRole("button", { name: /Ajouter un paiement chez Épicier/ })).toBeInTheDocument();
+  });
+});
+
+describe("MealsPage — vue d'ouverture et glisser-déposer", () => {
+  const week = { sat_lunch: { items: [{ label: "Couscous" }, { label: "Salade" }] } };
+
+  function openCalendar() {
+    return userEvent.click(screen.getByRole("button", { name: "Calendrier" }));
+  }
+
+  function drag(label: string, targetTestId: string, pointerType = "mouse") {
+    const item = screen.getByText(label).closest("li")!;
+    const target = screen.getByTestId(targetTestId);
+    document.elementFromPoint = vi.fn(() => target) as typeof document.elementFromPoint;
+    fireEvent.pointerDown(item, { pointerType, button: 0, clientX: 5, clientY: 5 });
+    fireEvent.pointerMove(window, { pointerType, clientX: 40, clientY: 40 });
+    fireEvent.pointerUp(window, { pointerType, clientX: 40, clientY: 40 });
+  }
+
+  it("s'ouvre par défaut sur le calendrier", () => {
+    mockedUseMealPlan.mockReturnValue({ plan: { weekId: "2026-11-21", defaultDiners: 4, slots: week }, loading: false });
+    mockedUseShoppingList.mockReturnValue({ list: { weekId: "2026-11-21", items: {} }, loading: false });
+    mockedUseExpenses.mockReturnValue({ expenses: [], loading: false });
+    render(
+      <MemoryRouter>
+        <MealsPage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("button", { name: "Calendrier" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByTestId("cell-sat-lunch")).toBeInTheDocument();
+  });
+
+  it("déplace un plat vers une autre case par glisser-déposer, en une seule écriture", async () => {
+    setup({ slots: week });
+    await openCalendar();
+    drag("Couscous", "cell-sun-dinner");
+    expect(moveMealItem).toHaveBeenCalledWith(
+      "2026-11-21",
+      { key: "sat_lunch", slot: { items: [{ label: "Salade" }] } },
+      { key: "sun_dinner", slot: { items: [{ label: "Couscous" }] } },
+    );
+  });
+
+  it("ne déplace rien si on lâche dans la case d'origine", async () => {
+    setup({ slots: week });
+    await openCalendar();
+    drag("Couscous", "cell-sat-lunch");
+    expect(moveMealItem).not.toHaveBeenCalled();
+  });
+
+  it("un simple clic sans glisser ne déplace rien", async () => {
+    setup({ slots: week });
+    await openCalendar();
+    const item = screen.getByText("Couscous").closest("li")!;
+    fireEvent.pointerDown(item, { pointerType: "mouse", button: 0, clientX: 5, clientY: 5 });
+    fireEvent.pointerUp(window, { pointerType: "mouse", clientX: 5, clientY: 5 });
+    expect(moveMealItem).not.toHaveBeenCalled();
+  });
+
+  it("au doigt, un appui long saisit le plat", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      setup({ slots: week });
+      await openCalendar();
+      const item = screen.getByText("Couscous").closest("li")!;
+      const target = screen.getByTestId("cell-mon-dinner");
+      document.elementFromPoint = vi.fn(() => target) as typeof document.elementFromPoint;
+      fireEvent.pointerDown(item, { pointerType: "touch", clientX: 5, clientY: 5 });
+      act(() => {
+        vi.advanceTimersByTime(400);
+      });
+      fireEvent.pointerMove(window, { pointerType: "touch", clientX: 6, clientY: 6 });
+      fireEvent.pointerUp(window, { pointerType: "touch", clientX: 6, clientY: 6 });
+      expect(moveMealItem).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("au doigt, glisser tout de suite fait défiler : rien n'est saisi", async () => {
+    setup({ slots: week });
+    await openCalendar();
+    const item = screen.getByText("Couscous").closest("li")!;
+    const target = screen.getByTestId("cell-mon-dinner");
+    document.elementFromPoint = vi.fn(() => target) as typeof document.elementFromPoint;
+    fireEvent.pointerDown(item, { pointerType: "touch", clientX: 5, clientY: 5 });
+    fireEvent.pointerMove(window, { pointerType: "touch", clientX: 5, clientY: 60 });
+    fireEvent.pointerUp(window, { pointerType: "touch", clientX: 5, clientY: 60 });
+    expect(moveMealItem).not.toHaveBeenCalled();
+  });
+
+  it("pas de déplacement quand le programme est filtré (positions différentes)", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous", status: "prepared" }, { label: "Salade" }] } } });
+    await openCalendar();
+    await userEvent.click(screen.getByRole("button", { name: "Préparé (1)" }));
+    expect(screen.queryByText(/Pour déplacer un plat/)).not.toBeInTheDocument();
+  });
+
+  it("affiche une erreur si l'écriture du déplacement échoue", async () => {
+    vi.mocked(moveMealItem).mockRejectedValueOnce(new Error("réseau"));
+    setup({ slots: week });
+    await openCalendar();
+    drag("Couscous", "cell-sun-dinner");
+    expect(await screen.findByRole("alert")).toHaveTextContent("déplacement");
   });
 });

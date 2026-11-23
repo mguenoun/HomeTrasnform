@@ -23,6 +23,8 @@ import {
   filterPlan,
   type StatusFilter,
 } from "../domain/mealStatus";
+import { moveItem } from "../domain/mealMove";
+import { moveMealItem } from "../services/meals";
 import { buildProgramTable } from "../domain/shareTable";
 import { buildTranslationIndex } from "../domain/translations";
 import { shareTableImage } from "../services/tableImage";
@@ -44,7 +46,12 @@ const TABS: Array<[Tab, string]> = [
   ["library", "Bibliothèque"],
 ];
 
-export function MealsPage() {
+export function MealsPage({
+  initialPlanView = "calendar",
+}: {
+  /** Vue du programme à l'ouverture : le calendrier d'ensemble, sauf demande contraire. */
+  initialPlanView?: "detail" | "calendar";
+} = {}) {
   const { user } = useAuth();
   const userId = user?.uid ?? "";
   const [weekId, setWeekId] = useState(() => weekIdOf(new Date()));
@@ -52,7 +59,8 @@ export function MealsPage() {
   const [sharingTable, setSharingTable] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   // Programme : vue d'ensemble en calendrier, ou détail jour par jour (saisie).
-  const [planView, setPlanView] = useState<"detail" | "calendar">("detail");
+  const [planView, setPlanView] = useState<"detail" | "calendar">(initialPlanView);
+  const [moveError, setMoveError] = useState<string | null>(null);
   // Vue filtrée sur ce qui est préparé, planifié ou non préparé.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const { plan, loading: planLoading } = useMealPlan(weekId);
@@ -90,6 +98,21 @@ export function MealsPage() {
         .getElementById(`day-${dayKey}`)
         ?.scrollIntoView?.({ behavior: "smooth", block: "start" });
     }, 0);
+  }
+
+  async function handleMove(fromKey: string, index: number, toKey: string) {
+    const moved = moveItem(plan, fromKey, index, toKey);
+    if (!moved) return;
+    setMoveError(null);
+    try {
+      await moveMealItem(
+        weekId,
+        { key: fromKey, slot: moved.from },
+        { key: toKey, slot: moved.to },
+      );
+    } catch {
+      setMoveError("Le déplacement n'a pas pu être enregistré. Réessayez.");
+    }
   }
 
   const counts = countByStatus(plan);
@@ -263,11 +286,18 @@ export function MealsPage() {
             <WeeklyFeedback plan={plan} translations={translations} />
           )}
           <ProgramImport weekId={weekId} />
+          {moveError && (
+            <p role="alert" className="mb-2 text-sm text-[var(--ht-danger)]">
+              {moveError}
+            </p>
+          )}
           {planView === "calendar" ? (
             <MealCalendar
               plan={filterPlan(plan, statusFilter)}
               onSelectDay={openDay}
               translations={translations}
+              // Les positions d'un plan filtré ne sont pas celles du plan : pas de déplacement.
+              onMove={statusFilter === "all" ? handleMove : undefined}
             />
           ) : (
             <MealWeekPlan
