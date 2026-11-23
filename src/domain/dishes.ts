@@ -1,4 +1,5 @@
-import type { Dish, DishVariant } from "../types";
+import type { Dish, DishMealType, DishVariant, MealPlan } from "../types";
+import { catalogKey } from "./catalog";
 
 /** Tailles proposées par défaut pour un plat (personnes). */
 export const PERSON_SIZES = [2, 3, 4, 5] as const;
@@ -49,4 +50,66 @@ export function describeVariants(dish: Dish): string {
   return dish.basis === "units"
     ? `${sizes} ${dish.unitLabel?.trim() || "unités"}`
     : `${sizes} pers.`;
+}
+
+export const MEAL_TYPE_LABEL: Record<DishMealType, string> = {
+  lunch: "Déjeuner",
+  dinner: "Dîner",
+  both: "Les deux",
+};
+
+/**
+ * Repas auquel chaque plat a été servi dans les programmes déjà saisis (toutes les
+ * semaines), par nom normalisé : uniquement au déjeuner, uniquement au dîner, ou aux
+ * deux. Les snacks ne comptent pas. Sert d'étiquette de départ quand un plat n'en a
+ * pas encore d'enregistrée.
+ */
+export function inferMealTypes(plans: MealPlan[]): Map<string, DishMealType> {
+  const seen = new Map<string, { lunch: boolean; dinner: boolean }>();
+  for (const plan of plans) {
+    for (const [slot, { items }] of Object.entries(plan.slots)) {
+      const meal = slot.endsWith("_lunch") ? "lunch" : slot.endsWith("_dinner") ? "dinner" : null;
+      if (!meal) continue;
+      for (const item of items) {
+        const key = catalogKey(item.label);
+        if (!key) continue;
+        const entry = seen.get(key) ?? { lunch: false, dinner: false };
+        entry[meal] = true;
+        seen.set(key, entry);
+      }
+    }
+  }
+  const result = new Map<string, DishMealType>();
+  for (const [key, { lunch, dinner }] of seen) {
+    result.set(key, lunch && dinner ? "both" : lunch ? "lunch" : "dinner");
+  }
+  return result;
+}
+
+/** Étiquette d'un plat : celle enregistrée, sinon celle déduite des programmes (`inferred`). */
+export function dishMealType(
+  dish: Dish,
+  inferred: Map<string, DishMealType>,
+): { type: DishMealType | undefined; inferred: boolean } {
+  if (dish.mealType) return { type: dish.mealType, inferred: false };
+  const type = inferred.get(catalogKey(dish.name));
+  return { type, inferred: type !== undefined };
+}
+
+/** Un snack n'a pas d'étiquette : « déjeuner/dîner » ne concerne que les plats. */
+export function isSnackDish(dish: Dish): boolean {
+  return dish.basis === "units" || (!dish.basis && !!dish.asSnack && !dish.asMeal);
+}
+
+/** Plats (hors snacks) sans étiquette enregistrée mais déductibles des programmes. */
+export function inferredLabelsToSave(
+  dishes: Dish[],
+  inferred: Map<string, DishMealType>,
+): Array<{ id: string; mealType: DishMealType }> {
+  return dishes
+    .filter((dish) => !dish.mealType && !isSnackDish(dish))
+    .flatMap((dish) => {
+      const type = inferred.get(catalogKey(dish.name));
+      return type ? [{ id: dish.id, mealType: type }] : [];
+    });
 }

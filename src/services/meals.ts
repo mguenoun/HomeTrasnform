@@ -21,6 +21,7 @@ import type {
   CatalogIngredient,
   PantryItem,
   Dish,
+  DishMealType,
   DishVariant,
   ExpenseType,
   HouseholdExpense,
@@ -584,6 +585,8 @@ export interface DishInput {
   /** Drapeaux d'usage déjà connus (planifié comme snack/repas), conservés. */
   asSnack?: boolean;
   asMeal?: boolean;
+  /** Déjeuner / dîner / les deux : obligatoire pour un plat, sans objet pour un snack. */
+  mealType?: DishMealType;
 }
 
 /**
@@ -615,12 +618,28 @@ export async function saveDish(
       // Un plat défini comme snack/plat est forcément proposé comme tel.
       asSnack: input.asSnack || input.basis === "units" || undefined,
       asMeal: input.asMeal || input.basis === "persons" || undefined,
+      mealType: input.basis === "persons" ? input.mealType : undefined,
     }),
   );
   if (previousId && previousId !== id) {
     await deleteDoc(doc(db, DISHES, previousId));
   }
   return id;
+}
+
+/**
+ * Enregistre en une fois les étiquettes déduites des programmes (plats qui n'en avaient
+ * pas). N'écrit que ce champ : le reste de chaque plat est inchangé.
+ */
+export async function saveMealTypes(
+  entries: Array<{ id: string; mealType: DishMealType }>,
+): Promise<void> {
+  if (entries.length === 0) return;
+  const batch = writeBatch(db);
+  for (const { id, mealType } of entries) {
+    batch.set(doc(db, DISHES, id), { mealType }, { merge: true });
+  }
+  await batch.commit();
 }
 
 export async function deleteDish(id: string): Promise<void> {

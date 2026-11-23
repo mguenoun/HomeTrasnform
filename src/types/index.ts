@@ -278,6 +278,9 @@ export interface HouseholdExpense {
  * Référentiel appris au fil des saisies (programme et courses) : sert à
  * l'autocomplétion et, plus tard, de support aux ingrédients par plat.
  */
+/** Repas auquel un plat se sert d'habitude : le déjeuner, le dîner, ou les deux. */
+export type DishMealType = "lunch" | "dinner" | "both";
+
 export interface Dish {
   /** Clé normalisée (voir `catalogKey`). */
   id: string;
@@ -287,6 +290,8 @@ export interface Dish {
   /** A déjà été planifié comme snack / comme repas : filtre les suggestions. */
   asSnack?: boolean;
   asMeal?: boolean;
+  /** Étiquette « plutôt déjeuner / dîner / les deux » (plats seulement, pas les snacks). */
+  mealType?: DishMealType;
   /**
    * Ce que mesure la taille d'une variante : des personnes (plat, salade…) ou
    * des unités produites (snack : « 10 petites pizzas »). Absent = plat

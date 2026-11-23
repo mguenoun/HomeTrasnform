@@ -48,6 +48,7 @@ vi.mock("../../services/meals", () => ({
   deleteDish: vi.fn().mockResolvedValue(undefined),
   moveMealItem: vi.fn().mockResolvedValue(undefined),
   saveWholeSlots: vi.fn().mockResolvedValue(undefined),
+  saveMealTypes: vi.fn().mockResolvedValue(undefined),
   setInPantry: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -73,6 +74,7 @@ import {
   saveMealSlot,
   saveMealSlots,
   saveWholeSlots,
+  saveMealTypes,
   moveMealItem,
   setInPantry,
   setDishTranslation,
@@ -528,6 +530,7 @@ describe("MealsPage — bibliothèque de plats", () => {
     await openLibrary();
     await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
     await userEvent.type(screen.getByLabelText("Nom du plat"), "شعرية الحليب");
+    await userEvent.selectOptions(screen.getByLabelText("Repas habituel du plat"), "dinner");
     await userEvent.click(screen.getByRole("button", { name: "+ 4 pers." }));
     await userEvent.type(screen.getByLabelText("Ingrédient 1, 4 pers."), "شعرية");
     await userEvent.type(screen.getByLabelText("Quantité 1, 4 pers."), "2 باكية");
@@ -550,6 +553,7 @@ describe("MealsPage — bibliothèque de plats", () => {
       ],
       asSnack: undefined,
       asMeal: undefined,
+      mealType: "dinner",
     });
   });
 
@@ -619,6 +623,63 @@ describe("MealsPage — bibliothèque de plats", () => {
         ],
       }),
     );
+  });
+
+  it("refuse de créer un plat sans dire s'il se sert au déjeuner ou au dîner", async () => {
+    setup();
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
+    await userEvent.type(screen.getByLabelText("Nom du plat"), "Tajine");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("plutôt au déjeuner, au dîner ou aux deux");
+    expect(saveDish).not.toHaveBeenCalled();
+  });
+
+  it("un snack n'a pas d'étiquette déjeuner/dîner", async () => {
+    setup();
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
+    await userEvent.click(screen.getByLabelText(/Snack \(quantités/));
+    expect(screen.queryByLabelText("Repas habituel du plat")).not.toBeInTheDocument();
+  });
+
+  it("propose l'étiquette déduite des programmes quand on ouvre un plat qui n'en a pas", async () => {
+    allPlansForTest = [
+      { weekId: "2026-11-14", defaultDiners: 4, slots: { sat_dinner: { items: [{ label: "Tajine" }] } } },
+    ];
+    setup({}, {}, [], [], [tajine]);
+    await openLibrary();
+    await userEvent.click(screen.getByRole("button", { name: /Tajine/ }));
+    expect(screen.getByLabelText("Repas habituel du plat")).toHaveValue("dinner");
+    expect(screen.getByText(/proposé d'après les programmes/)).toBeInTheDocument();
+  });
+
+  it("affiche l'étiquette déduite, et l'enregistre d'un clic pour tous les plats", async () => {
+    allPlansForTest = [
+      {
+        weekId: "2026-11-14",
+        defaultDiners: 4,
+        slots: {
+          sat_dinner: { items: [{ label: "Tajine" }] },
+          sun_lunch: { items: [{ label: "Tajine" }] },
+        },
+      },
+    ];
+    setup({}, {}, [], [], [tajine]);
+    await openLibrary();
+    expect(screen.getByText("Les deux (déduit)")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer les 1 étiquettes déduites" }));
+    expect(saveMealTypes).toHaveBeenCalledWith([{ id: "tajine", mealType: "both" }]);
+  });
+
+  it("ne propose pas d'enregistrer ce qui l'est déjà", async () => {
+    allPlansForTest = [
+      { weekId: "2026-11-14", defaultDiners: 4, slots: { sat_dinner: { items: [{ label: "Tajine" }] } } },
+    ];
+    setup({}, {}, [], [], [{ ...tajine, mealType: "lunch" }]);
+    await openLibrary();
+    expect(screen.getByText("Déjeuner")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /étiquettes déduites/ })).not.toBeInTheDocument();
   });
 
   it("demande confirmation avant de supprimer un plat", async () => {

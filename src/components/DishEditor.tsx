@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { catalogKey } from "../domain/catalog";
-import { missingPersonSizes } from "../domain/dishes";
+import { MEAL_TYPE_LABEL, missingPersonSizes } from "../domain/dishes";
 import { translationFor, type TranslationIndex } from "../domain/translations";
 import { deleteDish, saveDish } from "../services/meals";
 import { TranslationInput } from "./TranslationInput";
-import type { CatalogIngredient, Dish } from "../types";
+import type { CatalogIngredient, Dish, DishMealType } from "../types";
 
 interface IngredientDraft {
   name: string;
@@ -37,12 +37,15 @@ export function DishEditor({
   dishes,
   ingredients,
   translations,
+  inferredType,
   onClose,
 }: {
   dish?: Dish;
   dishes: Dish[];
   ingredients: CatalogIngredient[];
   translations?: TranslationIndex;
+  /** Déjeuner/dîner déduit des programmes : proposé d'office quand le plat n'a pas d'étiquette. */
+  inferredType?: DishMealType;
   onClose: () => void;
 }) {
   const [name, setName] = useState(dish?.name ?? "");
@@ -51,6 +54,9 @@ export function DishEditor({
     dish?.basis ?? (dish?.asSnack && !dish?.asMeal ? "units" : "persons"),
   );
   const [unitLabel, setUnitLabel] = useState(dish?.unitLabel ?? "");
+  const [mealType, setMealType] = useState<DishMealType | "">(
+    dish?.mealType ?? inferredType ?? "",
+  );
   const [variants, setVariants] = useState<VariantDraft[]>(() => toDrafts(dish));
   const [newSize, setNewSize] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -120,6 +126,10 @@ export function DishEditor({
       setError("Un plat de ce nom existe déjà.");
       return;
     }
+    if (isNew && basis === "persons" && !mealType) {
+      setError("Indiquez si ce plat se sert plutôt au déjeuner, au dîner ou aux deux.");
+      return;
+    }
     setError(null);
     setBusy(true);
     try {
@@ -134,6 +144,7 @@ export function DishEditor({
         })),
         asSnack: dish?.asSnack,
         asMeal: dish?.asMeal,
+        mealType: mealType || undefined,
       });
       onClose();
     } catch (err) {
@@ -202,6 +213,30 @@ export function DishEditor({
           Snack (quantités par nombre d&apos;unités)
         </label>
       </div>
+
+      {basis === "persons" && (
+        <label className="flex flex-wrap items-center gap-2 text-sm">
+          Se sert plutôt au
+          <select
+            value={mealType}
+            onChange={(e) => setMealType(e.target.value as DishMealType | "")}
+            aria-label="Repas habituel du plat"
+            className="ht-input w-auto"
+          >
+            <option value="">— choisir —</option>
+            {(Object.keys(MEAL_TYPE_LABEL) as DishMealType[]).map((key) => (
+              <option key={key} value={key}>
+                {MEAL_TYPE_LABEL[key]}
+              </option>
+            ))}
+          </select>
+          {!dish?.mealType && inferredType && (
+            <span className="text-xs text-[var(--ht-text-2)]">
+              proposé d&apos;après les programmes déjà saisis
+            </span>
+          )}
+        </label>
+      )}
 
       {basis === "units" && (
         <input

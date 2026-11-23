@@ -161,6 +161,12 @@ détail épique par épique ; en résumé :
   confirmation. `saveMealSlots` conserve désormais statut/votes (il les supprimait).
   Les tests de `MealsPage` figent la date (2026-11-23) : ils dépendaient du jour réel.
   `.env.local` est lu par vitest : les tests neutralisent `VITE_MEAL_STATUS_EDITORS`.
+  **Étiquette déjeuner/dîner (2026-11-23)** : `Dish.mealType` ; `inferMealTypes` déduit de
+  tous les programmes (déjeuner seul, dîner seul, les deux ; snacks exclus) ; bouton
+  « Enregistrer les N étiquettes déduites » (`saveMealTypes`, écriture par fusion). Obligatoire
+  à la création d'un plat, pas à la modification d'un ancien plat sans étiquette. Un plat
+  jamais servi et sans étiquette reste à compléter à la main. Prochaine brique : sélection de
+  plats + génération d'une V0 du programme, puis les envies des membres.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

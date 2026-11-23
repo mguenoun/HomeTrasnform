@@ -294,6 +294,11 @@ convives, sans statut ni votes) ; seuls les créneaux vides sont remplis, rien n
 est conservé, et si l'import retire des plats déjà saisis (ou déjà marqués), l'app le dit
 et demande confirmation. Les jours écrits avec une date (« السبت 21 ») sont reconnus. — ✅ Fait
 
+**US-12.30** (P1) — Chaque plat du référentiel porte une étiquette « plutôt déjeuner / dîner /
+les deux » (hors snacks). Elle est déduite des programmes déjà saisis (affichée « déduit »)
+et enregistrée d'un clic pour tous les plats ; elle est obligatoire pour tout nouveau plat.
+Prérequis de la génération d'une première version du programme. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

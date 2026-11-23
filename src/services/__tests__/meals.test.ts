@@ -37,6 +37,7 @@ const {
   payVendorRound,
   updateShoppingItem,
   saveDish,
+  saveMealTypes,
   deleteDish,
   rememberDishes,
   rememberIngredients,
@@ -842,5 +843,36 @@ describe("saveMealSlot — votes par personne", () => {
     const items = setDocMock.mock.calls[0][1].slots.sat_lunch.items;
     expect(items[0]).toEqual({ label: "Tarte" });
     expect(items[1]).toEqual({ label: "Riz", status: "prepared" });
+  });
+});
+
+describe("étiquette déjeuner / dîner d'un plat", () => {
+  it("enregistre l'étiquette d'un plat, pas celle d'un snack", async () => {
+    await saveDish(null, { name: "Tajine", basis: "persons", variants: [], mealType: "dinner" });
+    expect(writesTo("dishes")[0][1]).toMatchObject({ mealType: "dinner" });
+
+    setDocMock.mockClear();
+    await saveDish(null, { name: "Cake", basis: "units", variants: [], mealType: "lunch" });
+    expect(writesTo("dishes")[0][1]).not.toHaveProperty("mealType");
+  });
+
+  it("enregistre en une fois les étiquettes déduites, en fusion (le reste du plat est intact)", async () => {
+    batchMock.set.mockClear();
+    batchMock.commit.mockClear();
+    await saveMealTypes([
+      { id: "tajine", mealType: "both" },
+      { id: "couscous", mealType: "lunch" },
+    ]);
+    expect(batchMock.set).toHaveBeenCalledTimes(2);
+    expect(batchMock.set.mock.calls[0][0].__doc).toBe("dishes/tajine");
+    expect(batchMock.set.mock.calls[0][1]).toEqual({ mealType: "both" });
+    expect(batchMock.set.mock.calls[0][2]).toEqual({ merge: true });
+    expect(batchMock.commit).toHaveBeenCalledTimes(1);
+  });
+
+  it("n'écrit rien quand il n'y a rien à enregistrer", async () => {
+    batchMock.commit.mockClear();
+    await saveMealTypes([]);
+    expect(batchMock.commit).not.toHaveBeenCalled();
   });
 });

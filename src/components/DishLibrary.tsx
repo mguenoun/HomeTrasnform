@@ -1,10 +1,18 @@
 import { useMemo, useState } from "react";
 import { catalogKey } from "../domain/catalog";
-import { describeVariants } from "../domain/dishes";
+import {
+  MEAL_TYPE_LABEL,
+  describeVariants,
+  dishMealType,
+  inferMealTypes,
+  inferredLabelsToSave,
+  isSnackDish,
+} from "../domain/dishes";
 import { computeDishStats, sortDishes, type DishSort } from "../domain/feedback";
 import { useAllMealPlans } from "../hooks/useMeals";
 import type { TranslationIndex } from "../domain/translations";
 import type { CatalogIngredient, Dish } from "../types";
+import { saveMealTypes } from "../services/meals";
 import { DishEditor } from "./DishEditor";
 
 type Editing = { kind: "new" } | { kind: "edit"; id: string } | null;
@@ -30,6 +38,25 @@ export function DishLibrary({
   // lecture (rien à maintenir) à partir des plats marqués « préparés ».
   const allPlans = useAllMealPlans();
   const stats = useMemo(() => computeDishStats(allPlans), [allPlans]);
+  // Repas habituel déduit de ce qui a déjà été planifié, pour les plats sans étiquette.
+  const inferred = useMemo(() => inferMealTypes(allPlans), [allPlans]);
+  const toSave = inferredLabelsToSave(dishes, inferred);
+  const untagged = dishes.filter(
+    (d) => !isSnackDish(d) && !dishMealType(d, inferred).type,
+  ).length;
+  const [tagMessage, setTagMessage] = useState<string | null>(null);
+  const [tagError, setTagError] = useState<string | null>(null);
+
+  async function saveInferred() {
+    setTagError(null);
+    setTagMessage(null);
+    try {
+      await saveMealTypes(toSave);
+      setTagMessage(`${toSave.length} étiquette${toSave.length > 1 ? "s" : ""} enregistrée${toSave.length > 1 ? "s" : ""}.`);
+    } catch (err) {
+      setTagError(err instanceof Error ? err.message : "Échec de l'enregistrement.");
+    }
+  }
 
   const needle = catalogKey(search);
   const visible = sortDishes(dishes, stats, sort).filter(
@@ -51,6 +78,7 @@ export function DishLibrary({
         dishes={dishes}
         ingredients={ingredients}
         translations={translations}
+        inferredType={editedDish ? inferred.get(catalogKey(editedDish.name)) : undefined}
         onClose={() => setEditing(null)}
       />
     );
@@ -71,6 +99,38 @@ export function DishLibrary({
           Nouveau plat
         </button>
       </div>
+
+      {toSave.length > 0 && (
+        <div className="ht-card flex flex-col gap-2 p-3 text-sm text-[var(--ht-text)]">
+          <p>
+            {toSave.length} plat{toSave.length > 1 ? "s" : ""} sans étiquette « déjeuner / dîner »
+            ont pu être classés d&apos;après les programmes déjà saisis (affichés « déduit »).
+          </p>
+          <button
+            type="button"
+            onClick={() => void saveInferred()}
+            className="ht-btn-cta-sm self-start"
+          >
+            Enregistrer les {toSave.length} étiquettes déduites
+          </button>
+        </div>
+      )}
+      {tagMessage && (
+        <p role="status" className="text-sm text-[var(--ht-text)]">
+          {tagMessage}
+        </p>
+      )}
+      {tagError && (
+        <p role="alert" className="text-sm text-[var(--ht-danger)]">
+          {tagError}
+        </p>
+      )}
+      {untagged > 0 && (
+        <p className="text-xs text-[var(--ht-text-2)]">
+          {untagged} plat{untagged > 1 ? "s" : ""} sans étiquette, jamais servi{untagged > 1 ? "s" : ""} :
+          à compléter en ouvrant le plat.
+        </p>
+      )}
 
       {dishes.length > 0 && (
         <div className="flex gap-2">
@@ -123,10 +183,18 @@ export function DishLibrary({
                     )}
                   </span>
                   <span className="ht-pill ht-pill-neutral">
-                    {dish.basis === "units" || (!dish.basis && dish.asSnack && !dish.asMeal)
-                      ? "Snack"
-                      : "Plat"}
+                    {isSnackDish(dish) ? "Snack" : "Plat"}
                   </span>
+                  {(() => {
+                    if (isSnackDish(dish)) return null;
+                    const { type, inferred: guessed } = dishMealType(dish, inferred);
+                    return type ? (
+                      <span className="ht-pill ht-pill-info" style={{ whiteSpace: "normal" }}>
+                        {MEAL_TYPE_LABEL[type]}
+                        {guessed && " (déduit)"}
+                      </span>
+                    ) : null;
+                  })()}
                   <span
                     className={`text-xs ${
                       detailedDish

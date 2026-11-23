@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Dish } from "../../types";
-import { describeVariants, missingPersonSizes, sanitizeVariants } from "../dishes";
+import {
+  describeVariants,
+  dishMealType,
+  inferMealTypes,
+  inferredLabelsToSave,
+  missingPersonSizes,
+  sanitizeVariants,
+} from "../dishes";
 
 describe("sanitizeVariants", () => {
   it("rogne les noms, retire les lignes vides et omet la quantité vide", () => {
@@ -124,5 +131,54 @@ describe("describeVariants", () => {
     expect(
       describeVariants({ ...base, basis: "units", variants: [{ n: 6, ingredients: [] }] }),
     ).toBe("6 unités");
+  });
+});
+
+describe("étiquette déjeuner / dîner", () => {
+  const plans = [
+    {
+      weekId: "2026-11-14",
+      defaultDiners: 4,
+      slots: {
+        sat_lunch: { items: [{ label: "Couscous" }, { label: "Tajine" }] },
+        sat_dinner: { items: [{ label: "Soupe" }, { label: "tajine" }] },
+        sat_snack: { items: [{ label: "Cake" }] },
+      },
+    },
+  ];
+
+  it("déduit le repas habituel de ce qui a été servi, snacks exclus", () => {
+    const inferred = inferMealTypes(plans);
+    expect(inferred.get("couscous")).toBe("lunch");
+    expect(inferred.get("soupe")).toBe("dinner");
+    expect(inferred.get("tajine")).toBe("both");
+    expect(inferred.has("cake")).toBe(false);
+  });
+
+  it("l'étiquette enregistrée l'emporte sur la déduction", () => {
+    const inferred = inferMealTypes(plans);
+    expect(dishMealType({ id: "tajine", name: "Tajine", mealType: "dinner" }, inferred)).toEqual({
+      type: "dinner",
+      inferred: false,
+    });
+    expect(dishMealType({ id: "tajine", name: "Tajine" }, inferred)).toEqual({
+      type: "both",
+      inferred: true,
+    });
+    expect(dishMealType({ id: "x", name: "Inconnu" }, inferred)).toEqual({
+      type: undefined,
+      inferred: false,
+    });
+  });
+
+  it("liste les étiquettes à enregistrer : plats sans étiquette et déductibles, jamais les snacks", () => {
+    const inferred = inferMealTypes(plans);
+    const dishes: Dish[] = [
+      { id: "tajine", name: "Tajine" },
+      { id: "couscous", name: "Couscous", mealType: "dinner" },
+      { id: "cake", name: "Cake", basis: "units" },
+      { id: "inconnu", name: "Inconnu" },
+    ];
+    expect(inferredLabelsToSave(dishes, inferred)).toEqual([{ id: "tajine", mealType: "both" }]);
   });
 });
