@@ -1,19 +1,43 @@
+import { Suspense, lazy } from "react";
 import { Route, Routes } from "react-router-dom";
 import { AppNav } from "./components/AppNav";
 import { InstallPrompt } from "./components/InstallPrompt";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
-import { BudgetItemCreatePage } from "./pages/BudgetItemCreatePage";
-import { BudgetItemDetailPage } from "./pages/BudgetItemDetailPage";
-import { BudgetPage } from "./pages/BudgetPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { MealsPage } from "./pages/MealsPage";
-import { ObjectiveDetailPage } from "./pages/ObjectiveDetailPage";
-import { ObjectivesPage } from "./pages/ObjectivesPage";
-import { TaskCreatePage } from "./pages/TaskCreatePage";
-import { TaskDetailPage } from "./pages/TaskDetailPage";
-import { TasksPage } from "./pages/TasksPage";
+
+// Une page n'est téléchargée qu'à sa première visite : le premier écran charge bien
+// moins de JavaScript (Firebase et les pages lourdes comme Repas restent à part).
+const BudgetItemCreatePage = lazy(() =>
+  import("./pages/BudgetItemCreatePage").then((m) => ({ default: m.BudgetItemCreatePage })),
+);
+const BudgetItemDetailPage = lazy(() =>
+  import("./pages/BudgetItemDetailPage").then((m) => ({ default: m.BudgetItemDetailPage })),
+);
+const BudgetPage = lazy(() =>
+  import("./pages/BudgetPage").then((m) => ({ default: m.BudgetPage })),
+);
+const DashboardPage = lazy(() =>
+  import("./pages/DashboardPage").then((m) => ({ default: m.DashboardPage })),
+);
+const MealsPage = lazy(() =>
+  import("./pages/MealsPage").then((m) => ({ default: m.MealsPage })),
+);
+const ObjectiveDetailPage = lazy(() =>
+  import("./pages/ObjectiveDetailPage").then((m) => ({ default: m.ObjectiveDetailPage })),
+);
+const ObjectivesPage = lazy(() =>
+  import("./pages/ObjectivesPage").then((m) => ({ default: m.ObjectivesPage })),
+);
+const TaskCreatePage = lazy(() =>
+  import("./pages/TaskCreatePage").then((m) => ({ default: m.TaskCreatePage })),
+);
+const TaskDetailPage = lazy(() =>
+  import("./pages/TaskDetailPage").then((m) => ({ default: m.TaskDetailPage })),
+);
+const TasksPage = lazy(() =>
+  import("./pages/TasksPage").then((m) => ({ default: m.TasksPage })),
+);
 
 function App() {
   return (
@@ -22,6 +46,9 @@ function App() {
         <ProtectedRoute>
           <AppNav />
           <InstallPrompt />
+          <Suspense
+            fallback={<p className="p-6 text-[var(--ht-text-2)]">Chargement...</p>}
+          >
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/objectives" element={<ObjectivesPage />} />
@@ -34,6 +61,7 @@ function App() {
             <Route path="/budget/:id" element={<BudgetItemDetailPage />} />
             <Route path="/meals" element={<MealsPage />} />
           </Routes>
+          </Suspense>
         </ProtectedRoute>
       </ThemeProvider>
     </AuthProvider>

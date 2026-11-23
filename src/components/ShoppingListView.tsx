@@ -40,6 +40,7 @@ const groupKey = (group: { vendor: string; round: number }) =>
 interface ItemDraft {
   name: string;
   translation: string;
+  initialTranslation?: string;
   quantity: string;
   vendor: string;
 }
@@ -120,6 +121,8 @@ export function ShoppingListView({
         name: item.name,
         // Traduction déjà connue pour ce nom (catalogue, autre article, autre semaine).
         translation: translationFor(translations, item.name) ?? item.translation ?? "",
+        initialTranslation:
+          translationFor(translations, item.name) ?? item.translation ?? "",
         quantity: item.quantity ?? "",
         vendor: item.vendor ?? "",
       },

@@ -761,7 +761,7 @@ describe("MealsPage — correction et traduction", () => {
     expect(updateShoppingItem).toHaveBeenCalledWith(
       "2026-11-21",
       expect.objectContaining({ id: "a" }),
-      { name: "مطيشة", translation: "", quantity: "3 كيلو", vendor: "Fruits et légumes" },
+      { name: "مطيشة", translation: "", initialTranslation: "", quantity: "3 كيلو", vendor: "Fruits et légumes" },
     );
   });
 
@@ -821,6 +821,24 @@ describe("MealsPage — correction et traduction", () => {
       items: [{ label: "كسكسو" }],
     });
     expect(setDishTranslation).toHaveBeenCalledWith("كسكسو", "Couscous");
+  });
+
+  it("renommer un plat sans toucher à la traduction n'efface pas celle du nouveau nom", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "كسكس" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier كسكس" }));
+    const name = screen.getByLabelText("Nom, Déjeuner");
+    await userEvent.clear(name);
+    await userEvent.type(name, "كسكسو");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(setDishTranslation).not.toHaveBeenCalled();
+  });
+
+  it("vider volontairement une traduction affichée l'efface", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "كسكسو", translation: "Couscous" }] } } });
+    await userEvent.click(screen.getByRole("button", { name: "Modifier كسكسو" }));
+    await userEvent.clear(screen.getByLabelText("Traduction"));
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(setDishTranslation).toHaveBeenCalledWith("كسكسو", "");
   });
 
   it("refuse de vider le nom d'un plat du programme", async () => {

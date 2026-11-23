@@ -82,6 +82,8 @@ function SlotEditor({
     index: number;
     label: string;
     translation: string;
+    /** Traduction affichée à l'ouverture : inchangée, elle n'est pas réécrite. */
+    initialTranslation: string;
     n: string;
   } | null>(null);
   // Plat pour lequel on choisit le motif de non-préparation.
@@ -171,7 +173,11 @@ function SlotEditor({
           return next;
         }),
       });
-      await setDishTranslation(label, translation);
+      // Renommer un plat sans toucher à la traduction ne doit pas effacer celle que
+      // le nouveau nom possède déjà ailleurs.
+      if (translation.trim() !== "" || editing.initialTranslation.trim() !== "") {
+        await setDishTranslation(label, translation);
+      }
       setEditing(null);
     } catch (err) {
       setError(
@@ -280,6 +286,7 @@ function SlotEditor({
                         index,
                         label: item.label,
                         translation: translation ?? "",
+                        initialTranslation: translation ?? "",
                         n: item.n ? String(item.n) : "",
                       })
                     }

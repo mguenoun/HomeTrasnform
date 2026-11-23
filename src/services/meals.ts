@@ -669,6 +669,11 @@ export async function payVendorRound(
 export interface ShoppingItemPatch {
   name: string;
   translation: string;
+  /**
+   * Traduction affichée à l'ouverture. Vide avant ET après : rien n'est écrit, ce qui
+   * évite qu'un renommage efface la traduction déjà connue du nouveau nom.
+   */
+  initialTranslation?: string;
   quantity: string;
   vendor: string;
 }
@@ -709,5 +714,11 @@ export async function updateShoppingItem(
   await rememberIngredients([
     { name, vendor: vendor || undefined, quantity: quantity || undefined },
   ]);
-  await setIngredientTranslation(name, patch.translation);
+  if (
+    patch.initialTranslation === undefined ||
+    patch.translation.trim() !== "" ||
+    patch.initialTranslation.trim() !== ""
+  ) {
+    await setIngredientTranslation(name, patch.translation);
+  }
 }
