@@ -42,3 +42,25 @@ describe("buildTranslationIndex", () => {
     expect(translationFor(undefined, "Cake")).toBeUndefined();
   });
 });
+
+describe("orthographes voisines", () => {
+  const index = buildTranslationIndex([{ name: "كسكسو", translation: "Couscous" }]);
+
+  it("retrouve la traduction malgré ى/ي, ة/ه ou des espaces différents", () => {
+    expect(translationFor(index, "كسكسو")).toBe("Couscous");
+    expect(translationFor(buildTranslationIndex([{ name: "شوربة", translation: "Soupe" }]), "شوربه")).toBe("Soupe");
+    expect(translationFor(buildTranslationIndex([{ name: "مسمن", translation: "Msemen" }]), "م س م ن")).toBe("Msemen");
+  });
+
+  it("la clé exacte l'emporte sur une orthographe voisine", () => {
+    const both = buildTranslationIndex([
+      { name: "شوربه", translation: "voisine" },
+      { name: "شوربة", translation: "exacte" },
+    ]);
+    expect(translationFor(both, "شوربة")).toBe("exacte");
+  });
+
+  it("ne confond pas deux noms réellement différents", () => {
+    expect(translationFor(index, "كسكس")).toBeUndefined();
+  });
+});

@@ -29,6 +29,8 @@ import type {
   ShoppingItem,
   ShoppingList,
 } from "../types";
+import { buildVendorTable } from "../domain/shareTable";
+import { shareTableImage } from "../services/tableImage";
 import { ShoppingImport } from "./ShoppingImport";
 import { TranslationInput } from "./TranslationInput";
 
@@ -60,6 +62,7 @@ export function ShoppingListView({
   const [vendor, setVendor] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [hideChecked, setHideChecked] = useState(false);
+  const [tableError, setTableError] = useState<string | null>(null);
   // Passage dont le paiement est en cours de saisie ("Payer ici").
   const [paying, setPaying] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
@@ -260,6 +263,11 @@ export function ShoppingListView({
           {error}
         </p>
       )}
+      {tableError && (
+        <p role="alert" className="text-sm text-[var(--ht-danger)]">
+          {tableError}
+        </p>
+      )}
       {paidMessage && (
         <p role="status" className="text-sm text-[var(--ht-text)]">
           {paidMessage}
@@ -291,15 +299,35 @@ export function ShoppingListView({
                   </span>
                 </h3>
                 {group.vendor && groupBought < group.items.length && (
-                  <a
-                    href={whatsappUrl(buildVendorMessage(group, translations))}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Envoyer à ${title} sur WhatsApp`}
-                    className="ht-btn px-2.5 py-1 text-xs"
-                  >
-                    Envoyer sur WhatsApp
-                  </a>
+                  <span className="flex flex-wrap gap-1.5">
+                    <a
+                      href={whatsappUrl(buildVendorMessage(group, translations))}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Envoyer à ${title} sur WhatsApp`}
+                      className="ht-btn px-2.5 py-1 text-xs"
+                    >
+                      Envoyer sur WhatsApp
+                    </a>
+                    <button
+                      type="button"
+                      aria-label={`Envoyer à ${title} en tableau (image)`}
+                      onClick={() => {
+                        setTableError(null);
+                        shareTableImage(
+                          buildVendorTable(group, translations),
+                          `courses-${catalogKey(title)}.png`,
+                        ).catch((err: unknown) =>
+                          setTableError(
+                            err instanceof Error ? err.message : "Impossible de créer l'image.",
+                          ),
+                        );
+                      }}
+                      className="ht-btn px-2.5 py-1 text-xs"
+                    >
+                      Tableau (image)
+                    </button>
+                  </span>
                 )}
                 <p className="text-xs text-[var(--ht-text-2)]">
                   {paid.payments > 0

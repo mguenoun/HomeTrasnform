@@ -1660,13 +1660,24 @@ describe("MealsPage — partage en tableau", () => {
     expect(table.sections[0].rows[0][2]).toBe("Couscous");
   });
 
-  it("propose la liste en tableau, un bloc par point de vente", async () => {
+  it("envoie à chaque commerçant sa liste en tableau, seulement ce qu'il reste à acheter", async () => {
     const { shareTableImage } = await import("../../services/tableImage");
-    setup({}, { items: { a: { id: "a", name: "Lait", vendor: "Épicier", checked: false, createdAt: 1 } } });
+    setup(
+      {},
+      {
+        items: {
+          a: { id: "a", name: "Lait", vendor: "Épicier", checked: false, createdAt: 1 },
+          b: { id: "b", name: "Sel", vendor: "Épicier", checked: true, createdAt: 2 },
+          c: { id: "c", name: "Thym", vendor: "Herbes", checked: false, createdAt: 3 },
+        },
+      },
+    );
     await userEvent.click(screen.getByRole("tab", { name: "Courses" }));
-    await userEvent.click(screen.getByRole("button", { name: "Envoyer la liste en tableau (image)" }));
+    expect(screen.queryByRole("button", { name: "Envoyer la liste en tableau (image)" })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Envoyer à Épicier en tableau (image)" }));
     const [table] = vi.mocked(shareTableImage).mock.calls.at(-1)!;
-    expect(table.sections[0].heading).toBe("Épicier");
+    expect(table.title).toBe("Épicier");
+    expect(table.sections[0].rows).toEqual([["Lait", ""]]);
   });
 
   it("affiche l'erreur si l'image ne peut pas être créée", async () => {

@@ -7,6 +7,7 @@ import {
   groupByVendor,
   itemTranslation,
   slotKey,
+  type VendorGroup,
   snacksForDay,
 } from "./mealPlan";
 import { statusMarker } from "./mealStatus";
@@ -96,5 +97,34 @@ export function buildShoppingTable(
         ];
       }),
     })),
+  };
+}
+
+/**
+ * Tableau pour un commerçant : seulement ce qu'il reste à acheter chez lui
+ * (articles non pris), sans prix ni statut.
+ */
+export function buildVendorTable(
+  group: VendorGroup,
+  translations?: TranslationIndex,
+): ShareTable {
+  return {
+    title: describeGroup(group.vendor, group.round),
+    sections: [
+      {
+        columns: ["Article — المادة", "Quantité — الكمية"],
+        widths: [3, 1],
+        rows: group.items
+          .filter((item) => !item.checked)
+          .map((item) => {
+            const translation =
+              translationFor(translations, item.name) ?? item.translation;
+            return [
+              `${item.name}${translation ? `\n${translation}` : ""}`,
+              item.quantity ?? "",
+            ];
+          }),
+      },
+    ],
   };
 }

@@ -23,7 +23,7 @@ import {
   filterPlan,
   type StatusFilter,
 } from "../domain/mealStatus";
-import { buildProgramTable, buildShoppingTable } from "../domain/shareTable";
+import { buildProgramTable } from "../domain/shareTable";
 import { buildTranslationIndex } from "../domain/translations";
 import { shareTableImage } from "../services/tableImage";
 import {
@@ -104,10 +104,8 @@ export function MealsPage() {
     setSharingTable(true);
     try {
       await shareTableImage(
-        tab === "plan"
-          ? buildProgramTable(plan, translations)
-          : buildShoppingTable(Object.values(list.items), translations),
-        tab === "plan" ? `programme-${weekId}.png` : `courses-${weekId}.png`,
+        buildProgramTable(plan, translations),
+        `programme-${weekId}.png`,
       );
     } catch (err) {
       setShareError(
@@ -199,6 +197,7 @@ export function MealsPage() {
               ? "Envoyer le programme sur WhatsApp"
               : "Envoyer toute la liste sur WhatsApp"}
           </a>
+          {tab === "plan" && (
           <button
             type="button"
             disabled={sharingTable}
@@ -207,10 +206,9 @@ export function MealsPage() {
           >
             {sharingTable
               ? "Création de l'image…"
-              : tab === "plan"
-                ? "Envoyer le programme en tableau (image)"
-                : "Envoyer la liste en tableau (image)"}
+              : "Envoyer le programme en tableau (image)"}
           </button>
+          )}
           {shareError && (
             <p role="alert" className="text-sm text-[var(--ht-danger)]">
               {shareError}
