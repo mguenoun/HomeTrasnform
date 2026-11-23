@@ -1,6 +1,11 @@
 import { initializeApp, type FirebaseOptions } from "firebase/app";
 import { connectAuthEmulator, getAuth } from "firebase/auth";
-import { connectFirestoreEmulator, getFirestore } from "firebase/firestore";
+import {
+  connectFirestoreEmulator,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from "firebase/firestore";
 
 function requireEnv(name: string): string {
   const value = import.meta.env[name];
@@ -22,7 +27,13 @@ const firebaseConfig: FirebaseOptions = {
 
 export const firebaseApp = initializeApp(firebaseConfig);
 export const auth = getAuth(firebaseApp);
-export const db = getFirestore(firebaseApp);
+// Cache local persistant : à la réouverture, les listes s'affichent aussitôt depuis
+// l'appareil, puis se mettent à jour dès que le réseau répond.
+export const db = initializeFirestore(firebaseApp, {
+  localCache: persistentLocalCache({
+    tabManager: persistentMultipleTabManager(),
+  }),
+});
 
 // Optionnel : pointer vers les émulateurs locaux (utile pour développer/tester
 // sans toucher aux vraies données). Désactivé par défaut.

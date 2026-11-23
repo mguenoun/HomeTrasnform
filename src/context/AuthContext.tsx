@@ -48,7 +48,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return onAuthStateChanged(auth, async (nextUser) => {
-      setLoading(true);
+      // Accès déjà vérifié sur cet appareil : on affiche l'app tout de suite et on
+      // revérifie en arrière-plan (les règles Firestore restent la vraie barrière ;
+      // ceci ne fait qu'éviter d'attendre l'aller-retour réseau à chaque ouverture).
+      const trusted = nextUser?.email ? wasMember(nextUser.email) : false;
+      if (trusted && nextUser) {
+        setError(null);
+        setUser(nextUser);
+        setIsAuthorized(true);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
 
       if (!nextUser || !nextUser.email) {
         // Ne pas effacer une erreur existante ici : ce cas se produit aussi
@@ -66,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           doc(db, "familymembers", nextUser.email),
         );
         if (!memberDoc.exists()) {
+          rememberMember(nextUser.email, false);
           setError(
             `Le compte ${nextUser.email} n'est pas autorisé à accéder à cette application.`,
           );
@@ -76,6 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
+        rememberMember(nextUser.email, true);
         setError(null);
         setUser(nextUser);
         setIsAuthorized(true);
@@ -90,6 +103,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...(nextUser.photoURL ? { photoURL: nextUser.photoURL } : {}),
         }).catch(() => {});
       } catch (err) {
+        // Hors ligne avec un accès déjà vérifié : on garde la session, sans la fermer.
+        if (trusted) return;
         setError(
           `Impossible de vérifier votre accès (${err instanceof Error ? err.message : "erreur inconnue"}). Vérifiez les règles de sécurité Firestore.`,
         );
@@ -123,6 +138,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
+}
+
+const MEMBER_KEY = "ht-member:";
+
+function wasMember(email: string): boolean {
+  try {
+    return localStorage.getItem(MEMBER_KEY + email) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function rememberMember(email: string, member: boolean) {
+  try {
+    if (member) localStorage.setItem(MEMBER_KEY + email, "1");
+    else localStorage.removeItem(MEMBER_KEY + email);
+  } catch {
+    // stockage indisponible : on revérifie simplement à chaque ouverture
+  }
 }
 
 export function useAuth(): AuthContextValue {

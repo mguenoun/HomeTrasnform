@@ -51,6 +51,7 @@ function Probe() {
 
 describe("AuthProvider", () => {
   beforeEach(() => {
+    localStorage.clear();
     signInWithRedirectMock.mockReset().mockResolvedValue(undefined);
     getRedirectResultMock.mockReset().mockResolvedValue(null);
     upsertUserProfileMock.mockReset().mockResolvedValue(undefined);
@@ -152,5 +153,39 @@ describe("AuthProvider", () => {
       displayName: "Membre Test",
       email: "member@example.com",
     });
+  });
+
+  it("affiche l'app sans attendre le réseau quand l'accès a déjà été vérifié sur cet appareil", async () => {
+    localStorage.setItem("ht-member:member@example.com", "1");
+    getDocMock.mockReturnValue(new Promise(() => {}));
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    expect(await screen.findByText(/isAuthorized: true/)).toBeInTheDocument();
+  });
+
+  it("retire l'accès mémorisé et déconnecte si le compte n'est plus membre", async () => {
+    localStorage.setItem("ht-member:member@example.com", "1");
+    getDocMock.mockResolvedValue({ exists: () => false });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await waitFor(() => expect(signOutMock).toHaveBeenCalled());
+    expect(localStorage.getItem("ht-member:member@example.com")).toBeNull();
+  });
+
+  it("mémorise un accès vérifié avec succès", async () => {
+    getDocMock.mockResolvedValue({ exists: () => true });
+    render(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await screen.findByText(/isAuthorized: true/);
+    expect(localStorage.getItem("ht-member:member@example.com")).toBe("1");
   });
 });
