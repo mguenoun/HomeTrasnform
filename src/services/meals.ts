@@ -183,11 +183,8 @@ export async function saveMealSlots(
   const entries = Object.entries(slots)
     .map(([key, items]) => [
       key,
-      {
-        items: items
-          .map((item) => ({ label: item.label.trim() }))
-          .filter((item) => item.label.length > 0),
-      },
+      // Les plats déjà en place gardent leurs champs (statut, votes, traduction).
+      { items: cleanSlotItems(items) },
     ] as const)
     .filter(([, slot]) => slot.items.length > 0);
   if (entries.length === 0) return;
@@ -198,6 +195,35 @@ export async function saveMealSlots(
   );
   await rememberDishes(
     Object.entries(slots).flatMap(([key, items]) =>
+      items.map((item) => ({ label: item.label, snack: isSnackKey(key) })),
+    ),
+  );
+}
+
+/**
+ * Écrit plusieurs créneaux d'un coup, convives compris (recopie d'une semaine).
+ * Ne touche qu'aux créneaux fournis.
+ */
+export async function saveWholeSlots(
+  weekId: string,
+  slots: Record<MealSlotKey, MealSlot>,
+): Promise<void> {
+  const entries = Object.entries(slots)
+    .map(([key, slot]) => ({ key, diners: slot.diners, items: cleanSlotItems(slot.items) }))
+    .filter((entry) => entry.items.length > 0);
+  if (entries.length === 0) return;
+  await setDoc(
+    doc(db, MEAL_PLANS, weekId),
+    {
+      weekId,
+      slots: Object.fromEntries(
+        entries.map(({ key, diners, items }) => [key, stripUndefined({ diners, items })]),
+      ),
+    },
+    { merge: true },
+  );
+  await rememberDishes(
+    entries.flatMap(({ key, items }) =>
       items.map((item) => ({ label: item.label, snack: isSnackKey(key) })),
     ),
   );

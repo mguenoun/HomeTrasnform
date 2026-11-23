@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -47,6 +47,7 @@ vi.mock("../../services/meals", () => ({
   saveDish: vi.fn().mockResolvedValue("id"),
   deleteDish: vi.fn().mockResolvedValue(undefined),
   moveMealItem: vi.fn().mockResolvedValue(undefined),
+  saveWholeSlots: vi.fn().mockResolvedValue(undefined),
   setInPantry: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -71,6 +72,7 @@ import {
   updateShoppingItem,
   saveMealSlot,
   saveMealSlots,
+  saveWholeSlots,
   moveMealItem,
   setInPantry,
   setDishTranslation,
@@ -78,6 +80,7 @@ import {
   deleteDish,
 } from "../../services/meals";
 import { suggestTranslations } from "../../services/translate";
+import { weekIdOf } from "../../domain/mealPlan";
 import { MealsPage } from "../MealsPage";
 
 const mockedUseMealPlan = vi.mocked(useMealPlan);
@@ -130,8 +133,16 @@ const expense = (
   ...over,
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
+  // .env.local réserve le statut au gestionnaire : les tests partent de « tout le monde ».
+  vi.stubEnv("VITE_MEAL_STATUS_EDITORS", "");
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(2026, 10, 23, 12));
   allPlansForTest = [];
   pantryForTest = [];
 });
@@ -1895,5 +1906,117 @@ describe("MealsPage — confirmation et réserve du statut", () => {
     vi.stubEnv("VITE_MEAL_STATUS_EDITORS", "gestionnaire@example.com");
     setup({ slots: { sat_lunch: { items: [{ label: "A" }] } } });
     expect(screen.getByRole("button", { name: /Tout marquer préparé/ })).toBeDisabled();
+  });
+});
+
+describe("MealsPage — import sans perte et recopie de la semaine", () => {
+  const rated = {
+    sat_lunch: {
+      items: [
+        { label: "Couscous", status: "prepared" as const, votes: { u2: "up" as const } },
+        { label: "Tarte", status: "skipped" as const },
+      ],
+    },
+  };
+
+  async function openImport(text: string) {
+    await userEvent.click(screen.getByRole("button", { name: "Coller le programme" }));
+    await userEvent.type(screen.getByLabelText("Programme à importer"), text);
+    await userEvent.click(screen.getByRole("button", { name: "Importer" }));
+  }
+
+  it("un plat déjà en place garde son statut et ses votes quand on réimporte", async () => {
+    setup({ slots: rated });
+    await openImport("السبت : | Couscous + Tarte + Salade |");
+    expect(saveMealSlots).toHaveBeenCalledWith("2026-11-21", {
+      sat_lunch: [
+        { label: "Couscous", status: "prepared", votes: { u2: "up" } },
+        { label: "Tarte", status: "skipped" },
+        { label: "Salade" },
+      ],
+    });
+    expect(screen.getByRole("status")).toHaveTextContent("2 plat(s) déjà en place conservé(s)");
+  });
+
+  it("demande confirmation quand l'import fait disparaître des plats, en prévenant des statuts", async () => {
+    setup({ slots: rated });
+    await openImport("السبت : | Couscous |");
+    expect(saveMealSlots).not.toHaveBeenCalled();
+    const group = screen.getByRole("group", { name: "Confirmer l'import" });
+    expect(group).toHaveTextContent("retire 1 plat déjà saisi dans 1 créneau");
+    expect(group).toHaveTextContent("1 déjà marqué préparé ou non préparé");
+    await userEvent.click(screen.getByRole("button", { name: "Importer quand même" }));
+    expect(saveMealSlots).toHaveBeenCalledWith("2026-11-21", {
+      sat_lunch: [{ label: "Couscous", status: "prepared", votes: { u2: "up" } }],
+    });
+  });
+
+  it("annuler la confirmation n'écrit rien", async () => {
+    setup({ slots: rated });
+    await openImport("السبت : | Couscous |");
+    await userEvent.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(saveMealSlots).not.toHaveBeenCalled();
+    expect(screen.queryByRole("group", { name: "Confirmer l'import" })).not.toBeInTheDocument();
+  });
+
+  it("accepte un jour écrit avec sa date", async () => {
+    setup();
+    await openImport("السبت 21 : | Couscous |");
+    expect(saveMealSlots).toHaveBeenCalledWith("2026-11-21", { sat_lunch: [{ label: "Couscous" }] });
+  });
+
+  describe("recopie de la semaine précédente", () => {
+    const previous = {
+      weekId: "2026-11-14",
+      defaultDiners: 4,
+      slots: {
+        sat_lunch: { diners: 6, items: [{ label: "Couscous", status: "prepared" as const, votes: { u1: "up" as const } }] },
+        sun_dinner: { items: [{ label: "Tajine" }] },
+      },
+    };
+
+    function setupCopy(currentSlots = {}) {
+      setup({ slots: currentSlots });
+      cleanup();
+      mockedUseMealPlan.mockImplementation((id: string) =>
+        id === weekIdOf(new Date())
+          ? { plan: { weekId: "2026-11-21", defaultDiners: 4, slots: currentSlots }, loading: false }
+          : { plan: previous, loading: false },
+      );
+      render(
+        <MemoryRouter>
+          <MealsPage initialPlanView="detail" />
+        </MemoryRouter>,
+      );
+    }
+
+    it("propose de recopier la semaine précédente quand il y a quelque chose à recopier", () => {
+      setupCopy();
+      expect(screen.getByRole("button", { name: /Recopier la semaine du/ })).toBeInTheDocument();
+      expect(screen.getByText(/2 créneaux à recopier/)).toBeInTheDocument();
+    });
+
+    it("recopie plats et convives, sans statut ni votes", async () => {
+      setupCopy();
+      await userEvent.click(screen.getByRole("button", { name: /Recopier la semaine du/ }));
+      expect(saveWholeSlots).toHaveBeenCalledWith("2026-11-21", {
+        sat_lunch: { diners: 6, items: [{ label: "Couscous" }] },
+        sun_dinner: { items: [{ label: "Tajine" }] },
+      });
+    });
+
+    it("ne remplace jamais un créneau déjà rempli", async () => {
+      setupCopy({ sat_lunch: { items: [{ label: "Pâtes" }] } });
+      expect(screen.getByText(/1 créneau à recopier/)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole("button", { name: /Recopier la semaine du/ }));
+      expect(saveWholeSlots).toHaveBeenCalledWith("2026-11-21", {
+        sun_dinner: { items: [{ label: "Tajine" }] },
+      });
+    });
+
+    it("ne propose rien quand la semaine précédente est vide", () => {
+      setup();
+      expect(screen.queryByRole("button", { name: /Recopier la semaine du/ })).not.toBeInTheDocument();
+    });
   });
 });

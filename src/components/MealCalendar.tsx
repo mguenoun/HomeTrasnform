@@ -51,12 +51,8 @@ function Items({
                 : undefined
             }
             onContextMenu={onStartDrag ? (e) => e.preventDefault() : undefined}
-            style={
-              onStartDrag
-                ? { userSelect: "none", WebkitTouchCallout: "none" }
-                : undefined
-            }
-            className={`leading-snug ${draggingIndex === index ? "opacity-40" : ""}`}
+            style={onStartDrag ? { WebkitTouchCallout: "none" } : undefined}
+            className={`leading-snug ${onStartDrag ? "select-none" : ""} ${draggingIndex === index ? "opacity-40" : ""}`}
           >
             {/* L'arabe sur sa ligne, le français (quand il existe) dessous. */}
             <span

@@ -324,7 +324,8 @@ function SlotEditor({
                       })
                     }
                     dir="auto"
-                    className="min-w-0 flex-1 break-words text-left"
+                    style={{ WebkitTouchCallout: "none" }}
+                    className="min-w-0 flex-1 select-none break-words text-left"
                   >
                     {/* Le nom sur une ligne, sa traduction (si elle existe) dessous. */}
                     <span

@@ -144,8 +144,11 @@ function normalizeDayName(name: string): string {
     .normalize("NFD")
     .replace(/[̀-ًͯ-ٟ]/g, "")
     .replace(/[أإآ]/g, "ا")
-    .replace(/^ال/, "")
-    .trim();
+    // « السبت 21 », « Samedi 21/11 » : la date et la ponctuation ne font pas partie du nom.
+    .replace(/[\d/.\-–,]+/g, " ")
+    .trim()
+    .split(/\s+/)[0]
+    ?.replace(/^ال/, "") ?? "";
 }
 
 const DAY_ALIASES: Record<string, string> = {

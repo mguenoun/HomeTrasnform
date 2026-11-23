@@ -286,6 +286,14 @@ change le statut préparé / non préparé : les autres voient les boutons gris�
 voter. Changer le statut d'un plat déjà préparé ou non préparé demande confirmation (et
 prévient que les votes seront effacés). — ✅ Fait
 
+**US-12.28** (P1) — Je prépare une nouvelle semaine en recopiant la précédente (plats et
+convives, sans statut ni votes) ; seuls les créneaux vides sont remplis, rien n'est écrasé.
+— ✅ Fait
+
+**US-12.29** (P1) — Un import collé ne fait perdre ni statut ni votes : un plat déjà en place
+est conservé, et si l'import retire des plats déjà saisis (ou déjà marqués), l'app le dit
+et demande confirmation. Les jours écrits avec une date (« السبت 21 ») sont reconnus. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

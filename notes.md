@@ -156,6 +156,11 @@ détail épique par épique ; en résumé :
   d'interface seulement** : les règles Firestore ne distinguent pas les champs d'un plat, un
   membre qui contourne l'interface pourrait encore écrire. Changer cette liste exige un
   nouveau `npm run build` + déploiement.
+  **Création d'une semaine fiabilisée (2026-11-23)** : `domain/weekCopy.ts`
+  (`copyPreviousWeek`, `mergeImportedSlots`), `WeekCopy`, `ProgramImport` avec
+  confirmation. `saveMealSlots` conserve désormais statut/votes (il les supprimait).
+  Les tests de `MealsPage` figent la date (2026-11-23) : ils dépendaient du jour réel.
+  `.env.local` est lu par vitest : les tests neutralisent `VITE_MEAL_STATUS_EDITORS`.
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

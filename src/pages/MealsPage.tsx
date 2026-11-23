@@ -4,6 +4,7 @@ import { CoveragePanel } from "../components/CoveragePanel";
 import { DishLibrary } from "../components/DishLibrary";
 import { ExpensesView } from "../components/ExpensesView";
 import { MealCalendar } from "../components/MealCalendar";
+import { WeekCopy } from "../components/WeekCopy";
 import { MealWeekPlan } from "../components/MealWeekPlan";
 import { ProgramImport } from "../components/ProgramImport";
 import { WeeklyFeedback } from "../components/WeeklyFeedback";
@@ -65,6 +66,7 @@ export function MealsPage({
   // Vue filtrée sur ce qui est préparé, planifié ou non préparé.
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const { plan, loading: planLoading } = useMealPlan(weekId);
+  const { plan: previousPlan } = useMealPlan(shiftWeek(weekId, -1));
   const { list, loading: listLoading } = useShoppingList(weekId);
   const { expenses, loading: expensesLoading } = useExpenses(weekId);
   const dishes = useDishes();
@@ -287,7 +289,8 @@ export function MealsPage({
           {counts.prepared + counts.skipped > 0 && (
             <WeeklyFeedback plan={plan} translations={translations} />
           )}
-          <ProgramImport weekId={weekId} />
+          <WeekCopy key={`copy-${weekId}`} previous={previousPlan} current={plan} />
+          <ProgramImport key={`import-${weekId}`} weekId={weekId} plan={plan} />
           {moveError && (
             <p role="alert" className="mb-2 text-sm text-[var(--ht-danger)]">
               {moveError}
