@@ -155,14 +155,14 @@ function GeneratorPanel({
     const s = stats.get(catalogKey(dish.name));
     return (
       <li key={dish.id}>
-        <label className="flex cursor-pointer items-center gap-3 px-4 py-2 text-sm">
+        <label className="flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-sm">
           <input
             type="checkbox"
             checked={picked.has(dish.id)}
             onChange={() => toggle(dish.id)}
             aria-label={`Choisir ${dish.name}`}
           />
-          <span dir="auto" className="min-w-0 flex-1 break-words text-[var(--ht-text)]">
+          <span dir="auto" className="min-w-0 flex-1 basis-[calc(100%-2rem)] break-words text-[var(--ht-text)]">
             {dish.name}
             {dish.translation && (
               <span className="text-[var(--ht-text-2)]"> — {dish.translation}</span>

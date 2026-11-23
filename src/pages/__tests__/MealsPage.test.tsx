@@ -2192,3 +2192,21 @@ describe("MealsPage — composer le programme", () => {
     expect(screen.queryByLabelText("Choisir Couscous")).not.toBeInTheDocument();
   });
 });
+
+describe("MealsPage — noms longs dans la bibliothèque", () => {
+  it("le nom d'un plat occupe toute la ligne, les pastilles passent dessous (plus de texte écrasé)", async () => {
+    const long: Dish = {
+      id: "tajine",
+      name: "طاجين الدجاج بالزيتون والليمون المخلل",
+      translation: "Tajine de poulet aux olives et citrons confits",
+      asMeal: true,
+      basis: "persons",
+      mealType: "both",
+    };
+    setup({}, {}, [], [], [long]);
+    await userEvent.click(screen.getByRole("tab", { name: "Bibliothèque" }));
+    const row = screen.getByRole("button", { name: /طاجين الدجاج/ });
+    expect(row.className).toContain("flex-wrap");
+    expect(within(row).getByText(/طاجين الدجاج/).className).toContain("basis-full");
+  });
+});
