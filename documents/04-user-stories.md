@@ -277,6 +277,10 @@ via la feuille de partage du téléphone (WhatsApp) ou en téléchargement. — 
 écriture ; le plat garde statut, votes et traduction. Désactivé quand un filtre de statut
 est actif. — ✅ Fait (à valider sur iPhone)
 
+**US-12.26** (P2) — Je vois mes dépenses des six derniers mois (courses et ménage), et l'app
+me propose d'enregistrer d'un tap le tarif des jours habituels de la personne de ménage
+(samedi, mardi, jeudi) déjà passés sans paiement. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

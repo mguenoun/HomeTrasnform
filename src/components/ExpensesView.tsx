@@ -1,5 +1,11 @@
 import { useState, type FormEvent } from "react";
-import { summarizeExpenses, toDateInputValue } from "../domain/expenses";
+import {
+  missingHelperDays,
+  summarizeExpenses,
+  toDateInputValue,
+} from "../domain/expenses";
+import { daysOfWeek } from "../domain/mealPlan";
+import { ExpensesHistogram } from "./ExpensesHistogram";
 import { DEFAULT_VENDORS, describeGroup, roundOf } from "../domain/mealPlan";
 import { formatMad } from "../domain/money";
 import { addExpense, HELPER_DAILY_RATE, removeExpense } from "../services/meals";
@@ -25,10 +31,16 @@ export function ExpensesView({
   weekId,
   userId,
   expenses,
+  allExpenses = [],
+  today,
 }: {
   weekId: string;
   userId: string;
   expenses: HouseholdExpense[];
+  /** Toutes les semaines, pour la vue par mois. */
+  allExpenses?: HouseholdExpense[];
+  /** Date du jour (injectable pour les tests). */
+  today?: Date;
 }) {
   const [type, setType] = useState<ExpenseType>("groceries");
   const [amount, setAmount] = useState("");
@@ -44,6 +56,25 @@ export function ExpensesView({
       ...expenses.map((e) => e.vendor).filter((v): v is string => !!v),
     ]),
   ];
+
+  const forgottenDays = missingHelperDays(expenses, daysOfWeek(weekId), today);
+
+  async function addHelperDay(isoDate: string) {
+    setError(null);
+    try {
+      await addExpense({
+        type: "helper",
+        amount: HELPER_DAILY_RATE,
+        date: isoDate,
+        weekId,
+        createdBy: userId,
+      });
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Échec de l'enregistrement.",
+      );
+    }
+  }
 
   function chooseType(next: ExpenseType) {
     setType(next);
@@ -95,6 +126,29 @@ export function ExpensesView({
           </p>
         </div>
       </div>
+
+      {forgottenDays.length > 0 && (
+        <section
+          aria-label="Jours de ménage à enregistrer"
+          className="ht-card flex flex-col gap-2 p-4"
+        >
+          <p className="text-sm text-[var(--ht-text)]">
+            Jours habituels sans paiement enregistré :
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {forgottenDays.map((day) => (
+              <button
+                key={day.key}
+                type="button"
+                onClick={() => void addHelperDay(toDateInputValue(day.date))}
+                className="ht-btn px-3 py-1.5 text-sm"
+              >
+                {day.fr} {day.date.getDate()} : ajouter {formatMad(HELPER_DAILY_RATE)}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <form onSubmit={handleSubmit} className="ht-card flex flex-col gap-2 p-4">
         <div role="radiogroup" aria-label="Type de dépense" className="flex gap-2">
@@ -164,6 +218,8 @@ export function ExpensesView({
           </p>
         )}
       </form>
+
+      <ExpensesHistogram expenses={allExpenses} />
 
       {summary.byVendor.length > 0 && (
         <section className="ht-card p-4">

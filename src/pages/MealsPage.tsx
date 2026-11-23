@@ -30,6 +30,7 @@ import { buildTranslationIndex } from "../domain/translations";
 import { shareTableImage } from "../services/tableImage";
 import {
   useDishes,
+  useAllExpenses,
   useExpenses,
   useIngredients,
   useMealPlan,
@@ -69,6 +70,7 @@ export function MealsPage({
   const dishes = useDishes();
   const ingredients = useIngredients();
   const pantry = usePantry();
+  const allExpenses = useAllExpenses(tab === "expenses");
 
   // Une traduction appartient au nom : référentiel d'abord (corrigé à la main),
   // puis ce qui est déjà saisi dans le programme et les courses. Un plat traduit
@@ -338,7 +340,12 @@ export function MealsPage({
         />
       )}
       {!loading && tab === "expenses" && (
-        <ExpensesView weekId={weekId} userId={userId} expenses={expenses} />
+        <ExpensesView
+          weekId={weekId}
+          userId={userId}
+          expenses={expenses}
+          allExpenses={allExpenses}
+        />
       )}
     </div>
   );

@@ -148,6 +148,9 @@ détail épique par épique ; en résumé :
   bords, `touchmove` non passif pendant la saisie), `domain/mealMove.ts`, `moveMealItem`
   (une écriture pour les deux créneaux). Un snack reporté se déplace depuis son jour
   d'origine. **À valider sur iPhone PWA** : jsdom ne teste pas le geste réel.
+  **Dépenses par mois + rappel ménage (2026-11-23)** : `expensesByMonth`, `missingHelperDays`,
+  `ExpensesHistogram`, abonnement à toutes les dépenses seulement quand l'onglet Dépenses est
+  ouvert. Plat sur plusieurs jours : écarté, le report des snacks suffit (décision utilisateur).
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

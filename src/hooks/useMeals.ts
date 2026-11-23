@@ -3,6 +3,7 @@ import { emptyPlan } from "../domain/mealPlan";
 import {
   subscribeToAllMealPlans,
   subscribeToDishes,
+  subscribeToAllExpenses,
   subscribeToExpenses,
   subscribeToIngredients,
   subscribeToPantry,
@@ -57,6 +58,16 @@ export function useShoppingList(weekId: string): {
     list: ready ? state : { weekId, items: {} },
     loading: !ready,
   };
+}
+
+/** Toutes les dépenses ; n'écoute la base que si enabled (onglet Dépenses ouvert). */
+export function useAllExpenses(enabled: boolean): HouseholdExpense[] {
+  const [expenses, setExpenses] = useState<HouseholdExpense[]>([]);
+  useEffect(() => {
+    if (!enabled) return;
+    return subscribeToAllExpenses(setExpenses);
+  }, [enabled]);
+  return expenses;
 }
 
 export function useExpenses(weekId: string): {

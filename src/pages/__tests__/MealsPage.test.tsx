@@ -27,6 +27,7 @@ vi.mock("../../hooks/useMeals", () => ({
   useIngredients: vi.fn(),
   useAllMealPlans: vi.fn(),
   usePantry: vi.fn(),
+  useAllExpenses: vi.fn(() => []),
 }));
 
 vi.mock("../../services/meals", () => ({

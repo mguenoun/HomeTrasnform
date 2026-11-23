@@ -376,6 +376,17 @@ export function subscribeToExpenses(
   );
 }
 
+/** Toutes les dépenses, pour la vue par mois. */
+export function subscribeToAllExpenses(
+  onChange: (expenses: HouseholdExpense[]) => void,
+): Unsubscribe {
+  return onSnapshot(collection(db, EXPENSES), (snapshot) => {
+    onChange(
+      snapshot.docs.map((d) => ({ id: d.id, ...d.data() }) as HouseholdExpense),
+    );
+  });
+}
+
 export interface NewExpenseInput {
   type: ExpenseType;
   amount: number;
