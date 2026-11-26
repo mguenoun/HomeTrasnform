@@ -281,6 +281,9 @@ export interface HouseholdExpense {
 /** Repas auquel un plat se sert d'habitude : le déjeuner, le dîner, ou les deux. */
 export type DishMealType = "lunch" | "dinner" | "both";
 
+/** Place du plat dans un repas. Absent = plat principal. */
+export type DishCourse = "main" | "starter" | "side" | "dessert";
+
 export interface Dish {
   /** Clé normalisée (voir `catalogKey`). */
   id: string;
@@ -292,6 +295,10 @@ export interface Dish {
   asMeal?: boolean;
   /** Étiquette « plutôt déjeuner / dîner / les deux » (plats seulement, pas les snacks). */
   mealType?: DishMealType;
+  /** Plat principal, entrée, accompagnement ou dessert (absent = plat principal). */
+  course?: DishCourse;
+  /** Jour où ce plat se sert d'habitude (ex. "fri" : le couscous du vendredi). */
+  preferredDay?: string;
   /**
    * Ce que mesure la taille d'une variante : des personnes (plat, salade…) ou
    * des unités produites (snack : « 10 petites pizzas »). Absent = plat

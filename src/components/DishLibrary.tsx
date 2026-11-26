@@ -1,7 +1,9 @@
 import { useMemo, useState } from "react";
 import { catalogKey } from "../domain/catalog";
 import {
+  COURSE_LABEL,
   MEAL_TYPE_LABEL,
+  dishCourse,
   describeVariants,
   dishMealType,
   inferMealTypes,
@@ -12,6 +14,7 @@ import { computeDishStats, sortDishes, type DishSort } from "../domain/feedback"
 import { useAllMealPlans } from "../hooks/useMeals";
 import type { TranslationIndex } from "../domain/translations";
 import type { CatalogIngredient, Dish } from "../types";
+import { WEEK_DAYS } from "../domain/mealPlan";
 import { saveMealTypes } from "../services/meals";
 import { DishEditor } from "./DishEditor";
 
@@ -183,8 +186,13 @@ export function DishLibrary({
                     )}
                   </span>
                   <span className="ht-pill ht-pill-neutral">
-                    {isSnackDish(dish) ? "Snack" : "Plat"}
+                    {isSnackDish(dish) ? "Snack" : COURSE_LABEL[dishCourse(dish)]}
                   </span>
+                  {dish.preferredDay && !isSnackDish(dish) && (
+                    <span className="ht-pill ht-pill-neutral">
+                      {WEEK_DAYS.find((d) => d.key === dish.preferredDay)?.fr ?? dish.preferredDay}
+                    </span>
+                  )}
                   {(() => {
                     if (isSnackDish(dish)) return null;
                     const { type, inferred: guessed } = dishMealType(dish, inferred);

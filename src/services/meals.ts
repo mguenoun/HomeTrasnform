@@ -21,6 +21,7 @@ import type {
   CatalogIngredient,
   PantryItem,
   Dish,
+  DishCourse,
   DishMealType,
   DishVariant,
   ExpenseType,
@@ -587,6 +588,10 @@ export interface DishInput {
   asMeal?: boolean;
   /** Déjeuner / dîner / les deux : obligatoire pour un plat, sans objet pour un snack. */
   mealType?: DishMealType;
+  /** Plat principal (par défaut), entrée, accompagnement, dessert. */
+  course?: DishCourse;
+  /** Jour habituel (ex. "fri"). */
+  preferredDay?: string;
 }
 
 /**
@@ -619,6 +624,12 @@ export async function saveDish(
       asSnack: input.asSnack || input.basis === "units" || undefined,
       asMeal: input.asMeal || input.basis === "persons" || undefined,
       mealType: input.basis === "persons" ? input.mealType : undefined,
+      // « Plat principal » est la valeur par défaut : on ne l'écrit pas.
+      course:
+        input.basis === "persons" && input.course && input.course !== "main"
+          ? input.course
+          : undefined,
+      preferredDay: input.basis === "persons" ? input.preferredDay || undefined : undefined,
     }),
   );
   if (previousId && previousId !== id) {

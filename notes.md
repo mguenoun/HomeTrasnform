@@ -172,6 +172,11 @@ détail épique par épique ; en résumé :
   espacés), `ProgramGenerator` (le panneau n'écoute tous les programmes que quand il est
   ouvert). Écrit via `saveWholeSlots`, créneaux libres uniquement. Reste : les envies des
   membres (vote) qui alimenteront la sélection.
+  **Catégories, jour préféré, compléments (2026-11-26)** : `Dish.course` (absent = plat
+  principal, non écrit), `Dish.preferredDay` ; `generateProgram` renvoie les plats AJOUTÉS par
+  créneau + `emptyOnly` (créneaux vides à la génération : non écrits s'ils ont été remplis
+  depuis) ; l'application écrit « existant + ajouts ». `DishPicker` dans le détail. Les tests
+  de `MealsPage` ont un délai de 30 s (page lourde, saisie simulée).
   Environnement : sur ce poste, `npx vitest` lancé depuis **Bash** échoue
   ("Cannot read properties of undefined (reading 'config')") alors qu'il
   passe depuis **PowerShell** — utiliser PowerShell pour les tests.

@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { catalogKey } from "../domain/catalog";
-import { MEAL_TYPE_LABEL, missingPersonSizes } from "../domain/dishes";
+import { COURSES, COURSE_LABEL, MEAL_TYPE_LABEL, missingPersonSizes } from "../domain/dishes";
+import { WEEK_DAYS } from "../domain/mealPlan";
 import { translationFor, type TranslationIndex } from "../domain/translations";
 import { deleteDish, saveDish } from "../services/meals";
 import { TranslationInput } from "./TranslationInput";
-import type { CatalogIngredient, Dish, DishMealType } from "../types";
+import type { CatalogIngredient, Dish, DishCourse, DishMealType } from "../types";
 
 interface IngredientDraft {
   name: string;
@@ -57,6 +58,8 @@ export function DishEditor({
   const [mealType, setMealType] = useState<DishMealType | "">(
     dish?.mealType ?? inferredType ?? "",
   );
+  const [course, setCourse] = useState<DishCourse>(dish?.course ?? "main");
+  const [preferredDay, setPreferredDay] = useState(dish?.preferredDay ?? "");
   const [variants, setVariants] = useState<VariantDraft[]>(() => toDrafts(dish));
   const [newSize, setNewSize] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -145,6 +148,8 @@ export function DishEditor({
         asSnack: dish?.asSnack,
         asMeal: dish?.asMeal,
         mealType: mealType || undefined,
+        course,
+        preferredDay,
       });
       onClose();
     } catch (err) {
@@ -213,6 +218,42 @@ export function DishEditor({
           Snack (quantités par nombre d&apos;unités)
         </label>
       </div>
+
+      {basis === "persons" && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+          <label className="flex items-center gap-2">
+            Catégorie
+            <select
+              value={course}
+              onChange={(e) => setCourse(e.target.value as DishCourse)}
+              aria-label="Catégorie du plat"
+              className="ht-input w-auto"
+            >
+              {COURSES.map((key) => (
+                <option key={key} value={key}>
+                  {COURSE_LABEL[key]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            Jour préféré
+            <select
+              value={preferredDay}
+              onChange={(e) => setPreferredDay(e.target.value)}
+              aria-label="Jour préféré du plat"
+              className="ht-input w-auto"
+            >
+              <option value="">Aucun</option>
+              {WEEK_DAYS.map((day) => (
+                <option key={day.key} value={day.key}>
+                  {day.fr}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       {basis === "persons" && (
         <label className="flex flex-wrap items-center gap-2 text-sm">

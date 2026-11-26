@@ -30,6 +30,7 @@ import {
 import { translationFor, type TranslationIndex } from "../domain/translations";
 import { saveMealSlot, setDishTranslation } from "../services/meals";
 import type { Dish, MealItem, MealPlan, MealSlot } from "../types";
+import { DishPicker } from "./DishPicker";
 import { TranslationInput } from "./TranslationInput";
 
 const EMPTY_SLOT: MealSlot = { items: [] };
@@ -52,8 +53,10 @@ function SlotEditor({
   mealKey,
   mealLabel,
   translations,
+  dishes,
 }: {
   plan: MealPlan;
+  dishes: Dish[];
   /** Programme réduit au filtre actif (identique à `plan` si « Tout »). */
   filteredPlan: MealPlan;
   filter: StatusFilter;
@@ -76,6 +79,7 @@ function SlotEditor({
     ? (filteredPlan.slots[slotKey(inheritedFrom.key, "snack")]?.items ?? [])
     : [];
   const [draft, setDraft] = useState("");
+  const [picking, setPicking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const uid = user?.uid;
@@ -584,9 +588,30 @@ function SlotEditor({
             aria-label={`Ajouter un plat, ${mealLabel}`}
             list={isSnack ? "dishes-snack" : "dishes-meal"}
             dir="auto"
-            className="ht-input flex-1"
+            className="ht-input min-w-0 flex-1"
           />
+          <button
+            type="button"
+            aria-label={`Choisir dans la bibliothèque, ${mealLabel}`}
+            aria-expanded={picking}
+            onClick={() => setPicking(!picking)}
+            className="ht-btn shrink-0 px-2.5 text-xs"
+          >
+            Bibliothèque
+          </button>
         </form>
+      )}
+      {!filtered && picking && (
+        <DishPicker
+          dishes={dishes}
+          snack={isSnack}
+          already={slot.items.map((item) => item.label)}
+          mealLabel={mealLabel}
+          onPick={(dish) =>
+            void save({ ...slot, items: [...slot.items, { label: dish.name }] })
+          }
+          onClose={() => setPicking(false)}
+        />
       )}
       {error && (
         <p role="alert" className="text-xs text-[var(--ht-danger)]">
@@ -655,6 +680,7 @@ export function MealWeekPlan({
               mealKey={meal.key}
               mealLabel={meal.fr}
               translations={translations}
+              dishes={dishes}
             />
           ))}
         </section>

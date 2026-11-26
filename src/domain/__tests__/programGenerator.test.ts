@@ -145,3 +145,119 @@ describe("generateProgram", () => {
     expect(plan.slots).toEqual({ sat_lunch: { items: [{ label: "Pâtes" }] } });
   });
 });
+
+describe("generateProgram — catégories et jour préféré", () => {
+  it("met un plat à jour préféré ce jour-là, au repas habituel (le couscous du vendredi midi)", () => {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const { slots, dayMissed } = generateProgram({
+        plan: empty,
+        meals: [
+          { label: "Couscous", type: "lunch", preferredDay: "fri" },
+          ...dishes(13, "both", "P"),
+        ],
+        snacks: [],
+        seed,
+      });
+      expect(slots.fri_lunch.items[0].label).toBe("Couscous");
+      expect(dayMissed).toEqual([]);
+    }
+  });
+
+  it("si le jour préféré est déjà pris, place le plat ailleurs et le signale", () => {
+    const plan: MealPlan = { ...empty, slots: { fri_lunch: { items: [{ label: "Pâtes" }] } } };
+    const { slots, dayMissed } = generateProgram({
+      plan,
+      meals: [{ label: "Couscous", type: "lunch", preferredDay: "fri" }],
+      snacks: [],
+      seed: 1,
+    });
+    expect(slots.fri_lunch).toBeUndefined();
+    expect(labelsOf(slots)).toContain("Couscous");
+    expect(dayMissed).toEqual(["Couscous"]);
+  });
+
+  it("une entrée ou un dessert seuls ne remplissent jamais un repas vide", () => {
+    const { slots, unplacedExtras } = generateProgram({
+      plan: empty,
+      meals: [{ label: "Salade", type: "both", course: "starter" }],
+      snacks: [],
+      seed: 1,
+    });
+    expect(slots).toEqual({});
+    expect(unplacedExtras).toEqual(["Salade"]);
+  });
+
+  it("les 14 places ne comptent que les plats principaux ; entrées et desserts s'y ajoutent", () => {
+    const { slots, unplaced } = generateProgram({
+      plan: empty,
+      meals: [
+        ...dishes(14, "both", "P"),
+        { label: "Salade", type: "both", course: "starter" },
+        { label: "Fruits", type: "both", course: "dessert" },
+      ],
+      snacks: [],
+      seed: 3,
+    });
+    expect(unplaced).toEqual([]);
+    expect(Object.keys(slots)).toHaveLength(14);
+    const withSalad = Object.values(slots).filter((s) => s.items.some((i) => i.label === "Salade"));
+    expect(withSalad).toHaveLength(1);
+    expect(withSalad[0].items[0].label.startsWith("P")).toBe(true);
+  });
+
+  it("complète un programme déjà saisi sans rien retirer, une entrée au plus par repas", () => {
+    const plan: MealPlan = {
+      ...empty,
+      slots: {
+        sat_lunch: { items: [{ label: "Couscous", status: "prepared" }] },
+        sun_dinner: { items: [{ label: "Tajine" }, { label: "Salade marocaine" }] },
+      },
+    };
+    const courseOf = (label: string) => (label === "Salade marocaine" ? "starter" : "main");
+    const { slots, emptyOnly, unplacedExtras } = generateProgram({
+      plan,
+      meals: [
+        { label: "Zaalouk", type: "both", course: "starter" },
+        { label: "Taktouka", type: "both", course: "starter" },
+      ],
+      snacks: [],
+      seed: 1,
+      courseOf,
+    });
+    // sun_dinner a déjà une entrée : seul sat_lunch peut en recevoir une
+    expect(Object.keys(slots)).toEqual(["sat_lunch"]);
+    expect(slots.sat_lunch.items).toHaveLength(1);
+    expect(emptyOnly).toEqual([]);
+    expect(unplacedExtras).toHaveLength(1);
+  });
+
+  it("préfère pour un complément le repas qui lui correspond", () => {
+    const plan: MealPlan = {
+      ...empty,
+      slots: {
+        sat_lunch: { items: [{ label: "Couscous" }] },
+        sat_dinner: { items: [{ label: "Soupe" }] },
+      },
+    };
+    const { slots } = generateProgram({
+      plan,
+      meals: [{ label: "Harira", type: "dinner", course: "starter" }],
+      snacks: [],
+      seed: 1,
+    });
+    expect(slots.sat_dinner.items[0].label).toBe("Harira");
+  });
+
+  it("emptyOnly liste les créneaux vides qui reçoivent un plat principal ou un snack", () => {
+    const plan: MealPlan = { ...empty, slots: { sat_lunch: { items: [{ label: "Couscous" }] } } };
+    const { emptyOnly } = generateProgram({
+      plan,
+      meals: [{ label: "Soupe", type: "dinner" }, { label: "Salade", type: "both", course: "starter" }],
+      snacks: [{ label: "Cake" }],
+      seed: 1,
+    });
+    expect(emptyOnly).toContain("sat_dinner");
+    expect(emptyOnly.some((k) => k.endsWith("_snack"))).toBe(true);
+    expect(emptyOnly).not.toContain("sat_lunch");
+  });
+});

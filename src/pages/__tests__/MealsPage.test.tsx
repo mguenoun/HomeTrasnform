@@ -135,6 +135,8 @@ const expense = (
   ...over,
 });
 
+vi.setConfig({ testTimeout: 30000 });
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -554,6 +556,8 @@ describe("MealsPage — bibliothèque de plats", () => {
       asSnack: undefined,
       asMeal: undefined,
       mealType: "dinner",
+      course: "main",
+      preferredDay: "",
     });
   });
 
@@ -2131,7 +2135,7 @@ describe("MealsPage — composer le programme", () => {
     expect(written.find(([, label]) => label === "Couscous")![0]).toMatch(/_lunch$/);
     expect(written.find(([, label]) => label === "Soupe")![0]).toMatch(/_dinner$/);
     expect(written.find(([, label]) => label === "Cake")![0]).toMatch(/_snack$/);
-    expect(screen.getByRole("status")).toHaveTextContent("3 créneaux ajoutés");
+    expect(screen.getByRole("status")).toHaveTextContent("3 créneaux complétés");
   });
 
   it("« Autre répartition » propose un autre aperçu", async () => {
@@ -2208,5 +2212,94 @@ describe("MealsPage — noms longs dans la bibliothèque", () => {
     const row = screen.getByRole("button", { name: /طاجين الدجاج/ });
     expect(row.className).toContain("flex-wrap");
     expect(within(row).getByText(/طاجين الدجاج/).className).toContain("basis-full");
+  });
+});
+
+describe("MealsPage — entrées, desserts, jour préféré, choix dans la bibliothèque", () => {
+  const catalog: Dish[] = [
+    { id: "couscous", name: "Couscous", asMeal: true, basis: "persons", mealType: "lunch", preferredDay: "fri" },
+    { id: "soupe", name: "Soupe", asMeal: true, basis: "persons", mealType: "dinner" },
+    { id: "salade", name: "Salade", asMeal: true, basis: "persons", mealType: "both", course: "starter" },
+    { id: "fruits", name: "Fruits", asMeal: true, basis: "persons", mealType: "both", course: "dessert" },
+    { id: "cake", name: "Cake", asSnack: true, basis: "units" },
+  ];
+
+  it("l'éditeur enregistre la catégorie et le jour préféré", async () => {
+    setup();
+    await userEvent.click(screen.getByRole("tab", { name: "Bibliothèque" }));
+    await userEvent.click(screen.getByRole("button", { name: "Nouveau plat" }));
+    await userEvent.type(screen.getByLabelText("Nom du plat"), "Couscous");
+    await userEvent.selectOptions(screen.getByLabelText("Repas habituel du plat"), "lunch");
+    await userEvent.selectOptions(screen.getByLabelText("Catégorie du plat"), "main");
+    await userEvent.selectOptions(screen.getByLabelText("Jour préféré du plat"), "fri");
+    await userEvent.click(screen.getByRole("button", { name: "Enregistrer" }));
+    expect(saveDish).toHaveBeenCalledWith(
+      null,
+      expect.objectContaining({ course: "main", preferredDay: "fri", mealType: "lunch" }),
+    );
+  });
+
+  it("la bibliothèque affiche la catégorie et le jour préféré", async () => {
+    setup({}, {}, [], [], catalog);
+    await userEvent.click(screen.getByRole("tab", { name: "Bibliothèque" }));
+    const couscous = screen.getByRole("button", { name: /^Couscous/ });
+    expect(couscous).toHaveTextContent("Plat principal");
+    expect(couscous).toHaveTextContent("Vendredi");
+    expect(screen.getByRole("button", { name: /^Salade/ })).toHaveTextContent("Entrée");
+  });
+
+  it("le composeur groupe les plats par catégorie et ne compte que les plats principaux", async () => {
+    setup({}, {}, [], [], catalog);
+    await userEvent.click(screen.getByRole("button", { name: "Composer le programme" }));
+    await userEvent.click(screen.getByLabelText("Choisir Couscous"));
+    await userEvent.click(screen.getByLabelText("Choisir Salade"));
+    expect(screen.getByText(/Plats principaux \(1 choisi sur 14 places\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Entrées \(1 choisi\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Desserts \(0 choisi\)/)).toBeInTheDocument();
+  });
+
+  it("met le couscous le vendredi midi et lui ajoute l'entrée", async () => {
+    setup({}, {}, [], [], catalog);
+    await userEvent.click(screen.getByRole("button", { name: "Composer le programme" }));
+    await userEvent.click(screen.getByLabelText("Choisir Couscous"));
+    await userEvent.click(screen.getByLabelText("Choisir Salade"));
+    await userEvent.click(screen.getByRole("button", { name: "Générer le programme" }));
+    await userEvent.click(screen.getByRole("button", { name: "Appliquer au programme" }));
+    const slots = vi.mocked(saveWholeSlots).mock.calls.at(-1)![1];
+    expect(slots.fri_lunch.items.map((i) => i.label)).toEqual(["Couscous", "Salade"]);
+  });
+
+  it("complète un programme déjà saisi avec des entrées et desserts, en gardant tout", async () => {
+    setup(
+      { slots: { sat_lunch: { items: [{ label: "Couscous", status: "prepared" as const }] } } },
+      {},
+      [],
+      [],
+      catalog,
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Composer le programme" }));
+    await userEvent.click(screen.getByLabelText("Choisir Fruits"));
+    await userEvent.click(screen.getByRole("button", { name: "Générer le programme" }));
+    expect(screen.getByRole("region", { name: "Aperçu du programme généré" })).toHaveTextContent(
+      "Déjeuner : Couscous + Fruits",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Appliquer au programme" }));
+    expect(saveWholeSlots).toHaveBeenCalledWith("2026-11-21", {
+      sat_lunch: { items: [{ label: "Couscous", status: "prepared" }, { label: "Fruits" }] },
+    });
+  });
+
+  it("le détail permet d'ajouter un plat depuis la bibliothèque, groupé par catégorie", async () => {
+    setup({ slots: { sat_lunch: { items: [{ label: "Couscous" }] } } }, {}, [], [], catalog);
+    await userEvent.click(screen.getAllByRole("button", { name: "Choisir dans la bibliothèque, Déjeuner" })[0]);
+    const picker = screen.getAllByRole("group", { name: "Bibliothèque, Déjeuner" })[0];
+    expect(within(picker).getByText("Entrées")).toBeInTheDocument();
+    // le couscous est déjà au repas : pas reproposé ; les snacks non plus
+    expect(within(picker).queryByRole("button", { name: /Ajouter Couscous/ })).not.toBeInTheDocument();
+    expect(within(picker).queryByRole("button", { name: /Ajouter Cake/ })).not.toBeInTheDocument();
+    await userEvent.click(within(picker).getByRole("button", { name: "Ajouter Salade, Déjeuner" }));
+    expect(saveMealSlot).toHaveBeenCalledWith("2026-11-21", "sat_lunch", {
+      items: [{ label: "Couscous" }, { label: "Salade" }],
+    });
   });
 });

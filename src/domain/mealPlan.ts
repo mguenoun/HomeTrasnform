@@ -82,6 +82,9 @@ export function shiftWeek(weekId: string, delta: number): string {
   return toId(start);
 }
 
+/** Jours dans l'ordre de la semaine de la famille (samedi d'abord). */
+export const WEEK_DAYS = [6, 0, 1, 2, 3, 4, 5].map((i) => DAY_BY_JS_INDEX[i]);
+
 export interface WeekDay {
   key: string;
   fr: string;

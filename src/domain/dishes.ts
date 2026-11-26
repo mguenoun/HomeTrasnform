@@ -1,4 +1,4 @@
-import type { Dish, DishMealType, DishVariant, MealPlan } from "../types";
+import type { Dish, DishCourse, DishMealType, DishVariant, MealPlan } from "../types";
 import { catalogKey } from "./catalog";
 
 /** Tailles proposées par défaut pour un plat (personnes). */
@@ -112,4 +112,19 @@ export function inferredLabelsToSave(
       const type = inferred.get(catalogKey(dish.name));
       return type ? [{ id: dish.id, mealType: type }] : [];
     });
+}
+
+export const COURSE_LABEL: Record<DishCourse, string> = {
+  main: "Plat principal",
+  starter: "Entrée",
+  side: "Accompagnement",
+  dessert: "Dessert",
+};
+
+/** Ordre d'affichage et de saisie : plat principal, entrée, accompagnement, dessert. */
+export const COURSES: DishCourse[] = ["main", "starter", "side", "dessert"];
+
+/** Catégorie d'un plat : celle enregistrée, sinon plat principal. */
+export function dishCourse(dish: Dish): DishCourse {
+  return dish.course ?? "main";
 }

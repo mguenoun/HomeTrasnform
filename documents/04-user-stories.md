@@ -305,6 +305,15 @@ déjeuners et dîners libres selon leur repas habituel (étiquette), espace les 
 un aperçu, propose une autre répartition, puis je l'applique. Jamais un créneau déjà rempli
 n'est touché. — ✅ Fait
 
+**US-12.32** (P1) — Chaque plat a une catégorie (plat principal par défaut, entrée,
+accompagnement, dessert) et peut avoir un jour préféré (le couscous du vendredi). Le
+composeur ne compte que les plats principaux pour les 14 repas, les place d'abord à leur
+jour préféré, et ajoute entrées / accompagnements / desserts aux repas qui ont un plat
+principal, y compris un programme déjà saisi (« compléter »), sans rien retirer. — ✅ Fait
+
+**US-12.33** (P1) — Dans le détail d'un repas, j'ajoute un plat en le choisissant dans la
+bibliothèque (groupé par catégorie), pas seulement en le tapant. — ✅ Fait
+
 ## Ordre d'implémentation proposé
 1. Epic 0 (socle + sécurité) — prérequis technique. — ✅ Fait
 2. Epic 1 (auth) — nécessaire pour tout accès aux données. — ✅ Fait

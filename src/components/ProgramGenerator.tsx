@@ -1,17 +1,20 @@
 import { useMemo, useState } from "react";
 import { catalogKey } from "../domain/catalog";
 import {
+  COURSES,
+  COURSE_LABEL,
   MEAL_TYPE_LABEL,
+  dishCourse,
   dishMealType,
   inferMealTypes,
   isSnackDish,
 } from "../domain/dishes";
 import { computeDishStats } from "../domain/feedback";
-import { MEALS, daysOfWeek, slotKey } from "../domain/mealPlan";
+import { MEALS, WEEK_DAYS, daysOfWeek, slotKey } from "../domain/mealPlan";
 import { generateProgram, type GeneratedProgram } from "../domain/programGenerator";
 import { useAllMealPlans } from "../hooks/useMeals";
 import { saveWholeSlots } from "../services/meals";
-import type { Dish, MealPlan } from "../types";
+import type { Dish, DishCourse, MealPlan } from "../types";
 
 /**
  * Compose une première version du programme : on coche les plats de la semaine (et les
@@ -84,14 +87,19 @@ function GeneratorPanel({
     !needle ||
     catalogKey(dish.name).includes(needle) ||
     catalogKey(dish.translation ?? "").includes(needle);
-  const mealDishes = dishes
-    .filter((d) => !isSnackDish(d) && matches(d))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const byName = (a: Dish, b: Dish) => a.name.localeCompare(b.name);
+  const mealDishes = (course: DishCourse) =>
+    dishes.filter((d) => !isSnackDish(d) && dishCourse(d) === course && matches(d)).sort(byName);
   const snackDishes = dishes
     .filter((d) => isSnackDish(d) && matches(d))
     .sort((a, b) => a.name.localeCompare(b.name));
 
   const pickedMeals = dishes.filter((d) => !isSnackDish(d) && picked.has(d.id));
+  const pickedMains = pickedMeals.filter((d) => dishCourse(d) === "main");
+  const courseByName = useMemo(
+    () => new Map(dishes.map((d) => [catalogKey(d.name), dishCourse(d)])),
+    [dishes],
+  );
   const pickedSnacks = dishes.filter((d) => isSnackDish(d) && picked.has(d.id));
 
   function toggle(id: string) {
@@ -117,7 +125,10 @@ function GeneratorPanel({
           translation: d.translation,
           // Étiquette enregistrée, sinon déduite ; inconnue = peut aller aux deux repas.
           type: dishMealType(d, inferred).type ?? "both",
+          course: dishCourse(d),
+          preferredDay: d.preferredDay,
         })),
+        courseOf: (label) => courseByName.get(catalogKey(label)) ?? "main",
         snacks: pickedSnacks.map((d) => ({ label: d.name, translation: d.translation })),
         seed: nextSeed,
       }),
@@ -129,15 +140,22 @@ function GeneratorPanel({
     setBusy(true);
     setError(null);
     try {
-      // Un créneau rempli entre-temps (autre membre) n'est pas écrasé.
+      // Ce qui est déjà saisi est gardé et complété ; un créneau vide à la génération mais
+      // rempli entre-temps (autre membre) n'est pas touché.
       const slots = Object.fromEntries(
-        Object.entries(preview.slots).filter(
-          ([key]) => (plan.slots[key]?.items.length ?? 0) === 0,
-        ),
+        Object.entries(preview.slots)
+          .filter(
+            ([key]) =>
+              !preview.emptyOnly.includes(key) || (plan.slots[key]?.items.length ?? 0) === 0,
+          )
+          .map(([key, slot]) => [
+            key,
+            { items: [...(plan.slots[key]?.items ?? []), ...slot.items] },
+          ]),
       );
       await saveWholeSlots(weekId, slots);
       setMessage(
-        `${Object.keys(slots).length} créneau${Object.keys(slots).length > 1 ? "x" : ""} ajouté${Object.keys(slots).length > 1 ? "s" : ""} au programme. Ajustez-le dans le calendrier.`,
+        `${Object.keys(slots).length} créneau${Object.keys(slots).length > 1 ? "x" : ""} complété${Object.keys(slots).length > 1 ? "s" : ""} dans le programme. Ajustez-le dans le calendrier.`,
       );
       setPreview(null);
       setPicked(new Set());
@@ -168,6 +186,11 @@ function GeneratorPanel({
               <span className="text-[var(--ht-text-2)]"> — {dish.translation}</span>
             )}
           </span>
+          {dish.preferredDay && (
+            <span className="ht-pill ht-pill-neutral">
+              {WEEK_DAYS.find((d) => d.key === dish.preferredDay)?.fr}
+            </span>
+          )}
           {type && (
             <span className="ht-pill ht-pill-info" style={{ whiteSpace: "normal" }}>
               {MEAL_TYPE_LABEL[type]}
@@ -198,9 +221,11 @@ function GeneratorPanel({
       </div>
 
       <p className="text-xs text-[var(--ht-text-2)]">
-        Cochez les plats de la semaine ({freeMeals} déjeuners et dîners libres) et quelques
-        snacks. L&apos;app les répartit selon leur repas habituel ; rien n&apos;est écrit
-        avant « Appliquer », et ce qui est déjà saisi n&apos;est pas touché.
+        Cochez les plats principaux de la semaine ({freeMeals} déjeuners et dîners libres),
+        puis, si vous voulez, des entrées, accompagnements, desserts et snacks. Les plats
+        principaux vont dans les repas libres (à leur jour préféré s&apos;ils en ont un) ; les
+        compléments s&apos;ajoutent aux repas qui ont un plat principal, même déjà saisis. Rien
+        n&apos;est écrit avant « Appliquer », et rien de ce qui est saisi n&apos;est retiré.
       </p>
 
       <input
@@ -219,12 +244,23 @@ function GeneratorPanel({
         </p>
       ) : (
         <>
-          <p className="text-sm font-semibold text-[var(--ht-text)]">
-            Plats ({pickedMeals.length} choisi{pickedMeals.length > 1 ? "s" : ""} sur {freeMeals} places)
-          </p>
-          <ul className="max-h-72 divide-y divide-[var(--ht-input-border)] overflow-y-auto rounded-lg border border-[var(--ht-input-border)]">
-            {mealDishes.map(row)}
-          </ul>
+          {COURSES.map((course) => {
+            const list = mealDishes(course);
+            if (list.length === 0) return null;
+            const count = pickedMeals.filter((d) => dishCourse(d) === course).length;
+            return (
+              <div key={course} className="flex flex-col gap-1.5">
+                <p className="text-sm font-semibold text-[var(--ht-text)]">
+                  {course === "main"
+                    ? `Plats principaux (${count} choisi${count > 1 ? "s" : ""} sur ${freeMeals} places)`
+                    : `${COURSE_LABEL[course]}s (${count} choisi${count > 1 ? "s" : ""})`}
+                </p>
+                <ul className="max-h-72 divide-y divide-[var(--ht-input-border)] overflow-y-auto rounded-lg border border-[var(--ht-input-border)]">
+                  {list.map(row)}
+                </ul>
+              </div>
+            );
+          })}
           {snackDishes.length > 0 && (
             <>
               <p className="text-sm font-semibold text-[var(--ht-text)]">
@@ -243,6 +279,7 @@ function GeneratorPanel({
           type="button"
           onClick={() => generate(seed)}
           disabled={pickedMeals.length + pickedSnacks.length === 0}
+          title={pickedMains.length === 0 && pickedMeals.length > 0 ? "Compléments seuls : ils s'ajoutent aux repas déjà saisis" : undefined}
           className="ht-btn-cta-sm"
         >
           Générer le programme
@@ -264,7 +301,7 @@ function GeneratorPanel({
             {daysOfWeek(weekId).map((day) => {
               const cells = MEALS.map((meal) => {
                 const key = slotKey(day.key, meal.key);
-                const generated = preview.slots[key]?.items[0]?.label;
+                const generated = preview.slots[key]?.items.map((i) => i.label).join(" + ");
                 const existing = plan.slots[key]?.items.map((i) => i.label).join(" + ");
                 return { meal, generated, existing };
               }).filter((c) => c.generated || c.existing);
@@ -280,7 +317,7 @@ function GeneratorPanel({
                       dir="auto"
                       className={`block break-words ${generated ? "text-[var(--ht-text)]" : "text-[var(--ht-text-2)]"}`}
                     >
-                      {meal.fr} : {generated ?? existing}
+                      {meal.fr} : {[existing, generated].filter(Boolean).join(" + ")}
                     </span>
                   ))}
                 </li>
@@ -296,6 +333,18 @@ function GeneratorPanel({
           {preview.unplaced.length > 0 && (
             <p role="alert" className="text-sm text-[var(--ht-danger)]">
               Pas de créneau libre pour : <span dir="auto">{preview.unplaced.join(", ")}</span>.
+            </p>
+          )}
+          {preview.dayMissed.length > 0 && (
+            <p className="text-xs text-[var(--ht-text-2)]">
+              Jour habituel déjà pris, placé un autre jour :{" "}
+              <span dir="auto">{preview.dayMissed.join(", ")}</span>.
+            </p>
+          )}
+          {preview.unplacedExtras.length > 0 && (
+            <p role="alert" className="text-sm text-[var(--ht-danger)]">
+              Pas de repas à compléter pour : <span dir="auto">{preview.unplacedExtras.join(", ")}</span>
+              {" "}(il faut d&apos;abord un plat principal).
             </p>
           )}
           {preview.unplacedSnacks.length > 0 && (
