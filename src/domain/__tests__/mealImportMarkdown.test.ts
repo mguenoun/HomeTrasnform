@@ -104,3 +104,61 @@ describe("vendorFromHeader", () => {
     expect(vendorFromHeader("Droguerie")).toBe("Droguerie");
   });
 });
+
+// Format réel tel qu'envoyé sur WhatsApp : titres de section sans « # », puces « • ».
+const WHATSAPP_LIST = `تقضية الأسبوع - من يوم السبت
+
+اللحوم
+• جوج كيلو لحم
+• كيلو لحم قطبان
+• كيلو كفتة
+
+دواجن
+• دجاجة من وزن جوج كيلو
+
+الخضروات
+• كيلو ونصف خيزو
+• جوج كيلو بصل
+
+الربيع
+• 2 دراهم كرافص
+• 5 دراهم ربيع مخلط
+• 2 دراهم نعناع مخلط
+• الخص
+
+البقال
+• ليتر زيت
+• نصف كيلو شعرية
+
+العطار
+• 10 دراهم كمون`;
+
+describe("import d'une liste WhatsApp à titres simples et puces « • »", () => {
+  const groups = parseShoppingText(WHATSAPP_LIST);
+
+  it("prend les titres de section comme points de vente, et ignore l'intitulé", () => {
+    expect(groups.map((g) => g.vendor)).toEqual([
+      "Boucher",
+      "Volailler",
+      "Fruits et légumes",
+      "Herbes",
+      "Épicier",
+      "العطار",
+    ]);
+    expect(groups.flatMap((g) => g.items.map((i) => i.name))).not.toContain(
+      "تقضية الأسبوع - من يوم السبت",
+    );
+  });
+
+  it("lit les articles derrière la puce", () => {
+    expect(groups[0].items[0]).toEqual({ name: "لحم", quantity: "جوج كيلو" });
+    expect(groups[3].items.map((i) => i.name)).toEqual(["كرافص", "ربيع مخلط", "نعناع مخلط", "الخص"]);
+    expect(groups[4].items[0]).toEqual({ name: "زيت", quantity: "ليتر" });
+  });
+
+  it("accepte une puce collée au texte (« •كيلو »)", () => {
+    const parsed = parseShoppingText("اللحوم\n•كيلو لحم\n•كيلو كفتة");
+    expect(parsed[0].vendor).toBe("Boucher");
+    expect(parsed[0].items).toHaveLength(2);
+  });
+});

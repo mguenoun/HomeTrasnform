@@ -103,7 +103,7 @@ export function vendorFromHeader(header: string): string {
 // Ligne d'article en liste à puces ("- كيلو لحم").
 // Seul un tiret court suivi d'une espace compte : le tiret long collé ("—كيلو") des
 // listes WhatsApp ordinaires n'est pas une puce.
-const BULLET = /^[-•*]\s+/;
+const BULLET = /^(?:[-*]\s+|[•●▪◦·]\s*)/;
 
 export function parseShoppingText(text: string): ParsedShoppingGroup[] {
   const groups: ParsedShoppingGroup[] = [];
@@ -130,8 +130,8 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
     current = [];
   };
 
-  for (const rawLine of text.split(/\r?\n/)) {
-    const line = rawLine.replace(INVISIBLE, "").trim();
+  const lines = text.split(/\r?\n/).map((l) => l.replace(INVISIBLE, "").trim());
+  for (const [index, line] of lines.entries()) {
     if (!line) {
       // Une ligne vide sépare deux groupes (ex. herbes / poisson, achetés chez
       // deux commerçants) même sans montant ; un montant qui suit ensuite se
@@ -158,7 +158,16 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
       continue;
     }
 
-    if (bulleted && !BULLET.test(line)) continue;
+    if (bulleted && !BULLET.test(line)) {
+      // Dans une liste à puces, une ligne sans puce suivie directement d'articles à
+      // puces est un titre de section (« اللحوم ») : elle donne le point de vente.
+      // Sinon c'est l'intitulé de la liste (« تقضية الأسبوع… ») : ignoré.
+      if (BULLET.test(lines[index + 1] ?? "")) {
+        flush();
+        vendor = vendorFromHeader(line);
+      }
+      continue;
+    }
 
     const item = parseShoppingLine(line);
     if (item) current.push(item);
