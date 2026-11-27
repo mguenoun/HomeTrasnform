@@ -168,6 +168,9 @@ export function ShoppingImport({
             Une ligne par article. Une ligne de montant seul (ex. 187dh) clôt un
             groupe d&apos;articles payés ensemble, une ligne vide sépare deux groupes, et
             une ligne « # Boucher » donne le point de vente des groupes qui suivent.
+            Les listes à titres « ### اللحوم » et à puces « - كيلو لحم » sont aussi
+            reconnues (les titres arabes courants deviennent Boucher, Volailler, Fruits
+            et légumes, Épicier…, modifiables avant l&apos;import).
           </p>
           <button
             type="button"

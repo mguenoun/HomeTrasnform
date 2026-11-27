@@ -30,7 +30,7 @@ const AMOUNT_LINE =
 const NUM = String.raw`(?:\d+(?:[.,/]\d+)?|جوج|نصف|ربعة|ربع|ثلاثة|تلاتة)`;
 // "حك" = boîte (de conserve), confirmé par l'utilisateur ("حك ماييص" = 1 boîte de maïs).
 // "طون" n'est PAS une unité : c'est le thon ("جوج طون زيت" = 2 boîtes de thon à l'huile).
-const UNIT = String.raw`(?:كيلو|كغ|غرام|لتر|دراهم|درهم|باكية|باكيات|دنون|علبة|حك|kg|g|l|dhs?|paquets?|boîtes?|bottes?)`;
+const UNIT = String.raw`(?:كيلو|كغ|غرام|ليتر|لتر|دراهم|درهم|باكية|باكيات|دنون|علبة|حك|kg|g|l|dhs?|paquets?|boîtes?|bottes?)`;
 // nombre et/ou unité en tête, éventuellement suivi de "و نصف"/"ونصف" ("كيلو و نصف")
 const QUANTITY = new RegExp(
   `^(?=[^\\s])(${NUM})?\\s*(${UNIT})?(?:\\s*و\\s*(${NUM}))?(?=\\s|$)`,
@@ -77,14 +77,48 @@ export function parseShoppingLine(line: string): ParsedShoppingItem | null {
   return name ? { name, ...(quantity ? { quantity } : {}) } : null;
 }
 
-// "# Boucher" : nomme le point de vente des groupes qui suivent (jusqu'au
-// prochain titre). Permet de préparer un import sans avoir à classer à la main.
-const VENDOR_HEADER = /^[#＃]\s*(.+)$/;
+// "# Boucher" ou "### اللحوم" : nomme le point de vente des groupes qui suivent
+// (jusqu'au prochain titre). Permet de préparer un import sans avoir à classer à la main.
+const VENDOR_HEADER = /^[#＃]+\s*(.+)$/;
+
+// Titres en arabe (liste envoyée par la personne de ménage) → points de vente de l'app,
+// pour que les paiements et passages se rattachent aux mêmes commerçants. Un titre
+// inconnu est gardé tel quel (il reste modifiable avant l'import).
+const VENDOR_ALIASES: Array<[RegExp, string]> = [
+  [/^(ال)?(لحوم|لحم|جزار|كزار)$/, "Boucher"],
+  [/^(ال)?(دواجن|دجاج|فراخ|فروج)$/, "Volailler"],
+  [/^(ال)?(خضروات|خضرة|خضر|خضرا|فواكه)$/, "Fruits et légumes"],
+  [/^(ال)?(بقال|حانوت|مول الحانوت)$/, "Épicier"],
+  [/^(ال)?(حوت|سمك|حواتي)$/, "Poissonnier"],
+  [/^(ال)?(بيض)$/, "Œufs"],
+  [/^(ال)?(ربيع|قزبر|نعناع)$/, "Herbes"],
+];
+
+export function vendorFromHeader(header: string): string {
+  const name = header.replace(INVISIBLE, "").replace(/[:：]\s*$/, "").trim();
+  const key = name.replace(/\s+/g, " ");
+  return VENDOR_ALIASES.find(([pattern]) => pattern.test(key))?.[1] ?? name;
+}
+
+// Ligne d'article en liste à puces ("- كيلو لحم").
+// Seul un tiret court suivi d'une espace compte : le tiret long collé ("—كيلو") des
+// listes WhatsApp ordinaires n'est pas une puce.
+const BULLET = /^[-•*]\s+/;
 
 export function parseShoppingText(text: string): ParsedShoppingGroup[] {
   const groups: ParsedShoppingGroup[] = [];
   let current: ParsedShoppingItem[] = [];
   let vendor: string | undefined;
+  // Liste à puces : une ligne sans puce (hors titre et montant) est un intitulé
+  // (« تقضية الأسبوع - من يوم السبت »), pas un article.
+  // On ne passe dans ce mode que si la plupart des articles ont une puce : un tiret
+  // isolé dans une liste ordinaire ne doit pas faire ignorer les autres lignes.
+  const candidates = text
+    .split(/\r?\n/)
+    .map((l) => l.replace(INVISIBLE, "").trim())
+    .filter((l) => l && !VENDOR_HEADER.test(l) && !AMOUNT_LINE.test(l));
+  const bulletCount = candidates.filter((l) => BULLET.test(l)).length;
+  const bulleted = bulletCount >= 2 && bulletCount * 2 >= candidates.length;
 
   const flush = (amount?: number) => {
     if (current.length === 0) return;
@@ -109,7 +143,7 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
     const header = VENDOR_HEADER.exec(line);
     if (header) {
       flush();
-      vendor = header[1].trim();
+      vendor = vendorFromHeader(header[1]);
       continue;
     }
 
@@ -123,6 +157,8 @@ export function parseShoppingText(text: string): ParsedShoppingGroup[] {
       }
       continue;
     }
+
+    if (bulleted && !BULLET.test(line)) continue;
 
     const item = parseShoppingLine(line);
     if (item) current.push(item);
